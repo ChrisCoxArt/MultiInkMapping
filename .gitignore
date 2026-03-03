@@ -39,3 +39,7 @@
 
 # debug information files
 *.dwo
+
+# Xcode build stuff
+build/
+.DS_Store
