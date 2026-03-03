@@ -7,9 +7,13 @@ Does it look reasonable? Yes.  And that's all I need from it.
 
 
 Assume primaries are saturated, not too neutral, and define a convex hull.
+Primaries will be sorted by hue to make sure they are in order to make a convex hull.
+
+TODO:
+5+ inks the splines are distorted - too concave, too many peaks
 
 
-Special case 1 ink -- single spline from paper->ink->dark, closest point
+Special case 1 ink -- single spline from paper->ink->dark, take only point
 Special case 2 ink -- spline surface, closest point on line
 Special case 3..N ink -- create closed shape, find interpolated inside, project point to closest outside
 
@@ -84,22 +88,24 @@ struct inkColorSet {
 
 std::vector<inkColorSet> colorSets =
 {
-
-    {   "Turquiose",
+// 1
+    {   "Turquoise",
         "Turquoise Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {44.4, -35.9, -32.5} }
     },
-    
-    {   "Orange-Turquiose",
+
+// 2
+    {   "Orange-Turquoise",
         "Orange and Turquoise Paint",
         { 97.12126, -0.024685, 0.025155 },
         { 7.6, 2.5, 0.8 },
         { {62.0, 32, 58.0}, {47.8, -34.2, -43.0 } }
     },
 
-    {   "Orange-Turquiose-Green",
+// 3
+    {   "Orange-Turquoise-Green",
         "Orange, Turquoise, and Green Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
@@ -112,6 +118,57 @@ std::vector<inkColorSet> colorSets =
         { -1,0,0 },
         { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7}, {90.2, 2.7, 97.7}  }
     },
+    
+// 4
+    {   "Turquoise-Magenta-Yellow-Violet",
+        "Turquoise, Magenta, Yellow, and Violet Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
+          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4} }
+    },
+
+// 5
+    {   "Turquoise-Magenta-Yellow-Violet-Green",
+        "Turquoise, Magenta, Yellow, Violet, and Green Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
+          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
+          {71.2, -54.2, 62.9} }
+    },
+
+// 6
+    {   "Turquoise-Magenta-Yellow-Violet-Green-Blue",
+        "Turquoise, Magenta, Yellow, Violet, Green, and Blue Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
+          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
+          {71.2, -54.2, 62.9}, {38.2, 13.3, -66.4} }
+    },
+
+// 7
+    {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange",
+        "Turquoise, Magenta, Yellow, Violet, Green, Blue, and Orange Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
+          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
+          {71.2, -54.2, 62.9}, {38.2, 13.3, -66.4},
+          {71.0, 50.7, 68.6}  }
+    },
+
+
+// 8
+// 9
+// A
+// B
+// C
+// D
+// E
+// F
+
 };
 
 /********************************************************************************/
@@ -702,8 +759,7 @@ void LinearInterpList( const int subdivisions, const PointList &input, PointList
     
     result.reserve( subdivisions+1 );
     
-    for (int i = 0; i <= subdivisions; ++i)
-        {
+    for (int i = 0; i <= subdivisions; ++i) {
         /// which input points are we between?
         float floatIndex = ((float)pointCount * i) / (float)subdivisions;
         int pointIndex = int( floatIndex );
@@ -732,7 +788,7 @@ void LinearInterpList( const int subdivisions, const PointList &input, PointList
         newPoint.b = LERP( t, input[p1].b, input[p2].b );
         
         result.emplace_back( newPoint );
-        }
+    }   // end for subdivisions
 }
 
 /********************************************************************************/
@@ -775,18 +831,16 @@ Point FindClosestPointInList( const PointList &list, Point &input )
 	size_t count = list.size();
 	ASSERT( count > 0, "empty point list");
 	
-	for (size_t i = 0; i < count; ++i)
-		{
+	for (size_t i = 0; i < count; ++i) {
 		float distA = input.a - list[i].a;
 		float distB = input.b - list[i].b;
 		float dist = distA*distA + distB*distB;	// leave it squared
 		
-		if (dist < closest_dist)
-			{
+		if (dist < closest_dist) {
 			closest_dist = dist;
 			closest_index = i;
-			}
-		}
+        }
+    }
 	
 	ASSERT( closest_index >= 0, "failed to find point in list");
 	return list[closest_index];
@@ -839,10 +893,8 @@ void SmoothOneDirection( float *data, int planeStep, int rowStep, int colStep )
 {
 	int i, j, k;
 	
-	for (i = 0; i < gDataGridPoints; ++i)
-		{
-		for (j = 0; j < gDataGridPoints; ++j)
-			{
+	for (i = 0; i < gDataGridPoints; ++i) {
+		for (j = 0; j < gDataGridPoints; ++j) {
 			k = 0;
 			
 			// special case first value
@@ -857,8 +909,7 @@ void SmoothOneDirection( float *data, int planeStep, int rowStep, int colStep )
 			float next0 = 0, next1 = 0, next2 = 0;
 			float result0, result1, result2;
 			
-			for (k = 0; k < (gDataGridPoints-1); ++k)
-				{
+			for (k = 0; k < (gDataGridPoints-1); ++k) {
 				
 				next0 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 0 ];
 				next1 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 1 ];
@@ -954,8 +1005,7 @@ void create_table( FILE *output, const inkColorSet &inkSet, const spline_list &s
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
 	
-	for (L = 0; L < gDataGridPoints; ++L)
-		{
+	for (L = 0; L < gDataGridPoints; ++L) {
 		// setup slices variables
 		float Lfloat = grid_to_L( L );
 		
@@ -986,7 +1036,7 @@ void create_table( FILE *output, const inkColorSet &inkSet, const spline_list &s
 		PointList planePoints;
 // TODO - needs more points for > number of inks
 // maybe 100*inks?   50*inks?
-        PointListFromFloatSpline( 100, planeSpline, planePoints, (inkCount > 2) );
+        PointListFromFloatSpline( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
 
 
 // DEBUG the last set generated to check the gamut shape and area
