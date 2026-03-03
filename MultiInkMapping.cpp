@@ -1,3 +1,26 @@
+/*
+Copyright (c) 2026 Chris Cox
+
+
+Is it accurate? Nope.  Accuracy would need a lot more measurements, and might not look as good.
+Does it look reasonable? Yes.  And that's all I need from it.
+
+TODO - mixtures and overprints are not right
+    probably need an overprint model instead of an interpolation
+
+
+Assume primaries are saturated, not too neutral, and define a convex hull.
+
+
+Special case 1 ink -- single spline from paper->ink->dark, closest point
+Special case 2 ink -- spline surface, closest point on line
+Special case 3..N ink -- create closed shape, find interpolated inside, project point to closest outside
+
+Smooth the resulting 3D table
+
+*/
+
+
 #include <cstdio>
 #include <cstdint>
 #include <cassert>
@@ -8,37 +31,9 @@
 #include <cmath>
 #include <memory>
 
-
-/*
-Copyright (C) Chris Cox 2011-2026
-
-Is it accurate? Nope.  Accuracy would need a lot more measurements, and might not look as good.
-Does it look reasonable? Yes.  And that's all I need from it.
-
-TODO - mixtures and overprints are not right
-    probably need a mix model instead of an interpolation
-
-
-
-Special case 1 ink -- single spline from paper->ink->dark, closest point
-Special case 2 ink -- spline surface, closest point on line
-Special case 3..N ink -- create closed shape, find interpolated inside, project point to closest outside
-
-Smooth the resulting 3D table
-
-
-
-
-1 and 2 inks work well - sampling closest point on spline
-
-3 or more still needs interpolation of inside color
-    need pigment mix eventually for dimensional B2A tables
-    Need mixing model for A2B tables
-*/
-
 /******************************************************************************/
 
-const char kVersionString[] = "0.3a";
+const char kVersionString[] = "0.6a";
 
 /******************************************************************************/
 
@@ -81,12 +76,6 @@ typedef std::vector< color_list > spline_list;
 
 /******************************************************************************/
 
-// assume primaries are saturated, not neutrals
-// and define a convex hull
-
-
-// TODO - should this include grid size and depth?
-// or keep that global?
 struct inkColorSet {
     std::string name;           // what filename to use
     std::string description;    // how to describe this combination
@@ -112,7 +101,6 @@ std::vector<inkColorSet> colorSets =
         { {62.0, 32, 58.0}, {47.8, -34.2, -43.0 } }
     },
 
-// 3 or more don't work correctly yet!
     {   "Orange-Turquiose-Green",
         "Orange, Turquoise, and Green Paint",
         { 97.12126, -0.024685, 0.025155 },
@@ -126,25 +114,13 @@ std::vector<inkColorSet> colorSets =
         { -1,0,0 },
         { {66.8, -51.5, -15.4}, {52.0, 81.1, -1.7}, {90.2, 2.7, 97.7}  }
     },
-
 };
 
 /********************************************************************************/
 
 // our global variables, just because it was quicker to write it this way
-int				gDataDepth;
-int				gDataGridPoints;
-
-/********************************************************************************/
-
-// current code is for little endian architectures only
-#if 1
-#define SwabShort(x)	( (((uint16_t)(x))>>8) | (((uint16_t)(x))<<8) )
-#define SwabLong(x)		( (((uint32_t)(x))>>24) \
-						| ((((uint32_t)(x))>>8)&0x0000FF00) \
-						| ((((uint32_t)(x))<<8)&0x00FF0000) \
-						| (((uint32_t)(x))<<24) )
-#endif
+int gDataDepth = 8;
+int gDataGridPoints = 17;
 
 /********************************************************************************/
 
@@ -352,7 +328,6 @@ xyzColor expInterp2inks( const float t, const xyzColor &ink1, const xyzColor &in
 	
 	return result;
 }
-
 
 /********************************************************************************/
 
@@ -1003,8 +978,10 @@ void create_table( FILE *output, const inkColorSet &inkSet, const spline_list &s
 // maybe 100*inks?   50*inks?
         PointListFromFloatSpline( 100, planeSpline, planePoints, (inkCount > 2) );
 
-// DEBUG!
+
+// DEBUG the last set generated to check the gamut shape and area
 DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
+
 
 		// now iterate over this plane/slice
 		for (A = 0; A < gDataGridPoints; ++A) {
@@ -1086,8 +1063,6 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 
 }
 
-
-
 /******************************************************************************/
 /******************************************************************************/
 
@@ -1114,6 +1089,10 @@ static void parse_arguments( int argc, char *argv[] )
 			&& c < (argc-1) )
 			{
 			gDataGridPoints = atoi( argv[c+1] );
+            if (gDataGridPoints < 2)
+                gDataGridPoints = 2;
+            if (gDataGridPoints > 256)
+                gDataGridPoints = 256;
 			++c;
 			}
 		else if ( (strcmp( argv[c], "-depth" ) == 0 || strcmp( argv[c], "-d" ) == 0 )
@@ -1153,11 +1132,6 @@ static void parse_arguments( int argc, char *argv[] )
 
 int main (int argc, char * argv[])
 {
-	// defaults
-	gDataDepth = 8;
-	gDataGridPoints = 17;
-	
-    
 	// handle our command line arguments
 	parse_arguments( argc, argv );
 	
@@ -1186,3 +1160,6 @@ int main (int argc, char * argv[])
 
     return 0;
 }
+
+/********************************************************************************/
+/********************************************************************************/
