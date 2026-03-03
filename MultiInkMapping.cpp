@@ -465,6 +465,14 @@ void subdivide_ink_splines( const inkColorSet &inkSet, const int divisions, cons
     xyzColor ink2Color = LAB2XYZ( ink2 );
     xyzColor ink2Filter = ink2Color / paperColor;
     xyzColor halfwayMix = ink1Filter * ink2Filter * paperColor;
+
+#if 1
+// this seems to work better everywhere
+// interp isn't right, but full overprint isn't right, either
+    xyzColor halfInterp = interp2inks( 0.5, ink1Color, ink2Color );
+// TODO - find best parameter, 0.5 isn't enough, 1.0 is too much
+    halfwayMix = interp2inks( 0.7, halfwayMix, halfInterp );
+#endif
     
     // d == 0 is the last pure ink spline
     // d == division is this pure ink spline (handled elsewhere)
