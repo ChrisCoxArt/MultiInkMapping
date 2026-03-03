@@ -5,9 +5,6 @@ Copyright (c) 2026 Chris Cox
 Is it accurate? Nope.  Accuracy would need a lot more measurements, and might not look as good.
 Does it look reasonable? Yes.  And that's all I need from it.
 
-TODO - mixtures and overprints are not right
-    probably need an overprint model instead of an interpolation
-
 
 Assume primaries are saturated, not too neutral, and define a convex hull.
 
@@ -87,6 +84,7 @@ struct inkColorSet {
 
 std::vector<inkColorSet> colorSets =
 {
+
     {   "Turquiose",
         "Turquoise Paint",
         { 97.12126, -0.024685, 0.025155 },
@@ -108,11 +106,11 @@ std::vector<inkColorSet> colorSets =
         { {62.0, 32, 58.0}, {47.8, -34.2, -43.0}, {71.2, -54.2, 62.9} }
     },
 
-    {   "Teal-Magenta-Yellow",
-        "Teal, Magenta, and Yellow Paint",
+    {   "Turquoise-Magenta-Yellow",
+        "Turquoise, Magenta, and Yellow Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {66.8, -51.5, -15.4}, {52.0, 81.1, -1.7}, {90.2, 2.7, 97.7}  }
+        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7}, {90.2, 2.7, 97.7}  }
     },
 };
 
@@ -402,7 +400,6 @@ bool labHueLess(const labColor &a, const labColor &b)
 void subdivide_ink_splines( const inkColorSet &inkSet, const int divisions, const int steps, const labColor &ink1, const labColor &ink2, const xyzColor &paperColor, spline_list &splines )
 {
 	color_list temp;
-	xyzColor mix;
 	labColor mixLAB;
 	xyzColor identity( 100.0, 100.0, 100.0 );
 
@@ -410,16 +407,26 @@ void subdivide_ink_splines( const inkColorSet &inkSet, const int divisions, cons
     xyzColor ink1Filter = ink1Color / paperColor;
     xyzColor ink2Color = LAB2XYZ( ink2 );
     xyzColor ink2Filter = ink2Color / paperColor;
+    xyzColor halfwayMix = ink1Filter * ink2Filter * paperColor;
     
     // d == 0 is the last pure ink spline
-    // d == division is this pure ink spline (below)
+    // d == division is this pure ink spline (handled elsewhere)
     for (int d = 1; d < divisions; ++d) {
         float t = (float)d / (float)divisions;
 
+#if 1
+// this works much better, so far
+        xyzColor mix;
+        if (t <= 0.5)
+            mix = interp2inks( t*2.0, ink1Color, halfwayMix );
+        else
+            mix = interp2inks( (t-0.5)*2.0, halfwayMix, ink2Color );
+#else
 // TODO - this mix model is wrong
         xyzColor filter1 = interp2inks( (1-t), identity, ink1Filter );
         xyzColor filter2 = interp2inks( t, identity, ink2Filter );
-        mix = filter1 * filter2 * paperColor;
+        xyzColor mix = filter1 * filter2 * paperColor;
+#endif
 
         mixLAB = XYZ2LAB( mix );
         temp = mix_one_spline( steps, inkSet.paperColor, mixLAB, inkSet.combinationColor );
@@ -475,8 +482,11 @@ spline_list mix_ink_splines( inkColorSet &inkSet )
         }
         
 		mixLAB = XYZ2LAB( mix );
-        printf("Estimated overprint for %s is (%f, %f, %f)\n", inkSet.name.c_str(),
+#if 1
+        printf("Estimated overprint for %s is (%f, %f, %f)\n",
+            inkSet.name.c_str(),
             mixLAB.L, mixLAB.A, mixLAB.B );
+#endif
         
         inkSet.combinationColor = mixLAB;
     }
