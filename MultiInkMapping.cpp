@@ -8,7 +8,8 @@ Is it accurate? Nope.
 Does it look reasonable? Yes.
     And that's all I need from it.
 
-
+NOTE - This started as a simulation of drawing with inks/watercolors.
+    I can always ligten them with water, and put down multiple layers for darks.
 
 Assume primaries are saturated, not too neutral, and define a convex hull.
 Primaries will be sorted by hue to make sure they are in order to make a convex hull.
@@ -480,7 +481,7 @@ xyzColor expInterp2inks( const float t, const xyzColor &ink1, const xyzColor &in
 
 /********************************************************************************/
 
-	// linear interpolation
+// linear interpolation
 xyzColor interp2inks( const float t, const xyzColor &ink1, const xyzColor &ink2 )
 {
 	xyzColor result;
@@ -980,19 +981,36 @@ float grid_to_AB( int grid_value )
 /********************************************************************************/
 
 // convert 0..100 representation to file representation
-int floatL_to_fileL( float L )
+int floatL_to_fileL8( float L )
 {
 	if (L <= 0.0) return 0;
 	if (L >= 100.0) return 255;
 	return (int)( (255.0 / 100.0) * L + 0.5 );
 }
 
-// ccox - FIX ME - cheap version for now -- refine if needed
-int floatAB_to_fileAB( float A )
+int floatAB_to_fileAB8( float A )
 {
 	if (A > 127.0) return 255;
 	if (A < -128.0) return 0;
 	return (int)( A + 128.0 );
+}
+
+/********************************************************************************/
+
+// convert 0..100 representation to file representation
+// ICC version 2 profile encoding for LAB 16 bit  --- not usable in TIFF
+int floatL_to_fileL16( float L )
+{
+	if (L <= 0.0) return 0;
+	if (L >= 100.0) return 65280;
+	return (int)( (65280.0 / 100.0) * L + 0.5 );
+}
+
+int floatAB_to_fileAB16( float A )
+{
+	if (A > 127.0) return 65280;
+	if (A < -128.0) return 0;
+	return (int)( A + 32768.0 );
 }
 
 /********************************************************************************/
@@ -1218,9 +1236,9 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 #endif
 				
 				// convert to integer output values
-				int Lout =   floatL_to_fileL( gGridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
-				int Aout = floatAB_to_fileAB( gGridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
-				int Bout = floatAB_to_fileAB( gGridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
+				int Lout =   floatL_to_fileL8( gGridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
+				int Aout = floatAB_to_fileAB8( gGridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
+				int Bout = floatAB_to_fileAB8( gGridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
 				
 				// write value out to file (interleaved)
 				// FIX ME - ccox - currently 8 bit only
@@ -1309,7 +1327,7 @@ int main (int argc, char * argv[])
 	// handle our command line arguments
 	parse_arguments( argc, argv );
 	
-
+    // iterate over each named set of inks
     for (auto &inkSet : colorSets) {
         
         std::string outFileName = inkSet.name + ".ppm";
