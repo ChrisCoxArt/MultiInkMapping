@@ -10,7 +10,10 @@ Does it look reasonable? Yes.
     And that's all I need from it.
 
 NOTE - This started as a simulation of drawing with inks/watercolors.
-    I can always lighten them with water, and put down multiple layers for darks.
+    I wanted a simulation of how artists map colors with very limited palettes.
+    But available software only handles gray, or CMYK.
+    And random colored inks don't mix like idealized CMY.
+    I can always lighten inks/paints by dilution, and put down multiple layers for darks.
 
 This assumes primaries are somewhat saturated, not too neutral, and define a convex hull.
 Primaries will be sorted by hue to make sure they are in order to make a convex hull.
@@ -102,7 +105,7 @@ struct Point {
 
 public:
 	Point() {};
-	Point( float A, float B) : a(A), b(B) {}
+	Point( float A, float B ) : a(A), b(B) {}
     
     bool operator==(const Point& other) const = default;
 };
@@ -151,7 +154,7 @@ std::vector<inkColorSet> colorSets =
         "Turquoise and Orange Paint",
         { 97.12126, -0.024685, 0.025155 },
         { 7.6, 2.5, 0.8 },
-        { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 47.8, -34.2, -43.0 } }
+        { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
     },
 
 // 3
@@ -159,7 +162,7 @@ std::vector<inkColorSet> colorSets =
         "Turquoise, Orange, and Green Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {"Orange", 62.0, 32, 58.0}, {"Turquoise", 47.8, -34.2, -43.0},
+        { {"Orange", 62.0, 32, 58.0}, {"Turquoise", 44.4, -35.9, -32.5 },
           { "Green", 71.2, -54.2, 62.9} }
     },
 
@@ -167,7 +170,7 @@ std::vector<inkColorSet> colorSets =
         "Turquoise, Magenta, and Yellow Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
           {"Yellow", 90.2, 2.7, 97.7}  }
     },
 
@@ -176,7 +179,7 @@ std::vector<inkColorSet> colorSets =
         "4 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
           {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4} }
     },
 
@@ -185,7 +188,7 @@ std::vector<inkColorSet> colorSets =
         "5 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
           {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
           {"Green", 71.2, -54.2, 62.9} }
     },
@@ -195,7 +198,7 @@ std::vector<inkColorSet> colorSets =
         "6 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
           {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
           {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4} }
     },
@@ -205,7 +208,7 @@ std::vector<inkColorSet> colorSets =
         "7 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
           {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
           {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
           {"Orange", 71.0, 50.7, 68.6}  }
@@ -216,7 +219,7 @@ std::vector<inkColorSet> colorSets =
         "8 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
           {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
           {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5} }
@@ -227,7 +230,7 @@ std::vector<inkColorSet> colorSets =
         "9 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
           {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
           {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
@@ -239,7 +242,7 @@ std::vector<inkColorSet> colorSets =
         "10! 10 Paints! Hah, ha, ha!",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
           {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
           {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
@@ -251,7 +254,7 @@ std::vector<inkColorSet> colorSets =
         "11 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
           {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
           {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
@@ -260,9 +263,60 @@ std::vector<inkColorSet> colorSets =
     },
 
 // C
+    {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange",
+        "12 Paints",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
+          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5},
+          {"Teal", 66.8, -51.5, -15.4 }, {"YellowOrange", 81.5, 27.9, 102.3} }
+    },
+
 // D
+    {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange-Cerulean",
+        "13 Paints",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
+          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5},
+          {"Teal", 66.8, -51.5, -15.4 }, {"YellowOrange", 81.5, 27.9, 102.3},
+          {"Cerulean", 63.3, -16.1, -35.3 } }
+    },
+
 // E
+    {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange-Cerulean-GreenGold",
+        "14 Paints",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
+          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5},
+          {"Teal", 66.8, -51.5, -15.4 }, {"YellowOrange", 81.5, 27.9, 102.3},
+          {"Cerulean", 63.3, -16.1, -35.3 }, {"GreenGold", 57.1, -14.3, 54.0} }
+    },
+
 // F
+    {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange-Cerulean-GreenGold-Indigo",
+        "15 Paints",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
+          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5},
+          {"Teal", 66.8, -51.5, -15.4 }, {"YellowOrange", 81.5, 27.9, 102.3},
+          {"Cerulean", 63.3, -16.1, -35.3 }, {"GreenGold", 57.1, -14.3, 54.0},
+          {"Indigo", 31, 35, -68} }
+    },
 
 };
 
@@ -296,7 +350,7 @@ const float ZD50 = 82.5188;
 
 float CIECurve( const float input )
 {
-	const float scale = 7.787037;	// pow( 29.0/6.0, 2.0) / 3.0;
+	const float scale = 7.787037;	        // powf( 29.0/6.0, 2.0) / 3.0;
 	const float breakpoint = 0.008856;		// powf( 6.0/29.0, 3.0 );
 	
 	if (input > breakpoint)
