@@ -1,4 +1,5 @@
 /*
+Multi Ink Mapping
 Copyright (c) 2026 Chris Cox
 
 
@@ -19,27 +20,34 @@ Primaries will be sorted by hue to make sure they are in order to make a convex 
 
 
 Special case 1 ink -- single spline from paper->ink->dark, take only point
-Special case 2 ink -- spline surface, closest point on line
-Special case 3..N ink -- create closed shape, find interpolated inside, project point to closest outside
+Special case 2 ink -- spline 2D surface, closest point on line
+Special case 3..N ink -- create closed shape from multiple surfaces,
+            find interpolated inside, project point to closest outside
+Always smooth the resulting 3D table
 
-Smooth the resulting 3D table
 
 
-
+TODO
 A2B - ink and overprints to LAB, can be fairly coarse, N-dimensional to 3 channels
     use ink mixing model and simple interpolation
+    doesn't really need smoothing
 B2A - LAB to ink mixes, needs detail, 3D to N channels
     Also need to define UCR/GCR technique
+    This needs smoothing.
 
+TODO - write XML profile data, once I have A2B and B2A working
 
 TODO - write a makefile, or CMakefile
 
-TODO - write XML profile data, once I have A2B and B2A working
 
 
 TODO - would be nice to add measured overprint colors
     need some sort of ink1,ink2 -> overprint mapping.
-    now have names for primaries!
+    { "Ink1", "Ink2", measuredOverprint }
+    
+    What about tints and shades?  need percentages of mixes, plus measurement.
+    Um, special case for "paper" and "dark"?
+    { "Ink1", 0.25, "Ink2", 0.75, measuredOverprint }
 
 */
 
@@ -120,12 +128,12 @@ color_list ConvertNamedColorList2ColorList( const named_color_list &input )
 /******************************************************************************/
 
 struct inkColorSet {
-    std::string name;           // what filename to use
-    std::string description;    // how to describe this combination
+    std::string name;               // what filename to use
+    std::string description;        // how to describe this combination
     
-    labColor paperColor;        // lightest possible color
-    labColor darrkColor;        // darkest possible color from combination of inks, calculated if L <= 0
-    named_color_list primaries;       // saturated hues
+    labColor paperColor;            // lightest possible color
+    labColor darkColor;             // darkest possible color from combination of inks, calculated if L <= 0
+    named_color_list primaries;     // saturated hues
 };
 
 std::vector<inkColorSet> colorSets =
@@ -651,7 +659,7 @@ void subdivide_ink_splines( const inkColorSet &inkSet, const int divisions, cons
             mix = interp2inks( (t-0.5)*2.0, halfwayMix, ink2Color );
 
         mixLAB = XYZ2LAB( mix );
-        temp = mix_pure_ink_spline( steps, inkSet.paperColor, mixLAB, inkSet.darrkColor );
+        temp = mix_pure_ink_spline( steps, inkSet.paperColor, mixLAB, inkSet.darkColor );
         splines.push_back( temp );
     }
 }
@@ -682,7 +690,7 @@ spline_list mix_ink_splines( inkColorSet &inkSet )
 
     // If the combined color has 0 L, estimate it from primaries
     // so we can get something sort of realistic for the mix
-    if (inkSet.darrkColor.L <= 0) {
+    if (inkSet.darkColor.L <= 0) {
         mix = estimate_ink_overprint( inkSet.primaries, paperColor );
 		mixLAB = XYZ2LAB( mix );
 #if 1
@@ -690,12 +698,12 @@ spline_list mix_ink_splines( inkColorSet &inkSet )
             inkSet.name.c_str(),
             mixLAB.L, mixLAB.A, mixLAB.B );
 #endif
-        inkSet.darrkColor = mixLAB;
+        inkSet.darkColor = mixLAB;
     }
     
 
     // first ink spline, always calculated
-    temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[0].color, inkSet.darrkColor );
+    temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[0].color, inkSet.darkColor );
 	splines.push_back( temp );
 
     // iterate any additional inks, keeping splines in order
@@ -705,7 +713,7 @@ spline_list mix_ink_splines( inkColorSet &inkSet )
             paperColor, splines);
 
         // pure ink spline paper->ink2->combined
-        temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[k].color, inkSet.darrkColor );
+        temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[k].color, inkSet.darkColor );
         splines.push_back( temp );
     }
     
@@ -828,9 +836,9 @@ bool ClippedL( float Linput, labColor &output, const inkColorSet &inkSet )
 	output.A = 0.0;
 	output.B = 0.0;
 	
-	if (Linput < inkSet.darrkColor.L)
+	if (Linput < inkSet.darkColor.L)
 		{
-		output = inkSet.darrkColor;
+		output = inkSet.darkColor;
 		return true;
 		}
 
