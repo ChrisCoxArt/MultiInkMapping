@@ -14,9 +14,9 @@
             filePath = "MultiInkMapping.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1028"
-            endingLineNumber = "1028"
-            landmarkName = "create_table(output, inkSet, splines, depth)"
+            startingLineNumber = "1201"
+            endingLineNumber = "1201"
+            landmarkName = "create_table(inkSet, splines, depth, filename)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

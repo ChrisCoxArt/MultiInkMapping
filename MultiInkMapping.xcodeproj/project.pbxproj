@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		F1769FE82F55106900D3103E /* MultiInkMapping.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1769FE72F55106900D3103E /* MultiInkMapping.cpp */; };
+		F1769FEB2F5804E300D3103E /* MiniTIFF.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1769FEA2F5804E300D3103E /* MiniTIFF.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +26,8 @@
 /* Begin PBXFileReference section */
 		F1769FDD2F55103200D3103E /* MultiInkMapping */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = MultiInkMapping; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1769FE72F55106900D3103E /* MultiInkMapping.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MultiInkMapping.cpp; sourceTree = "<group>"; };
+		F1769FE92F5804E300D3103E /* MiniTIFF.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MiniTIFF.hpp; sourceTree = "<group>"; };
+		F1769FEA2F5804E300D3103E /* MiniTIFF.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MiniTIFF.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +44,8 @@
 		F1769FD42F55103200D3103E = {
 			isa = PBXGroup;
 			children = (
+				F1769FE92F5804E300D3103E /* MiniTIFF.hpp */,
+				F1769FEA2F5804E300D3103E /* MiniTIFF.cpp */,
 				F1769FE72F55106900D3103E /* MultiInkMapping.cpp */,
 				F1769FDE2F55103200D3103E /* Products */,
 			);
@@ -115,6 +120,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F1769FE82F55106900D3103E /* MultiInkMapping.cpp in Sources */,
+				F1769FEB2F5804E300D3103E /* MiniTIFF.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

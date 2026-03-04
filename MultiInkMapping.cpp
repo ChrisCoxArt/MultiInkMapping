@@ -25,13 +25,14 @@ Special case 3..N ink -- create closed shape, find interpolated inside, project 
 Smooth the resulting 3D table
 
 
+
 A2B - ink and overprints to LAB, can be fairly coarse, N-dimensional to 3 channels
     use ink mixing model and simple interpolation
 B2A - LAB to ink mixes, needs detail, 3D to N channels
     Also need to define UCR/GCR technique
 
 
-TODO - output as TIFF image so I don't have to change color modes all the time
+TODO - write a makefile, or CMakefile
 
 TODO - write XML profile data, once I have A2B and B2A working
 
@@ -53,6 +54,7 @@ TODO - would be nice to add measured overprint colors
 #include <vector>
 #include <cmath>
 #include <memory>
+#include "MiniTIFF.hpp"
 
 /******************************************************************************/
 
@@ -115,7 +117,7 @@ std::vector<inkColorSet> colorSets =
         "Turquoise Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {44.4, -35.9, -32.5} }
+        { { 44.4, -35.9, -32.5 } }
     },
 
 // 2
@@ -123,7 +125,7 @@ std::vector<inkColorSet> colorSets =
         "Turquoise and Orange Paint",
         { 97.12126, -0.024685, 0.025155 },
         { 7.6, 2.5, 0.8 },
-        { {62.0, 32, 58.0}, {47.8, -34.2, -43.0 } }
+        { { 62.0, 32, 58.0 }, { 47.8, -34.2, -43.0 } }
     },
 
 // 3
@@ -143,7 +145,7 @@ std::vector<inkColorSet> colorSets =
     
 // 4
     {   "Turquoise-Magenta-Yellow-Violet",
-        "Turquoise, Magenta, Yellow, and Violet Paint",
+        "4 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
@@ -152,7 +154,7 @@ std::vector<inkColorSet> colorSets =
 
 // 5
     {   "Turquoise-Magenta-Yellow-Violet-Green",
-        "Turquoise, Magenta, Yellow, Violet, and Green Paint",
+        "5 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
@@ -162,7 +164,7 @@ std::vector<inkColorSet> colorSets =
 
 // 6
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue",
-        "Turquoise, Magenta, Yellow, Violet, Green, and Blue Paint",
+        "6 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
@@ -172,7 +174,7 @@ std::vector<inkColorSet> colorSets =
 
 // 7
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange",
-        "Turquoise, Magenta, Yellow, Violet, Green, Blue, and Orange Paint",
+        "7 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
@@ -183,7 +185,7 @@ std::vector<inkColorSet> colorSets =
 
 // 8
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen",
-        "Turquoise, Magenta, Yellow, Violet, Green, Blue, Orange, and BlueGreen Paint",
+        "8 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
@@ -194,7 +196,7 @@ std::vector<inkColorSet> colorSets =
 
 // 9
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet",
-        "Turquoise, Magenta, Yellow, Violet, Green, Blue, Orange, BlueGreen, and PinkViolet Paint",
+        "9 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
@@ -206,7 +208,7 @@ std::vector<inkColorSet> colorSets =
 
 // A
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red",
-        "Turquoise, Magenta, Yellow, Violet, Green, Blue, Orange, BlueGreen, PinkViolet, and Red Paint",
+        "10! 10 Paints! Hah, ha, ha!",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
@@ -218,7 +220,7 @@ std::vector<inkColorSet> colorSets =
 
 // B
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal",
-        "Turquoise, Magenta, Yellow, Violet, Green, Blue, Orange, BlueGreen, PinkViolet, Red, and Teal Paint",
+        "11 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { { 47.8, -34.2, -43.0 }, { 52.0, 81.1, -1.7 },
@@ -1125,12 +1127,14 @@ void DumpPointList( const std::string &name, const PointList &planePoints )
 /********************************************************************************/
 
 // currently creating LAB to LAB for color mapping
-void create_table( FILE *output, const inkColorSet &inkSet, const spline_list &splines, int depth )
+void create_table( const inkColorSet &inkSet, const spline_list &splines, int depth,
+                    const std::string &filename )
 {
 	int L, A, B;	// my grid iteration indices
 
 	// allocate my grid
-	float *gGridData = new float[ gDataGridPoints*gDataGridPoints*gDataGridPoints * 3 ];
+    std::unique_ptr<float> gridBuffer(new float[ gDataGridPoints*gDataGridPoints*gDataGridPoints * 3 ]);   
+    float *gridData = gridBuffer.get();
 	
 	int planeStep = gDataGridPoints*gDataGridPoints * 3;
 	int rowStep = gDataGridPoints * 3;
@@ -1150,9 +1154,9 @@ void create_table( FILE *output, const inkColorSet &inkSet, const spline_list &s
 			for (A = 0; A < gDataGridPoints; ++A)
 				for (B = 0; B < gDataGridPoints; ++B) {
 					// save the values
-					gGridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = clippedColor.L;
-					gGridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = clippedColor.A;
-					gGridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = clippedColor.B;
+					gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = clippedColor.L;
+					gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = clippedColor.A;
+					gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = clippedColor.B;
 					}
 			
 			continue;
@@ -1199,9 +1203,9 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
                 }
                 
 				// save the values
-				gGridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = Lfloat;
-				gGridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = result.a;
-				gGridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = result.b;
+				gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = Lfloat;
+				gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = result.a;
+				gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = result.b;
 				
 				}   // end for B
 			}   // end for A
@@ -1212,47 +1216,40 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 	// smooth the 3D table data
 // TODO - make this work with arbitrary dimensions!
 // TODO - make this work with arbitraray channel counts!
-	SmoothOneDirection( gGridData, planeStep, rowStep, colStep );
-	SmoothOneDirection( gGridData, rowStep, colStep, planeStep );
-	SmoothOneDirection( gGridData, colStep, planeStep, rowStep );
+	SmoothOneDirection( gridData, planeStep, rowStep, colStep );
+	SmoothOneDirection( gridData, rowStep, colStep, planeStep );
+	SmoothOneDirection( gridData, colStep, planeStep, rowStep );
 #endif
 
 
-// TODO - allow 16 bit output
+// TODO - 16 bit output
 
-    
-	// write out the grid to our file
-    fprintf(output,"P6\n%d %d\n%d\n", gDataGridPoints*gDataGridPoints, gDataGridPoints, ((depth == 16) ? 65535 : 255 ) );
+    std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gDataGridPoints*gDataGridPoints*gDataGridPoints * 3 ]);
+    uint8_t *outPtr = outBuffer.get();
 
-#if 1
-// easier to see while debugging
     for (A = 0; A < gDataGridPoints; ++A) {
         for (L = 0; L < gDataGridPoints; ++L) {
 			for (B = 0; B < gDataGridPoints; ++B) {
-#else
-	for (L = 0; L < gDataGridPoints; ++L) {
-		for (A = 0; A < gDataGridPoints; ++A) {
-			for (B = 0; B < gDataGridPoints; ++B) {
-#endif
-				
+
 				// convert to integer output values
-				int Lout =   floatL_to_fileL8( gGridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
-				int Aout = floatAB_to_fileAB8( gGridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
-				int Bout = floatAB_to_fileAB8( gGridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
+				int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
+				int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
+				int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
 				
 				// write value out to file (interleaved)
-				// FIX ME - ccox - currently 8 bit only
-				putc( Lout, output );
-				putc( Aout, output );
-				putc( Bout, output );
+                outPtr[0] = Lout;
+                outPtr[1] = Aout;
+                outPtr[2] = Bout;
+                outPtr += 3;
             }
         }
     }
-	
-	
-	// free our memory
-	delete[] gGridData;
-
+    
+    // write TIFF File
+    WriteTIFF( filename, 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
+                gDataGridPoints*gDataGridPoints, gDataGridPoints, 3, 8 );
+    
+    // buffers are freed automatically
 }
 
 /******************************************************************************/
@@ -1329,24 +1326,13 @@ int main (int argc, char * argv[])
 	
     // iterate over each named set of inks
     for (auto &inkSet : colorSets) {
-        
-        std::string outFileName = inkSet.name + ".ppm";
-        
-        // create output file
-        FILE *output = fopen( outFileName.c_str(), "wb" );
-        if (output == NULL) {
-            fprintf(stderr,"Could not create output\n");
-            exit(-1);
-        }
+        std::string outFileName = inkSet.name + ".tiff";
  
         // create splines from measured points using mixing model
         auto splines = mix_ink_splines( inkSet );
         
         // create and write color data
-        create_table( output, inkSet, splines, gDataDepth );
-        
-        // done with the output file
-        fclose( output );
+        create_table( inkSet, splines, gDataDepth, outFileName );
     
      }  // end for colorSets
 
