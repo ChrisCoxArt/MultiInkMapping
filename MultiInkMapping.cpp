@@ -2,15 +2,19 @@
 Copyright (c) 2026 Chris Cox
 
 
-Is it accurate? Nope.  Accuracy would need a lot more measurements, and might not look as good.
-Does it look reasonable? Yes.  And that's all I need from it.
+Is it accurate? Nope.
+    Accuracy would need a lot more measurements, and might not look as good.
+
+Does it look reasonable? Yes.
+    And that's all I need from it.
+
 
 
 Assume primaries are saturated, not too neutral, and define a convex hull.
 Primaries will be sorted by hue to make sure they are in order to make a convex hull.
 
-TODO:
-5+ inks the splines are distorted - too concave, too many peaks
+
+
 
 
 Special case 1 ink -- single spline from paper->ink->dark, take only point
@@ -18,6 +22,10 @@ Special case 2 ink -- spline surface, closest point on line
 Special case 3..N ink -- create closed shape, find interpolated inside, project point to closest outside
 
 Smooth the resulting 3D table
+
+
+A2B - ink and overprints to LAB, can be fairly coarse, N-dimensional to 3 channels
+B2A - LAB to ink mixes, needs detail, 3D to N channels
 
 */
 
@@ -97,16 +105,16 @@ std::vector<inkColorSet> colorSets =
     },
 
 // 2
-    {   "Orange-Turquoise",
-        "Orange and Turquoise Paint",
+    {   "Turquoise-Orange",
+        "Turquoise and Orange Paint",
         { 97.12126, -0.024685, 0.025155 },
         { 7.6, 2.5, 0.8 },
         { {62.0, 32, 58.0}, {47.8, -34.2, -43.0 } }
     },
 
 // 3
-    {   "Orange-Turquoise-Green",
-        "Orange, Turquoise, and Green Paint",
+    {   "Turquoise-Orange-Green",
+        "Turquoise, Orange, and Green Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {62.0, 32, 58.0}, {47.8, -34.2, -43.0}, {71.2, -54.2, 62.9} }
@@ -159,10 +167,41 @@ std::vector<inkColorSet> colorSets =
           {71.0, 50.7, 68.6}  }
     },
 
-
 // 8
+    {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen",
+        "Turquoise, Magenta, Yellow, Violet, Green, Blue, Orange, and BlueGreen Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
+          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
+          {71.2, -54.2, 62.9}, {38.2, 13.3, -66.4},
+          {71.0, 50.7, 68.6}, {70.9, -60.4, 20.5}  }
+    },
+
 // 9
+    {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet",
+        "Turquoise, Magenta, Yellow, Violet, Green, Blue, Orange, BlueGreen, and PinkViolet Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
+          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
+          {71.2, -54.2, 62.9}, {38.2, 13.3, -66.4},
+          {71.0, 50.7, 68.6}, {70.9, -60.4, 20.5},
+          {67.0, 44.6, -20.5 }  }
+    },
+
 // A
+    {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red",
+        "Turquoise, Magenta, Yellow, Violet, Green, Blue, Orange, BlueGreen, PinkViolet, and Red Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
+          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
+          {71.2, -54.2, 62.9}, {38.2, 13.3, -66.4},
+          {71.0, 50.7, 68.6}, {70.9, -60.4, 20.5},
+          {67.0, 44.6, -20.5 }, {57.7, 78.1, 48.5}  }
+    },
+
 // B
 // C
 // D
@@ -179,16 +218,6 @@ int gDataGridPoints = 17;
 
 /********************************************************************************/
 
-void ASSERT( bool condition, const char *message )
-{
-	if (!condition)
-		fprintf(stderr,"%s\n", message);
-	
-//	assert( condition );
-}
-
-/********************************************************************************/
-
 void VerifyDecreasingL( const color_list &list )
 {
 // TODO - debugging aid only
@@ -198,7 +227,7 @@ void VerifyDecreasingL( const color_list &list )
 		{
 		float currentL = list[i].L;
 		float previousL = list[i-1].L;
-		ASSERT( currentL <= previousL, "bad interpolation of colors");
+		assert( currentL <= previousL);
 		}
 #endif
 }
@@ -473,7 +502,7 @@ void subdivide_ink_splines( const inkColorSet &inkSet, const int divisions, cons
 // TODO - find best parameter, 0.5 isn't enough, 1.0 is too much
     halfwayMix = interp2inks( 0.7, halfwayMix, halfInterp );
 #endif
-    
+
     // d == 0 is the last pure ink spline
     // d == division is this pure ink spline (handled elsewhere)
     for (int d = 1; d < divisions; ++d) {
@@ -626,7 +655,7 @@ void SearchSpline( const color_list &spline, float L, float &A, float &B )
 			break;
 		}
 	
-	ASSERT( index < spline.size(), "BAD spline search");
+	assert( index < spline.size());
 	
 	// find t that gives the correct L to within tolerance (between index-1 and index)
 
@@ -776,7 +805,7 @@ void LinearInterpList( const int subdivisions, const PointList &input, PointList
         int p2 = pointIndex + 1;
 
         if (wrapAround) {
-            // treat list as a continuous shape
+            // wrap around if inks > 2, so we get a solid shape
             if (p1 < 0)
                 p1 = p1 + pointCount;
             if (p1 >= pointCount)
@@ -837,7 +866,7 @@ Point FindClosestPointInList( const PointList &list, Point &input )
 	size_t closest_index = -1;
 	
 	size_t count = list.size();
-	ASSERT( count > 0, "empty point list");
+	assert( count > 0);
 	
 	for (size_t i = 0; i < count; ++i) {
 		float distA = input.a - list[i].a;
@@ -850,7 +879,7 @@ Point FindClosestPointInList( const PointList &list, Point &input )
         }
     }
 	
-	ASSERT( closest_index >= 0, "failed to find point in list");
+	assert( closest_index >= 0);
 	return list[closest_index];
 }
 
