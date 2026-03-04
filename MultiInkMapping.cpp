@@ -9,9 +9,9 @@ Does it look reasonable? Yes.
     And that's all I need from it.
 
 NOTE - This started as a simulation of drawing with inks/watercolors.
-    I can always ligten them with water, and put down multiple layers for darks.
+    I can always lighten them with water, and put down multiple layers for darks.
 
-Assume primaries are saturated, not too neutral, and define a convex hull.
+This assumes primaries are somewhat saturated, not too neutral, and define a convex hull.
 Primaries will be sorted by hue to make sure they are in order to make a convex hull.
 
 
@@ -39,11 +39,9 @@ TODO - write XML profile data, once I have A2B and B2A working
 
 TODO - would be nice to add measured overprint colors
     need some sort of ink1,ink2 -> overprint mapping.
-    but can't rely on order of primaries!
-    name the colors, and map on name?
+    now have names for primaries!
 
 */
-
 
 #include <cstdio>
 #include <cstdint>
@@ -72,6 +70,14 @@ public:
 	labColor( float l, float a, float b) : L(l), A(a), B(b) {}
 };
 
+struct labColorNamed {
+    std::string name;
+    labColor color;
+	
+public:
+	labColorNamed( const std::string &n, float l, float a, float b) : name(n), color(l,a,b) {}
+};
+
 struct xyzColor {
 	float X;
 	float Y;
@@ -97,7 +103,19 @@ typedef std::vector< Point > PointList;
 
 typedef std::vector< labColor > color_list;
 
+typedef std::vector< labColorNamed > named_color_list;
+
 typedef std::vector< color_list > spline_list;
+
+/******************************************************************************/
+
+color_list ConvertNamedColorList2ColorList( const named_color_list &input )
+{
+    color_list result( input.size() );
+    for (size_t i = 0; i < input.size(); ++i)
+        result[i] = input[i].color;
+    return result;
+}
 
 /******************************************************************************/
 
@@ -107,7 +125,7 @@ struct inkColorSet {
     
     labColor paperColor;        // lightest possible color
     labColor darrkColor;        // darkest possible color from combination of inks, calculated if L <= 0
-    color_list primaries;       // saturated hues
+    named_color_list primaries;       // saturated hues
 };
 
 std::vector<inkColorSet> colorSets =
@@ -117,7 +135,7 @@ std::vector<inkColorSet> colorSets =
         "Turquoise Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { { 44.4, -35.9, -32.5 } }
+        { {"Turquoise", 44.4, -35.9, -32.5 } }
     },
 
 // 2
@@ -125,7 +143,7 @@ std::vector<inkColorSet> colorSets =
         "Turquoise and Orange Paint",
         { 97.12126, -0.024685, 0.025155 },
         { 7.6, 2.5, 0.8 },
-        { { 62.0, 32, 58.0 }, { 47.8, -34.2, -43.0 } }
+        { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 47.8, -34.2, -43.0 } }
     },
 
 // 3
@@ -133,23 +151,25 @@ std::vector<inkColorSet> colorSets =
         "Turquoise, Orange, and Green Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {62.0, 32, 58.0}, {47.8, -34.2, -43.0}, {71.2, -54.2, 62.9} }
+        { {"Orange", 62.0, 32, 58.0}, {"Turquoise", 47.8, -34.2, -43.0},
+          { "Green", 71.2, -54.2, 62.9} }
     },
 
     {   "Turquoise-Magenta-Yellow",
         "Turquoise, Magenta, and Yellow Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7}, {90.2, 2.7, 97.7}  }
+        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}  }
     },
-    
+
 // 4
     {   "Turquoise-Magenta-Yellow-Violet",
         "4 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
-          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4} }
+        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4} }
     },
 
 // 5
@@ -157,9 +177,9 @@ std::vector<inkColorSet> colorSets =
         "5 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
-          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
-          {71.2, -54.2, 62.9} }
+        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Green", 71.2, -54.2, 62.9} }
     },
 
 // 6
@@ -167,9 +187,9 @@ std::vector<inkColorSet> colorSets =
         "6 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
-          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
-          {71.2, -54.2, 62.9}, {38.2, 13.3, -66.4} }
+        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4} }
     },
 
 // 7
@@ -177,10 +197,10 @@ std::vector<inkColorSet> colorSets =
         "7 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
-          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
-          {71.2, -54.2, 62.9}, {38.2, 13.3, -66.4},
-          {71.0, 50.7, 68.6}  }
+        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Orange", 71.0, 50.7, 68.6}  }
     },
 
 // 8
@@ -188,10 +208,10 @@ std::vector<inkColorSet> colorSets =
         "8 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
-          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
-          {71.2, -54.2, 62.9}, {38.2, 13.3, -66.4},
-          {71.0, 50.7, 68.6}, {70.9, -60.4, 20.5}  }
+        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5} }
     },
 
 // 9
@@ -199,11 +219,11 @@ std::vector<inkColorSet> colorSets =
         "9 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
-          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
-          {71.2, -54.2, 62.9}, {38.2, 13.3, -66.4},
-          {71.0, 50.7, 68.6}, {70.9, -60.4, 20.5},
-          {67.0, 44.6, -20.5 }  }
+        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
+          {"PinkViolet", 67.0, 44.6, -20.5 } }
     },
 
 // A
@@ -211,11 +231,11 @@ std::vector<inkColorSet> colorSets =
         "10! 10 Paints! Hah, ha, ha!",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { {47.8, -34.2, -43.0}, {52.0, 81.1, -1.7},
-          {90.2, 2.7, 97.7}, {51.3, 26.0, -37.4},
-          {71.2, -54.2, 62.9}, {38.2, 13.3, -66.4},
-          {71.0, 50.7, 68.6}, {70.9, -60.4, 20.5},
-          {67.0, 44.6, -20.5 }, {57.7, 78.1, 48.5}  }
+        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
+          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5}  }
     },
 
 // B
@@ -223,12 +243,12 @@ std::vector<inkColorSet> colorSets =
         "11 Paints",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
-        { { 47.8, -34.2, -43.0 }, { 52.0, 81.1, -1.7 },
-          { 90.2, 2.7, 97.7 }, { 51.3, 26.0, -37.4 },
-          { 71.2, -54.2, 62.9 }, { 38.2, 13.3, -66.4 },
-          { 71.0, 50.7, 68.6 }, { 70.9, -60.4, 20.5 },
-          { 67.0, 44.6, -20.5 }, { 57.7, 78.1, 48.5 },
-          { 66.8, -51.5, -15.4 } }
+        { {"Turquoise", 47.8, -34.2, -43.0}, {"Magenta", 52.0, 81.1, -1.7},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
+          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5},
+          {"Teal", 66.8, -51.5, -15.4 } }
     },
 
 // C
@@ -542,10 +562,10 @@ color_list mix_pure_ink_spline( int steps, const labColor &paperColor, const lab
 
 /********************************************************************************/
 
-bool labHueLess(const labColor &a, const labColor &b)
+bool labHueLess(const labColorNamed &a, const labColorNamed &b)
 {
-    float angle1 = M_PI + atan2(a.A,a.B);
-    float angle2 = M_PI + atan2(b.A,b.B);
+    float angle1 = M_PI + atan2(a.color.A,a.color.B);
+    float angle2 = M_PI + atan2(b.color.A,b.color.B);
     return angle1 < angle2;
 }
 
@@ -600,6 +620,12 @@ xyzColor estimate_ink_overprint( const std::vector<labColor> &inkList, const xyz
     return overprint;
 }
 
+// convenience converter
+xyzColor estimate_ink_overprint( const std::vector<labColorNamed> &inkList, const xyzColor &paperColor )
+{
+    return estimate_ink_overprint( ConvertNamedColorList2ColorList(inkList), paperColor );
+}
+
 /********************************************************************************/
 
 void subdivide_ink_splines( const inkColorSet &inkSet, const int divisions, const int steps, const labColor &ink1, const labColor &ink2, const xyzColor &paperColor, spline_list &splines )
@@ -649,7 +675,7 @@ spline_list mix_ink_splines( inkColorSet &inkSet )
 
 
     // Need inks in hue angle order so the splines will be in order for hull
-    std::sort(inkSet.primaries.begin(), inkSet.primaries.end(), labHueLess );
+    std::sort( inkSet.primaries.begin(), inkSet.primaries.end(), labHueLess );
 
 	xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
 
@@ -669,24 +695,24 @@ spline_list mix_ink_splines( inkColorSet &inkSet )
     
 
     // first ink spline, always calculated
-    temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[0], inkSet.darrkColor );
+    temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[0].color, inkSet.darrkColor );
 	splines.push_back( temp );
 
     // iterate any additional inks, keeping splines in order
     for (size_t k = 1; k < inkCount; ++k) {
         subdivide_ink_splines( inkSet, divisions, steps,
-            inkSet.primaries[k-1], inkSet.primaries[k],
+            inkSet.primaries[k-1].color, inkSet.primaries[k].color,
             paperColor, splines);
 
         // pure ink spline paper->ink2->combined
-        temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[k], inkSet.darrkColor );
+        temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[k].color, inkSet.darrkColor );
         splines.push_back( temp );
     }
     
     // if we can make a solid, then wrap around from last ink to the first!
     if (inkCount > 2) {
         subdivide_ink_splines( inkSet, divisions, steps,
-            inkSet.primaries[inkCount-1], inkSet.primaries[0],
+            inkSet.primaries[inkCount-1].color, inkSet.primaries[0].color,
             paperColor, splines);
     }
 
