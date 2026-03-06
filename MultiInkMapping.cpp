@@ -4,7 +4,7 @@ Copyright (c) 2026 Chris Cox
 
 
 Is it accurate? Nope.
-    Accuracy would need a lot more measurements, and might not look as good.
+    Accuracy would need a lot more measurements, and math, and might not look as good.
 
 Does it look reasonable? Yes.
     And that's all I need from it.
@@ -14,6 +14,7 @@ NOTE - This started as a simulation of drawing with inks/watercolors.
     But available software only handles gray, or CMYK.
     And random colored inks don't mix like idealized CMY.
     I can always lighten inks/paints by dilution, and put down multiple layers for darks.
+    And I've rewritten this a few times along the way as I try new ideas.
 
 This assumes primaries are somewhat saturated, not too neutral, and define a convex hull.
 Primaries will be sorted by hue to make sure they are in order to make a convex hull.
@@ -52,6 +53,10 @@ TODO - would be nice to add measured overprint colors
     Um, special case for "paper" and "dark"?
     { "Ink1", 0.25, "Ink2", 0.75, measuredOverprint }
 
+TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
+    take max chroma points for hull?
+    or build in more combinations and sort midpoints by hue, before interpolating?
+
 */
 
 #include <cstdio>
@@ -64,6 +69,7 @@ TODO - would be nice to add measured overprint colors
 #include <cmath>
 #include <memory>
 #include "MiniTIFF.hpp"
+#include "MiniICC.hpp"
 
 /******************************************************************************/
 
@@ -1310,11 +1316,11 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 #endif
 
 
-// TODO - 16 bit output
-
-    std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gDataGridPoints*gDataGridPoints*gDataGridPoints * 3 ]);
+    size_t bufferSize = gDataGridPoints*gDataGridPoints*gDataGridPoints * 3;
+    std::unique_ptr<uint8_t> outBuffer(new uint8_t[ bufferSize ]);
     uint8_t *outPtr = outBuffer.get();
 
+    // order the data for easy viewing as an image
     for (A = 0; A < gDataGridPoints; ++A) {
         for (L = 0; L < gDataGridPoints; ++L) {
 			for (B = 0; B < gDataGridPoints; ++B) {
@@ -1334,8 +1340,52 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     }
     
     // write TIFF File
-    WriteTIFF( filename, 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
+    WriteTIFF( filename + ".tiff", 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
                 gDataGridPoints*gDataGridPoints, gDataGridPoints, 3, 8 );
+
+
+
+    // rewrite data for ICC profile
+    outPtr = outBuffer.get();
+    for (L = 0; L < gDataGridPoints; ++L) {
+        for (A = 0; A < gDataGridPoints; ++A) {
+			for (B = 0; B < gDataGridPoints; ++B) {
+
+				// convert to integer output values
+				int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
+				int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
+				int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
+				
+				// write value out to file (interleaved)
+                outPtr[0] = Lout;
+                outPtr[1] = Aout;
+                outPtr[2] = Bout;
+                outPtr += 3;
+            }
+        }
+    }
+    
+    // write ICC abstract profiles
+    profileData myProfile;
+    myProfile.description = inkSet.description;
+    myProfile.copyright = "Copyright (c) Chris Cox 2026";
+    myProfile.otherText = inkSet.name;
+    myProfile.profileClass = kClassAbstract;
+    myProfile.colorSpace = kSpaceLAB;
+    myProfile.pcsSpace = kSpaceLAB;
+    
+    tableFormat myTable;
+    myTable.tableSig = icSigAToB0Tag;
+    myTable.tableDepth = 8;
+    myTable.tableGridPoints = gDataGridPoints;
+    myTable.tableDimensions = 3;
+    myTable.tableChannels = 3;
+    myTable.tableData = outBuffer.get();
+    
+    myProfile.tables.emplace_back(myTable);
+    
+    writeICCProfile( filename+".icc", myProfile );
+    
     
     // buffers are freed automatically
 }
@@ -1414,13 +1464,12 @@ int main (int argc, char * argv[])
 	
     // iterate over each named set of inks
     for (auto &inkSet : colorSets) {
-        std::string outFileName = inkSet.name + ".tiff";
- 
+        
         // create splines from measured points using mixing model
         auto splines = mix_ink_splines( inkSet );
         
         // create and write color data
-        create_table( inkSet, splines, gDataDepth, outFileName );
+        create_table( inkSet, splines, gDataDepth, inkSet.name );
     
      }  // end for colorSets
 

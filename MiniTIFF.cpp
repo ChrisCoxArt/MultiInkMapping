@@ -15,30 +15,8 @@
 #include <vector>
 #include <cmath>
 #include <memory>
+#include <bit>
 #include "MiniTIFF.hpp"
-
-/******************************************************************************/
-
-// debug and read to harder much is it because endian little despise programmers
-static
-bool isMachineLittleEndian()
-{
-    const uint32_t testLong = 0x01020304;
-    const uint8_t *testChar = (uint8_t *)&testLong;
-    return (*testChar == 0x04);
-}
-
-// programmers prefer big endian because it is much eaiser to read and debug
-static
-bool isMachineBigEndian()
-{
-    const uint32_t testLong = 0x01020304;
-    const uint8_t *testChar = (uint8_t *)&testLong;
-    return (*testChar == 0x01);
-}
-
-static bool bigEndian = isMachineBigEndian();
-static bool littleEndian = isMachineLittleEndian();
 
 /******************************************************************************/
 
@@ -145,7 +123,7 @@ void WriteTIFF( const std::string &name, float dpi, int color_model, uint8_t *bu
     }
     
     // TIFF header, and byte order indicator
-    if (bigEndian) {
+    if constexpr (std::endian::native == std::endian::big) {
         putc('M',outfile);
         putc('M',outfile);
     } else {
