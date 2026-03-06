@@ -59,9 +59,10 @@ typedef enum  {
 typedef enum  {
 
     icSigCopyrightTag                      = 0x63707274,  /* 'cprt' */
+    icSigProfileDescriptionTag             = 0x64657363,  /* 'desc' */
+
     icSigMediaBlackPointTag                = 0x626B7074,  /* 'bkpt' */
     icSigMediaWhitePointTag                = 0x77747074,  /* 'wtpt' */
-    icSigProfileDescriptionTag             = 0x64657363,  /* 'desc' */
 
     icSigAToB0Tag                          = 0x41324230,  /* 'A2B0' */ 
     icSigAToB1Tag                          = 0x41324231,  /* 'A2B1' */
@@ -77,7 +78,9 @@ typedef enum  {
     icSigPreview1Tag                       = 0x70726531,  /* 'pre1' */
     icSigPreview2Tag                       = 0x70726532,  /* 'pre2' */
     
-// maybe
+    icSigGamutTag                          = 0x67616D74,  /* 'gamt' */
+
+// maybe v4 bits
     icSigColorSpaceNameTag                 = 0x63736e6d,  /* 'csnm' */
     icSigColorantInfoTag                   = 0x636c696e,  /* 'clin' */
     icSigColorantInfoOutTag                = 0x636c696f,  /* 'clio' */
@@ -85,15 +88,22 @@ typedef enum  {
     icSigColorantOrderOutTag               = 0x636c6f6f,  /* 'cloo' */
     icSigColorantTableTag                  = 0x636C7274,  /* 'clrt' */
     icSigColorantTableOutTag               = 0x636C6F74,  /* 'clot' */
-    icSigGamutTag                          = 0x67616D74,  /* 'gamt' */
 
+
+    icSigUnknown = 0,
+    icSigEnd = 0xFFFFFFFFF,
 } profile_sig;
 
 /********************************************************************************/
 
+// all pointers are passed in, not owned
 struct tableFormat {
 
+    tableFormat() : pointsBackTo(icSigUnknown),
+            tableSig(icSigUnknown), tableData(NULL) {}
+
     profile_sig     tableSig;
+    profile_sig     pointsBackTo;   // so we have A2B1 and A2B2 refer back to A2B0
     
     int				tableDepth;
     int				tableGridPoints;

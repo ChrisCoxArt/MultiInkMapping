@@ -2,6 +2,8 @@
 //  MiniTIFF.cpp
 //  MultiInkMapping
 //
+//  Writes a subset of TIFF files, uncompressed - but does what I need it to.
+//
 //  Copyright (c) 2026 Chris Cox
 //  Created by Chris Cox on 3/3/26.
 //

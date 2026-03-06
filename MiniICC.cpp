@@ -2,6 +2,8 @@
 //  MiniICC.cpp
 //  MultiInkMapping
 //
+//  Writes a subset of ICC Profiles - but does what I need it to.
+//
 //  Copyright (c) 2026 Chris Cox
 //  Created by Chris Cox on 3/4/26.
 //
@@ -21,12 +23,15 @@
 /********************************************************************************/
 
 struct ICCTag {
-    ICCTag() { data = NULL; }
+    ICCTag() { data = NULL; pointsBackTo = 0; }
     ICCTag( uint32_t sig, uint32_t ds, uint8_t *dd ) :
-            signature(sig), dataOffset(0), dataSize(ds), data(dd) {}
+            signature(sig), dataOffset(0), dataSize(ds), data(dd) { pointsBackTo = 0; }
+    ICCTag( uint32_t sig, uint32_t p2 ) :
+            signature(sig), dataOffset(0), dataSize(0), data(NULL), pointsBackTo(p2) {}
 
 	uint8_t*	data;
 	uint32_t	signature;
+    uint32_t    pointsBackTo;
 	uint32_t	dataOffset;	// from beginning of file, filled in when writing
 	uint32_t	dataSize;	// in bytes
 };
@@ -360,10 +365,22 @@ void write_tag_table( profileDataInner &data, FILE *output )
 	for ( auto &iter : data.tagInfo ) {
 		assert( (currentOffset & 0x03) == 0 );
 		
-		iter.dataOffset = currentOffset;
-		
 		uint32_t signature = SwabLong( iter.signature );
 		fwrite( &signature, 4, 1, output );
+  
+		iter.dataOffset = currentOffset;
+        if (iter.pointsBackTo != 0) {
+            // find previous tag and copy offset and size from it
+            iter.dataSize = 0;
+            for (auto &prev : data.tagInfo) {
+                if (prev.signature == iter.pointsBackTo) {
+                    iter.dataOffset = prev.dataOffset;
+                    iter.dataSize = prev.dataSize;
+                    break;
+                }
+            }
+        assert( iter.dataSize != 0 );
+        }
 		
 		uint32_t offset = SwabLong( iter.dataOffset );
 		fwrite( &offset, 4, 1, output );
@@ -381,6 +398,9 @@ void write_tag_table( profileDataInner &data, FILE *output )
 
 	// write the tag data itself
 	for ( auto &iter : data.tagInfo ) {
+        if (iter.pointsBackTo != 0)
+            continue;
+        
 		fwrite( iter.data, iter.dataSize, 1, output );
 		padFile4( output );
     }
@@ -426,9 +446,8 @@ void create_tags( profileDataInner &data )
 	else if ( data.profileClass == kClassOutput ) {
 		add_xyz_tag( data, icSigMediaWhitePointTag, 0x0000F6D6, 0x00010000, 0x0000D32D );	// D50
         
-        // A2B0
-        // B2A0
-        // A2B1,B2A1,A2B2,B2A2 -- can refer to same tables as 0
+        // A2B0,A2B1,A2B2
+        // B2A0,B2A1,B2A2
         // gamut
     }
 	else if ( data.profileClass == kClassSpace ) {
@@ -444,6 +463,12 @@ void create_tags( profileDataInner &data )
 
     // write tables
     for ( auto &table : data.tables ) {
+        if (table.pointsBackTo != icSigUnknown) {
+            // special case pointing back to a previous table
+            data.tagInfo.emplace_back( ICCTag( table.tableSig, table.pointsBackTo ) );
+            continue;
+        }
+    
         if (table.tableDepth == 8)
             add_lut8_tag( data, table.tableSig, table.tableDimensions, table.tableChannels,
                         table.tableGridPoints, table.tableData );

@@ -1204,8 +1204,7 @@ void SmoothOneDirection( float *data, int planeStep, int rowStep, int colStep )
 				current0 = next0;
 				current1 = next1;
 				current2 = next2;
-				
-				}
+            }
 			
 			// special case last k value
 			// next == current already
@@ -1217,10 +1216,9 @@ void SmoothOneDirection( float *data, int planeStep, int rowStep, int colStep )
 			data[ i * planeStep + j * rowStep + k*colStep + 0 ] = result0;
 			data[ i * planeStep + j * rowStep + k*colStep + 1 ] = result1;
 			data[ i * planeStep + j * rowStep + k*colStep + 2 ] = result2;
-			
-			}
+        }
 		
-		}
+    }
 
 }
 
@@ -1259,6 +1257,139 @@ void DumpPointList( const std::string &name, const PointList &planePoints )
     
     fclose(out);
 }
+
+/********************************************************************************/
+
+/*
+A2B - ink and overprints to LAB, can be fairly coarse, N-dimensional to 3 channels
+    use ink mixing model and simple interpolation
+    doesn't really need smoothing
+    virtual loops in an array
+*/
+void createA2B_table( const inkColorSet &inkSet, const spline_list &splines, int depth, profileData &myProfile )
+{
+    const int maxChannels = 15;          // ICC spec. limit
+    const int maxGridPoints = 65;        // sanity limit
+    const int maxGridSize = 1024*1024;   // limit 1 Meg, 20 Meg?
+    
+    size_t inkCount = inkSet.primaries.size();
+    assert(inkCount > 0);
+    assert(inkCount <= maxChannels);
+    
+    // decide on table size
+    int gridPoints = 2;         // absolute minimum
+    int gridSize = pow( gridPoints, inkCount );
+    
+    int newPoints = gridPoints;
+    int newSize = gridSize;
+    while (newSize <= maxGridSize && newPoints <= maxGridPoints) {
+        gridPoints = newPoints;
+        gridSize = newSize;
+        ++newPoints;
+        newSize = pow( newPoints, inkCount );
+    }
+    
+    // setup loops to create the table
+    std::vector<uint32_t> loopCounters(maxChannels);
+    std::vector<uint32_t> loopSteps(maxChannels);
+    std::vector<float> inkFractions(maxChannels);
+    
+    size_t index = inkCount;
+    int step = 3;
+    while (index) {
+        loopSteps[index-1] = step;
+        step *= gridPoints;
+        --index;
+    }
+    
+    std::vector<labColor> inkList(maxChannels);
+    for (size_t i = 0; i < inkSet.primaries.size(); ++i)
+        inkList[i] = inkSet.primaries[i].color;
+
+	xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
+
+    size_t gridCount = gridSize;
+    std::unique_ptr<uint8_t> gridBuffer(new uint8_t[ gridCount * 3 ]);
+    uint8_t *gridData = gridBuffer.get();
+
+// TODO - finish me!
+    
+    std::fill( loopCounters.begin(),loopCounters.end(), 0 );
+    
+    // iterate virtual loop to fill table
+        // calc ink fractions based on loop variables
+        estimate_fractional_ink_mix( inkList, inkFractions, paperColor );
+    
+
+
+    tableFormat myTable;
+    myTable.tableSig = icSigAToB0Tag;
+    myTable.tableDepth = 8;
+    myTable.tableGridPoints = gridPoints;
+    myTable.tableDimensions = (int)inkCount;    // input
+    myTable.tableChannels = 3;                  // output
+    myTable.tableData = gridBuffer.release();       // TODO - this is going to leak!
+    myProfile.tables.emplace_back(myTable);
+}
+
+/********************************************************************************/
+
+/*
+B2A - LAB to ink mixes, needs detail, 3D to N channels
+    ignore GCR/UCR just write the raw mixes
+    This needs smoothing.
+*/
+void createB2A_table( const inkColorSet &inkSet, const spline_list &splines, int depth, profileData &myProfile )
+{
+    const int maxChannels = 15;          // ICC spec. limit
+    const int gridPoints = 17;
+    
+    size_t inkCount = inkSet.primaries.size();
+    assert(inkCount > 0);
+    assert(inkCount <= maxChannels);
+
+    int gridSize = pow( gridPoints, 3 );
+
+    size_t gridCount = gridSize;
+    std::unique_ptr<uint8_t> gridBuffer(new uint8_t[ gridCount * inkCount ]);
+    uint8_t *gridData = gridBuffer.get();
+
+
+// TODO - fill in the table!
+
+
+    tableFormat myTable;
+    myTable.tableSig = icSigBToA0Tag;
+    myTable.tableDepth = 8;
+    myTable.tableGridPoints = gridPoints;
+    myTable.tableDimensions = 3;                // input
+    myTable.tableChannels = (int)inkCount;      // output
+    myTable.tableData = gridBuffer.release();       // TODO - this is going to leak!
+    myProfile.tables.emplace_back(myTable);
+}
+
+
+/********************************************************************************/
+
+std::vector<color_space> profileSpaceLookup =
+{
+    kSpace1CLR, // zero
+	kSpace1CLR,
+	kSpace2CLR,
+	kSpace3CLR,
+	kSpace4CLR,
+	kSpace5CLR,
+	kSpace6CLR,
+	kSpace7CLR,
+	kSpace8CLR,
+	kSpace9CLR,
+	kSpaceACLR,
+	kSpaceBCLR,
+	kSpaceCCLR,
+	kSpaceDCLR,
+	kSpaceECLR,
+	kSpaceFCLR,
+};
 
 /********************************************************************************/
 
@@ -1373,7 +1504,7 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ bufferSize ]);
     uint8_t *outPtr = outBuffer.get();
 
-#if 1
+#if 0
     // order the data for easy viewing as an image
     for (A = 0; A < gDataGridPoints; ++A) {
         for (L = 0; L < gDataGridPoints; ++L) {
@@ -1419,6 +1550,7 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
         }
     }
     
+#if 0
     // write ICC abstract profiles
     profileData myProfile;
     myProfile.description = inkSet.description;
@@ -1427,7 +1559,7 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     myProfile.profileClass = kClassAbstract;
     myProfile.colorSpace = kSpaceLAB;
     myProfile.pcsSpace = kSpaceLAB;
-    
+
     tableFormat myTable;
     myTable.tableSig = icSigAToB0Tag;
     myTable.tableDepth = 8;
@@ -1436,7 +1568,19 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     myTable.tableChannels = 3;      // output
     myTable.tableData = outBuffer.get();
     myProfile.tables.emplace_back(myTable);
+#endif
 
+    // write ICC abstract profiles
+    profileData myProfile;
+    myProfile.description = inkSet.description;
+    myProfile.copyright = "Copyright (c) Chris Cox 2026";
+    myProfile.otherText = inkSet.name;
+    myProfile.profileClass = kClassOutput;
+    myProfile.colorSpace = profileSpaceLookup[ inkCount ];
+    myProfile.pcsSpace = kSpaceLAB;
+
+
+// TODO - explicit gamut creation
     tableFormat myGamut;
     myGamut.tableSig = icSigGamutTag;
     myGamut.tableDepth = 8;
@@ -1445,7 +1589,36 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     myGamut.tableChannels = 1;      // output
     myGamut.tableData = gamutBuffer.get();
     myProfile.tables.emplace_back(myGamut);
+
+
+    // make A2B0 (ink to LAB)
+    createA2B_table( inkSet, splines, depth, myProfile );
+
+    // make B2A0 (LAB to ink)
+    createB2A_table( inkSet, splines, depth, myProfile );
     
+    
+    // and point the other A2B tables back to A2B0
+    tableFormat myFake;
+    myFake.tableSig = icSigAToB1Tag;
+    myFake.pointsBackTo = icSigAToB0Tag;
+    myProfile.tables.emplace_back(myFake);
+
+    myFake.tableSig = icSigAToB2Tag;
+    myFake.pointsBackTo = icSigAToB0Tag;
+    myProfile.tables.emplace_back(myFake);
+
+    // and point the other B2A tables back to B2A0
+    myFake.tableSig = icSigBToA1Tag;
+    myFake.pointsBackTo = icSigBToA0Tag;
+    myProfile.tables.emplace_back(myFake);
+    
+    myFake.tableSig = icSigBToA2Tag;
+    myFake.pointsBackTo = icSigBToA0Tag;
+    myProfile.tables.emplace_back(myFake);
+
+
+
     writeICCProfile( filename+".icc", myProfile );
     
     
