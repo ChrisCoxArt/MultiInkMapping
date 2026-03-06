@@ -168,12 +168,12 @@ void add_xyz_tag( profileDataInner &data, uint32_t signature, int32_t X, int32_t
 
 // (gridPoints^input_channels) * output_channels
 static
-uint32_t calcClutSize( int channels, int gridPoints )
+uint32_t calcClutSize( int inChannels, int outChannels, int gridPoints )
 {
 	// (gridPoints^input_channels) * output_channels
 	uint32_t clutSize = gridPoints;
 	
-	switch (channels) {
+	switch (inChannels) {
     case 1:
         clutSize = gridPoints;
         break;
@@ -188,12 +188,12 @@ uint32_t calcClutSize( int channels, int gridPoints )
         break;
     default:
         clutSize = gridPoints;
-        for (int i = 1; i < channels; ++i)
+        for (int i = 1; i < inChannels; ++i)
             clutSize *= gridPoints;
         break;
     }
     
-    return clutSize * channels;
+    return clutSize * outChannels;
 }
 
 /********************************************************************************/
@@ -201,16 +201,17 @@ uint32_t calcClutSize( int channels, int gridPoints )
 // currently written to use the same number of input and output channels
 // assumes identity matrix and 1D LUTs
 static
-void add_lut16_tag( profileDataInner &data, uint32_t signature, int channels, int gridPoints, uint16_t* clut )
+void add_lut16_tag( profileDataInner &data, uint32_t signature, int inChannels, int outChannels, int gridPoints, uint16_t* clut )
 {
 	const int lut_entries = 2;
+    
+	assert( inChannels >= 1 && inChannels <= 15 );
+	assert( outChannels >= 1 && outChannels <= 15 );
 	
-	assert( channels >= 1 && channels <= 15);
-	
-	uint32_t clutSize = calcClutSize( channels, gridPoints );
+	uint32_t clutSize = calcClutSize( inChannels, outChannels, gridPoints );
 	clutSize *= 2;	// 16 bit
 	
-	uint32_t myDataSize = 52 + (2*channels*lut_entries) + clutSize + (2*channels*lut_entries);
+	uint32_t myDataSize = 52 + (2*inChannels*lut_entries) + clutSize + (2*outChannels*lut_entries);
 	uint8_t *myData = new uint8_t[ myDataSize ];
 	
 	memset( myData, 0, myDataSize );
@@ -218,8 +219,8 @@ void add_lut16_tag( profileDataInner &data, uint32_t signature, int channels, in
 	// fill in the data
 	*((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( 'mft2' );	// type signature
 	*((uint32_t *)(myData +  4)) = 0;								// reserved
-	*(myData +  8) = channels;			// input
-	*(myData +  9) = channels;			// output
+	*(myData +  8) = inChannels;			// input
+	*(myData +  9) = outChannels;			// output
 	*(myData +  10) = gridPoints;
 	*(myData +  11) = 0;							// reserved
 	
@@ -243,13 +244,13 @@ void add_lut16_tag( profileDataInner &data, uint32_t signature, int channels, in
 	assert( lut_entries == 2 );
 	
 	// input_channels
-	for (int j = 0; j < channels; ++j) {
+	for (int j = 0; j < inChannels; ++j) {
 		// simple 2 point LUT
 		*((uint16_t *)(myData + current + j*4 + 0)) = 0;
 		*((uint16_t *)(myData + current + j*4 + 2)) = (uint16_t) SwabShort( 65535 );
     }
 	
-	current += (channels*lut_entries*2);
+	current += (inChannels*lut_entries*2);
 	
 	// LUT data assumed to already be in order!
 	// RGB, XYZ, LAB, etc.
@@ -259,13 +260,13 @@ void add_lut16_tag( profileDataInner &data, uint32_t signature, int channels, in
 	
 	// identity output tables
 	// output_channels
-	for (int j = 0; j < channels; ++j) {
+	for (int j = 0; j < outChannels; ++j) {
 		// simple 2 point LUT
 		*((uint16_t *)(myData + current + j*4 + 0)) = 0;
 		*((uint16_t *)(myData + current + j*4 + 2)) = (uint16_t) SwabShort( 65535 );
     }
 	
-	current += (channels*lut_entries*2);
+	current += (outChannels*lut_entries*2);
 	
 	assert( current == myDataSize );
 	
@@ -277,13 +278,14 @@ void add_lut16_tag( profileDataInner &data, uint32_t signature, int channels, in
 // currently written to use the same number of input and output channels
 // assumes identity matrix and 1D LUTs
 static
-void add_lut8_tag( profileDataInner &data, uint32_t signature, int channels, int gridPoints, uint8_t* clut )
+void add_lut8_tag( profileDataInner &data, uint32_t signature, int inChannels, int outChannels, int gridPoints, uint8_t* clut )
 {
-	assert( channels >= 1 && channels <= 15 );
+	assert( inChannels >= 1 && inChannels <= 15 );
+	assert( outChannels >= 1 && outChannels <= 15 );
 	
-	uint32_t clutSize = calcClutSize( channels, gridPoints );
+	uint32_t clutSize = calcClutSize( inChannels, outChannels, gridPoints );
 	
-	uint32_t myDataSize = 48 + (channels*256) + clutSize + (channels*256);
+	uint32_t myDataSize = 48 + (inChannels*256) + clutSize + (outChannels*256);
 	uint8_t *myData = new uint8_t[ myDataSize ];
 	
 	memset( myData, 0, myDataSize );
@@ -291,8 +293,8 @@ void add_lut8_tag( profileDataInner &data, uint32_t signature, int channels, int
 	// fill in the data
 	*((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( 'mft1' );	// type signature
 	*((uint32_t *)(myData +  4)) = 0;								// reserved
-	*(myData +  8) = channels;			// input
-	*(myData +  9) = channels;			// output
+	*(myData +  8) = inChannels;			// input
+	*(myData +  9) = outChannels;			// output
 	*(myData +  10) = gridPoints;
 	*(myData +  11) = 0;							// reserved
 	
@@ -312,11 +314,11 @@ void add_lut8_tag( profileDataInner &data, uint32_t signature, int channels, int
 	// identity input tables
 	
 	// input_channels
-	for (int j = 0; j < channels; ++j)
+	for (int j = 0; j < inChannels; ++j)
 		for (int i = 0; i < 256; ++i)
 			myData[ current + j*256 + i ] = (uint8_t) i;
 	
-	current += (channels*256);
+	current += (inChannels*256);
 	
 	// LUT data assumed to already be in order!
 	// RGB, XYZ, LAB, etc.
@@ -326,11 +328,11 @@ void add_lut8_tag( profileDataInner &data, uint32_t signature, int channels, int
 	
 	// identity output tables
 	// output_channels
-	for (int j = 0; j < channels; ++j)
+	for (int j = 0; j < outChannels; ++j)
 		for (int i = 0; i < 256; ++i)
 			myData[ current + j*256 + i ] = (uint8_t) i;
 	
-	current += (channels*256);
+	current += (outChannels*256);
 	
 	assert( current == myDataSize );
 
@@ -443,10 +445,10 @@ void create_tags( profileDataInner &data )
     // write tables
     for ( auto &table : data.tables ) {
         if (table.tableDepth == 8)
-            add_lut8_tag( data, table.tableSig, table.tableChannels,
+            add_lut8_tag( data, table.tableSig, table.tableDimensions, table.tableChannels,
                         table.tableGridPoints, table.tableData );
         else if (table.tableDepth == 16)
-            add_lut16_tag( data, table.tableSig, table.tableChannels,
+            add_lut16_tag( data, table.tableSig, table.tableDimensions, table.tableChannels,
                         table.tableGridPoints, (uint16_t *)table.tableData );
     }
 

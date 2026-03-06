@@ -11,7 +11,7 @@ Does it look reasonable? Yes.
 
 NOTE - This started as a simulation of drawing with inks/watercolors.
     I wanted a simulation of how artists map colors with very limited palettes.
-    But available software only handles gray, or CMYK.
+    But available software only handles gray, RGB, or CMYK.
     And random colored inks don't mix like idealized CMY.
     I can always lighten inks/paints by dilution, and put down multiple layers for darks.
     And I've rewritten this a few times along the way as I try new ideas.
@@ -35,9 +35,13 @@ TODO
 A2B - ink and overprints to LAB, can be fairly coarse, N-dimensional to 3 channels
     use ink mixing model and simple interpolation
     doesn't really need smoothing
+    virtual loops in an array
+    
 B2A - LAB to ink mixes, needs detail, 3D to N channels
-    Also need to define UCR/GCR technique
+    ignore GCR/UCR just write the raw mixes
     This needs smoothing.
+
+gamut - easy to get from LAB tables
 
 TODO - write XML profile data, once I have A2B and B2A working
 
@@ -1227,8 +1231,18 @@ void create_table( const inkColorSet &inkSet, const spline_list &splines, int de
 	int L, A, B;	// my grid iteration indices
 
 	// allocate my grid
-    std::unique_ptr<float> gridBuffer(new float[ gDataGridPoints*gDataGridPoints*gDataGridPoints * 3 ]);   
+    size_t gridCount =  gDataGridPoints*gDataGridPoints*gDataGridPoints;
+    std::unique_ptr<float> gridBuffer(new float[ gridCount * 3 ]);
     float *gridData = gridBuffer.get();
+    std::unique_ptr<uint8_t> gamutBuffer(new uint8_t[ gridCount ]);
+    uint8_t *gamutData = gamutBuffer.get();
+    
+    // set everything to out of gamut
+    memset( gamutData, 255, gridCount );
+    
+    int gamutPlaneStep = gDataGridPoints*gDataGridPoints;
+	int gamutRowStep = gDataGridPoints;
+	int gamutColStep = 1;
 	
 	int planeStep = gDataGridPoints*gDataGridPoints * 3;
 	int rowStep = gDataGridPoints * 3;
@@ -1250,8 +1264,7 @@ void create_table( const inkColorSet &inkSet, const spline_list &splines, int de
 					// save the values
 					gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = clippedColor.L;
 					gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = clippedColor.A;
-					gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = clippedColor.B;
-					}
+					gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = clippedColor.B;					}
 			
 			continue;
         }   // end ClippedL
@@ -1293,6 +1306,7 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 // TODO - interpolate ink mixture!  the AB value may be in gamut, but how did we mix it?
 // this needs a mixing model.  or some quick heuristics...
                         result = thisSpot;
+                        gamutData[ L * gamutPlaneStep + A * gamutRowStep + B * gamutColStep ] = 0;
                     }
                 }
                 
@@ -1381,8 +1395,16 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     myTable.tableDimensions = 3;
     myTable.tableChannels = 3;
     myTable.tableData = outBuffer.get();
-    
     myProfile.tables.emplace_back(myTable);
+    
+    tableFormat myGamut;
+    myGamut.tableSig = icSigGamutTag;
+    myGamut.tableDepth = 8;
+    myGamut.tableGridPoints = gDataGridPoints;
+    myGamut.tableDimensions = 3;
+    myGamut.tableChannels = 1;
+    myGamut.tableData = gamutBuffer.get();
+    myProfile.tables.emplace_back(myGamut);
     
     writeICCProfile( filename+".icc", myProfile );
     
