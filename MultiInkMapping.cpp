@@ -249,7 +249,7 @@ std::vector<inkColorSet> colorSets =
 
 // A
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red",
-        "10! 10 Paints! Hah, ha, ha!",
+        "10! Ten Paints! Hah, ha, ha!",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -553,9 +553,9 @@ xyzColor expInterp2inks( const float t, const xyzColor &ink1, const xyzColor &in
 
 // should be equivelent
 #if 1
-	float factorX = ink2.X /ink1.X;
-	float factorY = ink2.Y /ink1.Y;
-	float factorZ = ink2.Z /ink1.Z;
+	float factorX = ink2.X / ink1.X;
+	float factorY = ink2.Y / ink1.Y;
+	float factorZ = ink2.Z / ink1.Z;
 	
 	result.X = ink1.X * pow( factorX, t );
 	result.Y = ink1.Y * pow( factorY, t );
@@ -661,6 +661,44 @@ xyzColor estimate_ink_mix( const std::vector<labColor> &inkList, const xyzColor 
 
 // TODO - find best parameter, 0.5 isn't enough, 1.0 is too much
     xyzColor mix = interp2inks( 0.7, overprint, average );
+    
+    return mix;
+}
+
+/********************************************************************************/
+
+// trying to estimate appearance of overprints among arbitrary inks
+xyzColor estimate_fractional_ink_mix( const std::vector<labColor> &inkList,
+            const std::vector<float> inkFractionList, const xyzColor &paperColor )
+{
+	xyzColor identity( 100.0, 100.0, 100.0 );
+    
+    xyzColor overprint = identity;
+    xyzColor average(0,0,0);
+    xyzColor mix = paperColor;
+    int i = 0;
+    float totalFraction = 0.0;
+    for ( const auto &ink : inkList ) {
+        float thisFraction = inkFractionList[i];
+        if (thisFraction > 0.0) {
+            xyzColor inkColor = LAB2XYZ( ink );
+            xyzColor inkFilter = inkColor / paperColor;
+            totalFraction += thisFraction;
+            xyzColor inkFraction = interp2inks( thisFraction, identity, inkFilter );
+            average += inkFraction;
+            overprint *= inkFraction;
+        }
+        ++i;
+    }
+    overprint *= paperColor;
+    average *= paperColor;
+    
+    if (totalFraction > 0.0) {
+        average /= totalFraction;
+
+// TODO - find best parameter, 0.5 isn't enough, 1.0 is too much
+        mix = interp2inks( 0.7, overprint, average );
+    }
     
     return mix;
 }
@@ -1237,7 +1275,7 @@ void create_table( const inkColorSet &inkSet, const spline_list &splines, int de
     std::unique_ptr<uint8_t> gamutBuffer(new uint8_t[ gridCount ]);
     uint8_t *gamutData = gamutBuffer.get();
     
-    // set everything to out of gamut
+    // set everything to out of gamut (inverted from a normal image/table, but ok...)
     memset( gamutData, 255, gridCount );
     
     int gamutPlaneStep = gDataGridPoints*gDataGridPoints;
@@ -1264,7 +1302,8 @@ void create_table( const inkColorSet &inkSet, const spline_list &splines, int de
 					// save the values
 					gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = clippedColor.L;
 					gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = clippedColor.A;
-					gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = clippedColor.B;					}
+					gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = clippedColor.B;
+                }
 			
 			continue;
         }   // end ClippedL
@@ -1318,7 +1357,7 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 				}   // end for B
 			}   // end for A
 		}   // end for L
-	
+
 	
 #if 1
 	// smooth the 3D table data
@@ -1334,6 +1373,7 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ bufferSize ]);
     uint8_t *outPtr = outBuffer.get();
 
+#if 1
     // order the data for easy viewing as an image
     for (A = 0; A < gDataGridPoints; ++A) {
         for (L = 0; L < gDataGridPoints; ++L) {
@@ -1345,9 +1385,9 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 				int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
 				
 				// write value out to file (interleaved)
-                outPtr[0] = Lout;
-                outPtr[1] = Aout;
-                outPtr[2] = Bout;
+                outPtr[0] = (uint8_t)Lout;
+                outPtr[1] = (uint8_t)Aout;
+                outPtr[2] = (uint8_t)Bout;
                 outPtr += 3;
             }
         }
@@ -1356,7 +1396,7 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     // write TIFF File
     WriteTIFF( filename + ".tiff", 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
                 gDataGridPoints*gDataGridPoints, gDataGridPoints, 3, 8 );
-
+#endif
 
 
     // rewrite data for ICC profile
@@ -1371,9 +1411,9 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 				int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
 				
 				// write value out to file (interleaved)
-                outPtr[0] = Lout;
-                outPtr[1] = Aout;
-                outPtr[2] = Bout;
+                outPtr[0] = (uint8_t)Lout;
+                outPtr[1] = (uint8_t)Aout;
+                outPtr[2] = (uint8_t)Bout;
                 outPtr += 3;
             }
         }
@@ -1392,17 +1432,17 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     myTable.tableSig = icSigAToB0Tag;
     myTable.tableDepth = 8;
     myTable.tableGridPoints = gDataGridPoints;
-    myTable.tableDimensions = 3;
-    myTable.tableChannels = 3;
+    myTable.tableDimensions = 3;    // input
+    myTable.tableChannels = 3;      // output
     myTable.tableData = outBuffer.get();
     myProfile.tables.emplace_back(myTable);
-    
+
     tableFormat myGamut;
     myGamut.tableSig = icSigGamutTag;
     myGamut.tableDepth = 8;
     myGamut.tableGridPoints = gDataGridPoints;
-    myGamut.tableDimensions = 3;
-    myGamut.tableChannels = 1;
+    myGamut.tableDimensions = 3;    // input
+    myGamut.tableChannels = 1;      // output
     myGamut.tableData = gamutBuffer.get();
     myProfile.tables.emplace_back(myGamut);
     
