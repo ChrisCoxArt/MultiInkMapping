@@ -17,7 +17,7 @@
 
 /********************************************************************************/
 
-typedef enum  {
+typedef enum : uint32_t  {
 	kClassInput = 'scnr',
 	kClassMonitor = 'mntr',
 	kClassOutput = 'prtr',
@@ -27,7 +27,7 @@ typedef enum  {
 	kClassNamed = 'nmcl',
 } profile_class;
 
-typedef enum  {
+typedef enum : uint32_t {
 	kSpaceXYZ = 'XYZ ',
 	kSpaceLAB = 'Lab ',
 	kSpaceLUV = 'Luv ',
@@ -56,7 +56,7 @@ typedef enum  {
 	kSpaceFCLR = 'FCLR',
 } color_space;
 
-typedef enum  {
+typedef enum : uint32_t  {
 
     icSigCopyrightTag                      = 0x63707274,  /* 'cprt' */
     icSigProfileDescriptionTag             = 0x64657363,  /* 'desc' */
@@ -91,7 +91,6 @@ typedef enum  {
 
 
     icSigUnknown = 0,
-    icSigEnd = 0xFFFFFFFFF,
 } profile_sig;
 
 /********************************************************************************/
@@ -100,7 +99,7 @@ typedef enum  {
 struct tableFormat {
 
     tableFormat() : pointsBackTo(icSigUnknown),
-            tableSig(icSigUnknown), tableData(NULL) {}
+            tableSig(icSigUnknown) {}
 
     profile_sig     tableSig;
     profile_sig     pointsBackTo;   // so we have A2B1 and A2B2 refer back to A2B0
@@ -109,7 +108,7 @@ struct tableFormat {
     int				tableGridPoints;
     int             tableDimensions;
     int             tableChannels;
-    uint8_t	*		tableData;
+    std::shared_ptr<uint8_t> tableData;
 };
 
 /********************************************************************************/
@@ -117,14 +116,21 @@ struct tableFormat {
 // all pointers are passed in, not owned
 struct profileData {
 
+    profileData() : preferredCMM('ICCD'), platform('APPL'), manufacturer('none'), creator('ccox') {}
+
     std::string	    description;        // required
     std::string     copyright;          // required
-    std::string     otherText;          // optional
+    uint32_t        preferredCMM;       // required, default set
+    uint32_t        platform;           // required, default set
+    uint32_t        manufacturer;       // required, default set
+    uint32_t        creator;            // required, default set
 
     profile_class	profileClass;       // required
     color_space		colorSpace;         // required
     color_space		pcsSpace;           // required
 
+    std::string     otherText;          // optional
+    
     std::vector<tableFormat> tables;
 };
 

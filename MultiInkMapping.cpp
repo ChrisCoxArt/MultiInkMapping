@@ -14,11 +14,11 @@ NOTE - This started as a simulation of drawing with inks/watercolors.
     But available software only handles gray, RGB, or CMYK.
     And random colored inks don't mix like idealized CMY.
     I can always lighten inks/paints by dilution, and put down multiple layers for darks.
-    And I've rewritten this a few times along the way as I try new ideas.
+    And I've rewritten this a few times as I try new ideas.
 
 This assumes primaries are somewhat saturated, not too neutral, and define a convex hull.
 Primaries will be sorted by hue to make sure they are in order to make a convex hull.
-
+This further assumes that the primaries are really transparent, so ink order does not matter. (this is not realistic)
 
 
 
@@ -40,8 +40,6 @@ A2B - ink and overprints to LAB, can be fairly coarse, N-dimensional to 3 channe
 B2A - LAB to ink mixes, needs detail, 3D to N channels
     ignore GCR/UCR just write the raw mixes
     This needs smoothing.
-
-gamut - easy to get from LAB tables
 
 TODO - write XML profile data, once I have A2B and B2A working
 
@@ -649,20 +647,14 @@ xyzColor estimate_ink_mix( const std::vector<labColor> &inkList, const xyzColor 
 	xyzColor identity( 100.0, 100.0, 100.0 );
     
     xyzColor overprint = identity;
-    xyzColor average(0,0,0);
     for ( const auto &ink : inkList ) {
         xyzColor inkColor = LAB2XYZ( ink );
-        average += inkColor;
         xyzColor inkFilter = inkColor / paperColor;
         overprint *= inkFilter;
     }
     overprint *= paperColor;
-    average /= (float)inkList.size();
 
-// TODO - find best parameter, 0.5 isn't enough, 1.0 is too much
-    xyzColor mix = interp2inks( 0.7, overprint, average );
-    
-    return mix;
+    return overprint;
 }
 
 /********************************************************************************/
@@ -674,39 +666,27 @@ xyzColor estimate_fractional_ink_mix( const std::vector<labColor> &inkList,
 	xyzColor identity( 100.0, 100.0, 100.0 );
     
     xyzColor overprint = identity;
-    xyzColor average(0,0,0);
-    xyzColor mix = paperColor;
-    int i = 0;
-    float totalFraction = 0.0;
-    for ( const auto &ink : inkList ) {
+    size_t inkCount = inkList.size();
+    for (int i = 0; i < inkCount; ++i) {
+        auto &ink = inkList[i];
         float thisFraction = inkFractionList[i];
         if (thisFraction > 0.0) {
             xyzColor inkColor = LAB2XYZ( ink );
             xyzColor inkFilter = inkColor / paperColor;
-            totalFraction += thisFraction;
-            xyzColor inkFraction = interp2inks( thisFraction, identity, inkFilter );
-            average += inkFraction;
-            overprint *= inkFraction;
+            xyzColor fractionalInk = interp2inks( thisFraction, identity, inkFilter );
+            overprint *= fractionalInk;
         }
-        ++i;
     }
-    overprint *= paperColor;
-    average *= paperColor;
-    
-    if (totalFraction > 0.0) {
-        average /= totalFraction;
 
-// TODO - find best parameter, 0.5 isn't enough, 1.0 is too much
-        mix = interp2inks( 0.7, overprint, average );
-    }
-    
-    return mix;
+    overprint *= paperColor;
+
+    return overprint;
 }
 
 /********************************************************************************/
 
 // here, we want the darkest possible result
-xyzColor estimate_ink_overprint( const std::vector<labColor> &inkList, const xyzColor &paperColor )
+xyzColor estimate_darkest_ink_overprint( const std::vector<labColor> &inkList, const xyzColor &paperColor )
 {
     const float Ylimit = 1.3;
 	xyzColor identity( 100.0, 100.0, 100.0 );
@@ -731,9 +711,9 @@ xyzColor estimate_ink_overprint( const std::vector<labColor> &inkList, const xyz
 }
 
 // convenience converter
-xyzColor estimate_ink_overprint( const std::vector<labColorNamed> &inkList, const xyzColor &paperColor )
+xyzColor estimate_darkest_ink_overprint( const std::vector<labColorNamed> &inkList, const xyzColor &paperColor )
 {
-    return estimate_ink_overprint( ConvertNamedColorList2ColorList(inkList), paperColor );
+    return estimate_darkest_ink_overprint( ConvertNamedColorList2ColorList(inkList), paperColor );
 }
 
 /********************************************************************************/
@@ -793,7 +773,7 @@ spline_list mix_ink_splines( inkColorSet &inkSet )
     // If the combined color has 0 L, estimate it from primaries
     // so we can get something sort of realistic for the mix
     if (inkSet.darkColor.L <= 0) {
-        mix = estimate_ink_overprint( inkSet.primaries, paperColor );
+        mix = estimate_darkest_ink_overprint( inkSet.primaries, paperColor );
 		mixLAB = XYZ2LAB( mix );
 #if 1
         printf("Estimated overprint for %s is (%f, %f, %f)\n",
@@ -1104,15 +1084,15 @@ Point FindClosestPointInList( const PointList &list, Point &input )
 /********************************************************************************/
 
 // interpolate between 0 and 100.0
-float grid_to_L( int grid_value )
+float grid_to_L( int grid_value, int gridPoints )
 {
-	return (100.0 * (float)grid_value) / (float)(gDataGridPoints - 1);
+	return (100.0 * (float)grid_value) / (float)(gridPoints - 1);
 }
 
 // ccox - FIX ME - cheap version for now -- refine if needed
-float grid_to_AB( int grid_value )
+float grid_to_AB( int grid_value, int gridPoints )
 {
-	float middle = 0.5 * gDataGridPoints;
+	float middle = 0.5 * gridPoints;
 	return (127.0 * ((float)grid_value - middle)) / middle;
 }
 
@@ -1261,15 +1241,14 @@ void DumpPointList( const std::string &name, const PointList &planePoints )
 /********************************************************************************/
 
 /*
-A2B - ink and overprints to LAB, can be fairly coarse, N-dimensional to 3 channels
+A2B - ink and overprints to LAB, N-dimensional to 3 channels
     use ink mixing model and simple interpolation
     doesn't really need smoothing
-    virtual loops in an array
 */
 void createA2B_table( const inkColorSet &inkSet, const spline_list &splines, int depth, profileData &myProfile )
 {
     const int maxChannels = 15;          // ICC spec. limit
-    const int maxGridPoints = 65;        // sanity limit
+    const int maxGridPoints = 31;        // sanity limit - TODO - increase limit in release build
     const int maxGridSize = 1024*1024;   // limit 1 Meg, 20 Meg?
     
     size_t inkCount = inkSet.primaries.size();
@@ -1291,9 +1270,10 @@ void createA2B_table( const inkColorSet &inkSet, const spline_list &splines, int
     
     // setup loops to create the table
     std::vector<uint32_t> loopCounters(maxChannels);
-    std::vector<uint32_t> loopSteps(maxChannels);
     std::vector<float> inkFractions(maxChannels);
-    
+
+#if 0
+    std::vector<uint32_t> loopSteps(maxChannels);   // um, I may not end up using these
     size_t index = inkCount;
     int step = 3;
     while (index) {
@@ -1301,9 +1281,10 @@ void createA2B_table( const inkColorSet &inkSet, const spline_list &splines, int
         step *= gridPoints;
         --index;
     }
+#endif
     
     std::vector<labColor> inkList(maxChannels);
-    for (size_t i = 0; i < inkSet.primaries.size(); ++i)
+    for (size_t i = 0; i < inkCount; ++i)
         inkList[i] = inkSet.primaries[i].color;
 
 	xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
@@ -1311,15 +1292,37 @@ void createA2B_table( const inkColorSet &inkSet, const spline_list &splines, int
     size_t gridCount = gridSize;
     std::unique_ptr<uint8_t> gridBuffer(new uint8_t[ gridCount * 3 ]);
     uint8_t *gridData = gridBuffer.get();
-
-// TODO - finish me!
     
-    std::fill( loopCounters.begin(),loopCounters.end(), 0 );
+    std::fill( loopCounters.begin(), loopCounters.end(), 0 );
     
-    // iterate virtual loop to fill table
-        // calc ink fractions based on loop variables
-        estimate_fractional_ink_mix( inkList, inkFractions, paperColor );
-    
+    // iterate virtual loop to fill table  (faster than doing a dozen divides and modulos)
+    // i[k] = (index / (int)pow(gridPoints,(inkCount-1)-k)) % gridPoints;   // loopSteps can be precalcuated, but the divide cannot
+    for (uint32_t index = 0; loopCounters[0] < gridPoints; ++index ) {
+        
+        for (size_t k = 0; k < inkCount; ++k)
+            inkFractions[k] = (float)loopCounters[k] / (float)(gridPoints-1);
+        
+        xyzColor resultXYZ = estimate_fractional_ink_mix( inkList, inkFractions, paperColor );
+        labColor resultLAB = XYZ2LAB( resultXYZ );
+        int Lout =   floatL_to_fileL8( resultLAB.L );
+        int Aout = floatAB_to_fileAB8( resultLAB.A );
+        int Bout = floatAB_to_fileAB8( resultLAB.B );
+        gridData[ 3*index + 0 ] = Lout;
+        gridData[ 3*index + 1 ] = Aout;
+        gridData[ 3*index + 2 ] = Bout;
+        
+        // increment last counter
+        //    if incremented is >= gridPoints, reset and roll upward in list
+        for (int j = (inkCount-1); j >= 0; --j) {
+            int temp = loopCounters[j] + 1;
+            if (temp >= gridPoints && j != 0)   // we want counter 0 to overflow, to end the big loop
+                loopCounters[j] = 0;
+            else {
+                loopCounters[j] = temp;
+                break;
+            }
+        }
+    }
 
 
     tableFormat myTable;
@@ -1328,7 +1331,7 @@ void createA2B_table( const inkColorSet &inkSet, const spline_list &splines, int
     myTable.tableGridPoints = gridPoints;
     myTable.tableDimensions = (int)inkCount;    // input
     myTable.tableChannels = 3;                  // output
-    myTable.tableData = gridBuffer.release();       // TODO - this is going to leak!
+    myTable.tableData = std::move(gridBuffer);
     myProfile.tables.emplace_back(myTable);
 }
 
@@ -1339,10 +1342,9 @@ B2A - LAB to ink mixes, needs detail, 3D to N channels
     ignore GCR/UCR just write the raw mixes
     This needs smoothing.
 */
-void createB2A_table( const inkColorSet &inkSet, const spline_list &splines, int depth, profileData &myProfile )
+void createB2A_table( const inkColorSet &inkSet, const spline_list &splines, int depth, int gridPoints, profileData &myProfile )
 {
     const int maxChannels = 15;          // ICC spec. limit
-    const int gridPoints = 17;
     
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
@@ -1356,6 +1358,12 @@ void createB2A_table( const inkColorSet &inkSet, const spline_list &splines, int
 
 
 // TODO - fill in the table!
+// out of gamut - find nearest
+// in gamut, figure out ink mix using nearby ink hue angles and iterative solver
+// the result won't be perfect, but usable
+
+
+// smooth the table
 
 
     tableFormat myTable;
@@ -1364,7 +1372,7 @@ void createB2A_table( const inkColorSet &inkSet, const spline_list &splines, int
     myTable.tableGridPoints = gridPoints;
     myTable.tableDimensions = 3;                // input
     myTable.tableChannels = (int)inkCount;      // output
-    myTable.tableData = gridBuffer.release();       // TODO - this is going to leak!
+    myTable.tableData = std::move(gridBuffer);
     myProfile.tables.emplace_back(myTable);
 }
 
@@ -1393,43 +1401,34 @@ std::vector<color_space> profileSpaceLookup =
 
 /********************************************************************************/
 
-// currently creating LAB to LAB for color mapping
-void create_table( const inkColorSet &inkSet, const spline_list &splines, int depth,
+// create LAB to LAB for color mapping/preview
+void create_abstract_profile( const inkColorSet &inkSet, const spline_list &splines, int depth, int gridPoints,
                     const std::string &filename )
 {
 	int L, A, B;	// my grid iteration indices
 
 	// allocate my grid
-    size_t gridCount =  gDataGridPoints*gDataGridPoints*gDataGridPoints;
+    size_t gridCount =  gridPoints*gridPoints*gridPoints;
     std::unique_ptr<float> gridBuffer(new float[ gridCount * 3 ]);
     float *gridData = gridBuffer.get();
-    std::unique_ptr<uint8_t> gamutBuffer(new uint8_t[ gridCount ]);
-    uint8_t *gamutData = gamutBuffer.get();
-    
-    // set everything to out of gamut (inverted from a normal image/table, but ok...)
-    memset( gamutData, 255, gridCount );
-    
-    int gamutPlaneStep = gDataGridPoints*gDataGridPoints;
-	int gamutRowStep = gDataGridPoints;
-	int gamutColStep = 1;
 	
-	int planeStep = gDataGridPoints*gDataGridPoints * 3;
-	int rowStep = gDataGridPoints * 3;
+	int planeStep = gridPoints*gridPoints * 3;
+	int rowStep = gridPoints * 3;
 	int colStep = 3;
     
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
 	
-	for (L = 0; L < gDataGridPoints; ++L) {
+	for (L = 0; L < gridPoints; ++L) {
 		// setup slices variables
-		float Lfloat = grid_to_L( L );
+		float Lfloat = grid_to_L( L, gridPoints );
 		
 		//special case less < darkest and > brightest
 		labColor clippedColor;
 		if (ClippedL( Lfloat, clippedColor, inkSet)) {
 			// fill with clipped value
-			for (A = 0; A < gDataGridPoints; ++A)
-				for (B = 0; B < gDataGridPoints; ++B) {
+			for (A = 0; A < gridPoints; ++A)
+				for (B = 0; B < gridPoints; ++B) {
 					// save the values
 					gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = clippedColor.L;
 					gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = clippedColor.A;
@@ -1457,11 +1456,11 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 
 
 		// now iterate over this plane/slice
-		for (A = 0; A < gDataGridPoints; ++A) {
-			float Afloat = grid_to_AB( A );
+		for (A = 0; A < gridPoints; ++A) {
+			float Afloat = grid_to_AB( A, gridPoints );
 			
-			for (B = 0; B < gDataGridPoints; ++B) {
-				float Bfloat = grid_to_AB( B );
+			for (B = 0; B < gridPoints; ++B) {
+				float Bfloat = grid_to_AB( B, gridPoints );
 
 				// find closest point in our line/point list
 				Point thisSpot( Afloat, Bfloat );
@@ -1476,7 +1475,6 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 // TODO - interpolate ink mixture!  the AB value may be in gamut, but how did we mix it?
 // this needs a mixing model.  or some quick heuristics...
                         result = thisSpot;
-                        gamutData[ L * gamutPlaneStep + A * gamutRowStep + B * gamutColStep ] = 0;
                     }
                 }
                 
@@ -1500,15 +1498,15 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 #endif
 
 
-    size_t bufferSize = gDataGridPoints*gDataGridPoints*gDataGridPoints * 3;
+    size_t bufferSize = gridPoints*gridPoints*gridPoints * 3;
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ bufferSize ]);
     uint8_t *outPtr = outBuffer.get();
 
-#if 0
+#if 1
     // order the data for easy viewing as an image
-    for (A = 0; A < gDataGridPoints; ++A) {
-        for (L = 0; L < gDataGridPoints; ++L) {
-			for (B = 0; B < gDataGridPoints; ++B) {
+    for (A = 0; A < gridPoints; ++A) {
+        for (L = 0; L < gridPoints; ++L) {
+			for (B = 0; B < gridPoints; ++B) {
 
 				// convert to integer output values
 				int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
@@ -1526,15 +1524,15 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     
     // write TIFF File
     WriteTIFF( filename + ".tiff", 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
-                gDataGridPoints*gDataGridPoints, gDataGridPoints, 3, 8 );
+                gridPoints*gridPoints, gridPoints, 3, 8 );
 #endif
 
 
-    // rewrite data for ICC profile
+    // oganize data for ICC profile
     outPtr = outBuffer.get();
-    for (L = 0; L < gDataGridPoints; ++L) {
-        for (A = 0; A < gDataGridPoints; ++A) {
-			for (B = 0; B < gDataGridPoints; ++B) {
+    for (L = 0; L < gridPoints; ++L) {
+        for (A = 0; A < gridPoints; ++A) {
+			for (B = 0; B < gridPoints; ++B) {
 
 				// convert to integer output values
 				int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
@@ -1549,8 +1547,8 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
             }
         }
     }
-    
-#if 0
+
+
     // write ICC abstract profiles
     profileData myProfile;
     myProfile.description = inkSet.description;
@@ -1559,18 +1557,98 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     myProfile.profileClass = kClassAbstract;
     myProfile.colorSpace = kSpaceLAB;
     myProfile.pcsSpace = kSpaceLAB;
+    myProfile.preferredCMM = 'ICCD';
+    myProfile.platform = 'APPL';
+    myProfile.manufacturer = 'none';
+    myProfile.creator = 'ccox';
 
     tableFormat myTable;
     myTable.tableSig = icSigAToB0Tag;
     myTable.tableDepth = 8;
-    myTable.tableGridPoints = gDataGridPoints;
+    myTable.tableGridPoints = gridPoints;
     myTable.tableDimensions = 3;    // input
     myTable.tableChannels = 3;      // output
-    myTable.tableData = outBuffer.get();
+    myTable.tableData = std::move(outBuffer);
     myProfile.tables.emplace_back(myTable);
-#endif
 
-    // write ICC abstract profiles
+    writeICCProfile( filename+"_abstract.icc", myProfile );
+    
+    // buffers are freed automatically
+}
+
+/********************************************************************************/
+
+// full output profile: A2B, B2A, gamut
+void create_output_profile( const inkColorSet &inkSet, const spline_list &splines, int depth, int gridPoints,
+                    const std::string &filename )
+{
+	int L, A, B;	// my grid iteration indices
+
+	// allocate my gamut grid
+    size_t gridCount =  gridPoints*gridPoints*gridPoints;
+    std::unique_ptr<uint8_t> gamutBuffer(new uint8_t[ gridCount ]);
+    uint8_t *gamutData = gamutBuffer.get();
+    
+    // set everything to out of gamut (inverted from a normal image/table, but ok...)
+    memset( gamutData, 255, gridCount );
+    
+    int gamutPlaneStep = gridPoints*gridPoints;
+	int gamutRowStep = gridPoints;
+	int gamutColStep = 1;
+
+    size_t inkCount = inkSet.primaries.size();
+    assert(inkCount > 0);
+	
+	for (L = 0; L < gridPoints; ++L) {
+		// setup slices variables
+		float Lfloat = grid_to_L( L, gridPoints );
+		
+		//special case less < darkest and > brightest
+		labColor clippedColor;
+		if (ClippedL( Lfloat, clippedColor, inkSet)) {
+			continue;
+        }   // end ClippedL
+		
+		// interpolate splines in L to get points along this AB plane
+		PointList planeSpline;
+		for ( const auto &oneSpline: splines ) {
+			float A1, B1;
+			SearchSpline( oneSpline, Lfloat, A1, B1 );
+			planeSpline.push_back( Point( A1, B1 ) );
+        }
+		
+		// create interpolated point list from the splines
+		PointList planePoints;
+        PointListFromFloatSpline( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
+
+// DEBUG the last set generated to check the gamut shape and area
+//DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
+
+		// now iterate over this plane/slice
+		for (A = 0; A < gridPoints; ++A) {
+			float Afloat = grid_to_AB( A, gridPoints );
+			
+			for (B = 0; B < gridPoints; ++B) {
+				float Bfloat = grid_to_AB( B, gridPoints );
+
+				// find closest point in our line/point list
+				Point thisSpot( Afloat, Bfloat );
+                
+                // for 3 or more inks, test for inside polygon, interpolate inside
+                if (inkCount > 2) {
+                    bool inside = pointInPoly( planePoints, thisSpot );
+                    if (inside) {
+                        gamutData[ L * gamutPlaneStep + A * gamutRowStep + B * gamutColStep ] = 0;
+                    }
+                }
+				
+            }   // end for B
+        }   // end for A
+    }   // end for L
+
+
+
+    // write ICC output profiles
     profileData myProfile;
     myProfile.description = inkSet.description;
     myProfile.copyright = "Copyright (c) Chris Cox 2026";
@@ -1578,16 +1656,20 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     myProfile.profileClass = kClassOutput;
     myProfile.colorSpace = profileSpaceLookup[ inkCount ];
     myProfile.pcsSpace = kSpaceLAB;
+    myProfile.preferredCMM = 'ICCD';
+    myProfile.platform = 'APPL';
+    myProfile.manufacturer = 'none';
+    myProfile.creator = 'ccox';
 
 
 // TODO - explicit gamut creation
     tableFormat myGamut;
     myGamut.tableSig = icSigGamutTag;
     myGamut.tableDepth = 8;
-    myGamut.tableGridPoints = gDataGridPoints;
+    myGamut.tableGridPoints = gridPoints;
     myGamut.tableDimensions = 3;    // input
     myGamut.tableChannels = 1;      // output
-    myGamut.tableData = gamutBuffer.get();
+    myGamut.tableData = std::move(gamutBuffer);
     myProfile.tables.emplace_back(myGamut);
 
 
@@ -1595,7 +1677,7 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
     createA2B_table( inkSet, splines, depth, myProfile );
 
     // make B2A0 (LAB to ink)
-    createB2A_table( inkSet, splines, depth, myProfile );
+    createB2A_table( inkSet, splines, depth, gridPoints, myProfile );
     
     
     // and point the other A2B tables back to A2B0
@@ -1619,7 +1701,7 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 
 
 
-    writeICCProfile( filename+".icc", myProfile );
+    writeICCProfile( filename+"_output.icc", myProfile );
     
     
     // buffers are freed automatically
@@ -1703,8 +1785,8 @@ int main (int argc, char * argv[])
         // create splines from measured points using mixing model
         auto splines = mix_ink_splines( inkSet );
         
-        // create and write color data
-        create_table( inkSet, splines, gDataDepth, inkSet.name );
+        create_output_profile( inkSet, splines, gDataDepth, 21, inkSet.name );
+        create_abstract_profile( inkSet, splines, gDataDepth, 21, inkSet.name );
     
      }  // end for colorSets
 

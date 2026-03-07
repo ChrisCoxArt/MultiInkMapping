@@ -471,10 +471,10 @@ void create_tags( profileDataInner &data )
     
         if (table.tableDepth == 8)
             add_lut8_tag( data, table.tableSig, table.tableDimensions, table.tableChannels,
-                        table.tableGridPoints, table.tableData );
+                        table.tableGridPoints, table.tableData.get() );
         else if (table.tableDepth == 16)
             add_lut16_tag( data, table.tableSig, table.tableDimensions, table.tableChannels,
-                        table.tableGridPoints, (uint16_t *)table.tableData );
+                        table.tableGridPoints, (uint16_t *)table.tableData.get() );
     }
 
 }
@@ -491,7 +491,7 @@ void write_header( const profileDataInner &data, FILE *output )
 	fwrite( &temp, 4, 1, output );
 	
 	// 4 byte preferred CMM
-	uint32_t CMM_type = 'ICCD'; // iccDev
+	uint32_t CMM_type = data.preferredCMM; // 'ICCD', iccDev
 	temp = SwabLong( CMM_type );
 	fwrite( &temp, 4, 1, output );
 	
@@ -550,7 +550,7 @@ void write_header( const profileDataInner &data, FILE *output )
 	fwrite( &temp, 4, 1, output );
 	
 	// 4 byte platform signature
-	uint32_t platform = 'APPL';
+	uint32_t platform = data.platform;
 	temp = SwabLong( platform );
 	fwrite( &temp, 4, 1, output );
 	
@@ -560,7 +560,7 @@ void write_header( const profileDataInner &data, FILE *output )
 	fwrite( &temp, 4, 1, output );
 	
 	// 4 byte manufacturer
-	uint32_t manufacturer = 'none';
+	uint32_t manufacturer = data.manufacturer;
 	temp = SwabLong( manufacturer );
 	fwrite( &temp, 4, 1, output );
 	
@@ -594,7 +594,7 @@ void write_header( const profileDataInner &data, FILE *output )
 	fwrite( &temp, 4, 1, output );
 	
 	// 4 byte creator signature
-	uint32_t creator = 'ccox';
+	uint32_t creator = data.creator;
 	temp = SwabLong( creator );
 	fwrite( &temp, 4, 1, output );
 	
@@ -629,7 +629,7 @@ int writeICCProfile( const std::string &filename, profileData &profileInfo  )
 	std::string outputFileName = filename;
 	FILE *output = fopen( outputFileName.c_str(), "wb" );
 	if (output == NULL) {
-		fprintf(stderr,"Could not create output\n");
+		fprintf(stderr,"Could not create output file %s\n", outputFileName.c_str());
 		return -1;
     }
 	
