@@ -7,16 +7,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "706A6FCD-E303-4B3B-9B3E-C9C78076146F"
+            uuid = "A96917AE-D457-4B9A-9E19-755F38B2A973"
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MultiInkMapping.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1295"
-            endingLineNumber = "1295"
-            landmarkName = "create_table(inkSet, splines, depth, filename)"
+            startingLineNumber = "1318"
+            endingLineNumber = "1318"
+            landmarkName = "createA2B_table(inkSet, splines, depth, myProfile)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

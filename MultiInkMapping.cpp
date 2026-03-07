@@ -32,14 +32,7 @@ Always smooth the resulting 3D table
 
 
 TODO
-A2B - ink and overprints to LAB, can be fairly coarse, N-dimensional to 3 channels
-    use ink mixing model and simple interpolation
-    doesn't really need smoothing
-    virtual loops in an array
-    
-B2A - LAB to ink mixes, needs detail, 3D to N channels
-    ignore GCR/UCR just write the raw mixes
-    This needs smoothing.
+TODO - violet seems a bit too desaturated
 
 TODO - write XML profile data, once I have A2B and B2A working
 
@@ -188,7 +181,7 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4} }
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0} }
     },
 
 // 5
@@ -197,7 +190,7 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0},
           {"Green", 71.2, -54.2, 62.9} }
     },
 
@@ -207,8 +200,8 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
-          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4} }
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 2.0, -66.4} }
     },
 
 // 7
@@ -217,8 +210,8 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
-          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 2.0, -66.4},
           {"Orange", 71.0, 50.7, 68.6}  }
     },
 
@@ -228,8 +221,8 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
-          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 2.0, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5} }
     },
 
@@ -239,10 +232,10 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
-          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 2.0, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
-          {"PinkViolet", 67.0, 44.6, -20.5 } }
+          {"PinkViolet", 67.0, 59.0, -25.0 } }
     },
 
 // A
@@ -251,10 +244,10 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
-          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 2.0, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
-          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5}  }
+          {"PinkViolet", 67.0, 59.0, -25.0 }, {"Red", 57.7, 78.1, 48.5} }
     },
 
 // B
@@ -263,10 +256,10 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
-          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 2.0, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
-          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5},
+          {"PinkViolet", 67.0, 59.0, -25.0 }, {"Red", 57.7, 78.1, 48.5},
           {"Teal", 66.8, -51.5, -15.4 } }
     },
 
@@ -276,10 +269,10 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
-          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 2.0, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
-          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5},
+          {"PinkViolet", 67.0, 59.0, -25.0 }, {"Red", 57.7, 78.1, 48.5},
           {"Teal", 66.8, -51.5, -15.4 }, {"YellowOrange", 81.5, 27.9, 102.3} }
     },
 
@@ -289,10 +282,10 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
-          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 2.0, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
-          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5},
+          {"PinkViolet", 67.0, 59.0, -25.0 }, {"Red", 57.7, 78.1, 48.5},
           {"Teal", 66.8, -51.5, -15.4 }, {"YellowOrange", 81.5, 27.9, 102.3},
           {"Cerulean", 63.3, -16.1, -35.3 } }
     },
@@ -303,10 +296,10 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
-          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 2.0, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
-          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5},
+          {"PinkViolet", 67.0, 59.0, -25.0 }, {"Red", 57.7, 78.1, 48.5},
           {"Teal", 66.8, -51.5, -15.4 }, {"YellowOrange", 81.5, 27.9, 102.3},
           {"Cerulean", 63.3, -16.1, -35.3 }, {"GreenGold", 57.1, -14.3, 54.0} }
     },
@@ -317,10 +310,10 @@ std::vector<inkColorSet> colorSets =
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
-          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 26.0, -37.4},
-          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 13.3, -66.4},
+          {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0},
+          {"Green", 71.2, -54.2, 62.9}, {"Blue", 38.2, 2.0, -66.4},
           {"Orange", 71.0, 50.7, 68.6}, {"BlueGreen", 70.9, -60.4, 20.5},
-          {"PinkViolet", 67.0, 44.6, -20.5 }, {"Red", 57.7, 78.1, 48.5},
+          {"PinkViolet", 67.0, 59.0, -25.0 }, {"Red", 57.7, 78.1, 48.5},
           {"Teal", 66.8, -51.5, -15.4 }, {"YellowOrange", 81.5, 27.9, 102.3},
           {"Cerulean", 63.3, -16.1, -35.3 }, {"GreenGold", 57.1, -14.3, 54.0},
           {"Indigo", 31, 35, -68} }
@@ -362,7 +355,7 @@ float CIECurve( const float input )
 	const float breakpoint = 0.008856;		// powf( 6.0/29.0, 3.0 );
 	
 	if (input > breakpoint)
-		return powf( input, 1.0/3.0);
+		return cbrtf( input );
 	else
 		return (input * scale + (4.0/29.0));
 }
@@ -375,7 +368,7 @@ float CIEReverseCurve( const float input )
 	const float breakpoint = 6.0/29.0;
 	
 	if (input > breakpoint)
-		return powf( input, 3.0);
+		return input*input*input;   // powf(input,3);
 	else
 		return scale*(input - (4.0/29.0));
 }
@@ -544,35 +537,6 @@ inline xyzColor& operator-=( xyzColor &a, const xyzColor &b)
 
 /********************************************************************************/
 
-// exponental interpolation - helps blues, hurts reds :-(
-xyzColor expInterp2inks( const float t, const xyzColor &ink1, const xyzColor &ink2 )
-{
-	xyzColor result;
-
-// should be equivelent
-#if 1
-	float factorX = ink2.X / ink1.X;
-	float factorY = ink2.Y / ink1.Y;
-	float factorZ = ink2.Z / ink1.Z;
-	
-	result.X = ink1.X * pow( factorX, t );
-	result.Y = ink1.Y * pow( factorY, t );
-	result.Z = ink1.Z * pow( factorZ, t );
-#else
-	float factorX = log(ink2.X/ink1.X);
-	float factorY = log(ink2.Y/ink1.Y);
-	float factorZ = log(ink2.Z/ink1.Z);
-	
-	result.X = ink1.X * exp( factorX * t );
-	result.Y = ink1.Y * exp( factorY * t );
-	result.Z = ink1.Z * exp( factorZ * t );
-#endif
-	
-	return result;
-}
-
-/********************************************************************************/
-
 // linear interpolation
 xyzColor interp2inks( const float t, const xyzColor &ink1, const xyzColor &ink2 )
 {
@@ -647,14 +611,22 @@ xyzColor estimate_ink_mix( const std::vector<labColor> &inkList, const xyzColor 
 	xyzColor identity( 100.0, 100.0, 100.0 );
     
     xyzColor overprint = identity;
+    xyzColor average(0,0,0);
     for ( const auto &ink : inkList ) {
         xyzColor inkColor = LAB2XYZ( ink );
+        average += inkColor;
         xyzColor inkFilter = inkColor / paperColor;
         overprint *= inkFilter;
     }
     overprint *= paperColor;
+    average /= (float)inkList.size();
 
-    return overprint;
+// TODO - find best parameter, 0.5 isn't enough, 1.0 is too much
+// 0.0 leads to some crazy intermediate colors, and crazier splines
+// 1.0 leads to blah.
+    xyzColor mix = interp2inks( 0.6, overprint, average );
+    
+    return mix;
 }
 
 /********************************************************************************/
@@ -699,7 +671,7 @@ xyzColor estimate_darkest_ink_overprint( const std::vector<labColor> &inkList, c
     }
     overprint *= paperColor;
     
-    // Bring down luminance if needed to give a reasonable result
+    // Bring down luminance if needed to give a reasonable visual result
     // Scaling all channels to reduce chroma of the overprint
     float maxVal = std::max( overprint.X, std::max( overprint.Y, overprint.Z ));
     if (maxVal > Ylimit) {
@@ -1113,6 +1085,13 @@ int floatAB_to_fileAB8( float A )
 	return (int)( A + 128.0 );
 }
 
+uint8_t float_to_file255( float A )
+{
+	if (A > 1.0) return 255;
+	if (A < 0.0) return 0;
+	return (int)( A * 255.0 );
+}
+
 /********************************************************************************/
 
 // convert 0..100 representation to file representation
@@ -1139,17 +1118,23 @@ inline float Smooth3( float a, float b, float c)
 	return (a + 4*b + c) / 6.0;
 }
 
-// filter in place, in one dimension
-// TODO - make this work with arbitrary channel counts!
-void SmoothOneDirection( float *data, int planeStep, int rowStep, int colStep )
+inline void Smooth3( std::vector<float> &a, const std::vector<float> &b, const std::vector<float> &c, int channels)
+{
+    for (int i = 0; i < channels; ++i)
+        a[i] = Smooth3(a[i],b[i],c[i]);
+}
+
+// filter in place, in one dimension, for 3 channels
+void SmoothOneDirection3( float *data, int planeStep, int rowStep, int colStep )
 {
 	int i, j, k;
-	
+    
 	for (i = 0; i < gDataGridPoints; ++i) {
 		for (j = 0; j < gDataGridPoints; ++j) {
 			k = 0;
 			
 			// special case first value
+            
 			float last0 = data[ i * planeStep + j * rowStep + k*colStep + 0 ];
 			float last1 = data[ i * planeStep + j * rowStep + k*colStep + 1 ];
 			float last2 = data[ i * planeStep + j * rowStep + k*colStep + 2 ];
@@ -1202,10 +1187,66 @@ void SmoothOneDirection( float *data, int planeStep, int rowStep, int colStep )
 
 }
 
+// filter in place, in one dimension, for arbitrary channel counts
+void SmoothOneDirection( float *data, int planeStep, int rowStep, int colStep, int channels )
+{
+    assert(channels > 0);
+    assert(channels <= 15);
+ 
+    if (channels == 3) {
+        SmoothOneDirection3( data, planeStep, rowStep, colStep );
+        return;
+    }
+    
+    // there has to be a better way to do this for arbitrary channel counts
+// TODO - can I just use pointers and rotate those?
+    std::vector<float> last(15);
+    std::vector<float> current(15);
+    std::vector<float> next(15);
+	
+	for (int i = 0; i < gDataGridPoints; ++i) {
+		for (int j = 0; j < gDataGridPoints; ++j) {
+            int k = 0;
+            
+			// special case first value
+            for (int c = 0; c < channels; ++c)
+                last[c] = data[ i * planeStep + j * rowStep + j * colStep + c ];
+			
+			current = last;
+			
+			for (k = 0; k < (gDataGridPoints-1); ++k) {
+            
+                for (int c = 0; c < channels; ++c)
+                    next[c] = data[ i * planeStep + j * rowStep + (k+1)*colStep + c ];
+				
+				Smooth3( last, current, next, channels );
+				
+				// write back smoothed result
+                for (int c = 0; c < channels; ++c)
+                   data[ i * planeStep + j * rowStep + k*colStep + c ] = last[c];
+				
+				// rotate
+				last = current;
+				current = next;
+            }
+			
+			// special case last k value
+			// next == current already
+            Smooth3( last, current, next, channels );
+			
+			// write back smoothed result
+            for (int c = 0; c < channels; ++c)
+               data[ i * planeStep + j * rowStep + k*colStep + c ] = last[c];
+        }
+		
+    }
+
+}
+
 /********************************************************************************/
 
 // useful for debugging, but slow
-// probably faster to rasterize the poly without antialiasing
+// probably faster to rasterize the poly without antialiasing and sample the bitmap
 bool pointInPoly( const PointList &poly, const Point a )
 {
     bool inside = false;
@@ -1241,7 +1282,7 @@ void DumpPointList( const std::string &name, const PointList &planePoints )
 /********************************************************************************/
 
 /*
-A2B - ink and overprints to LAB, N-dimensional to 3 channels
+A2B - inks and overprints to LAB, N-dimensional to 3 channels
     use ink mixing model and simple interpolation
     doesn't really need smoothing
 */
@@ -1251,7 +1292,7 @@ void createA2B_table( const inkColorSet &inkSet, const spline_list &splines, int
     const int maxGridPoints = 31;        // sanity limit - TODO - increase limit in release build
     const int maxGridSize = 1024*1024;   // limit 1 Meg, 20 Meg?
     
-    size_t inkCount = inkSet.primaries.size();
+    int inkCount = (int)inkSet.primaries.size();
     assert(inkCount > 0);
     assert(inkCount <= maxChannels);
     
@@ -1296,7 +1337,7 @@ void createA2B_table( const inkColorSet &inkSet, const spline_list &splines, int
     std::fill( loopCounters.begin(), loopCounters.end(), 0 );
     
     // iterate virtual loop to fill table  (faster than doing a dozen divides and modulos)
-    // i[k] = (index / (int)pow(gridPoints,(inkCount-1)-k)) % gridPoints;   // loopSteps can be precalcuated, but the divide cannot
+    // i[k] = (index / (int)pow(gridPoints,(inkCount-1)-k)) % gridPoints;   // loopSteps can be precalcuated, but the divides cannot
     for (uint32_t index = 0; loopCounters[0] < gridPoints; ++index ) {
         
         for (size_t k = 0; k < inkCount; ++k)
@@ -1313,7 +1354,7 @@ void createA2B_table( const inkColorSet &inkSet, const spline_list &splines, int
         
         // increment last counter
         //    if incremented is >= gridPoints, reset and roll upward in list
-        for (int j = (inkCount-1); j >= 0; --j) {
+        for (int j = (int)(inkCount-1); j >= 0; --j) {
             int temp = loopCounters[j] + 1;
             if (temp >= gridPoints && j != 0)   // we want counter 0 to overflow, to end the big loop
                 loopCounters[j] = 0;
@@ -1322,7 +1363,7 @@ void createA2B_table( const inkColorSet &inkSet, const spline_list &splines, int
                 break;
             }
         }
-    }
+    }   // overall table loop using a vector of counters
 
 
     tableFormat myTable;
@@ -1346,24 +1387,123 @@ void createB2A_table( const inkColorSet &inkSet, const spline_list &splines, int
 {
     const int maxChannels = 15;          // ICC spec. limit
     
-    size_t inkCount = inkSet.primaries.size();
+    int inkCount = (int)inkSet.primaries.size();
     assert(inkCount > 0);
     assert(inkCount <= maxChannels);
 
     int gridSize = pow( gridPoints, 3 );
 
-    size_t gridCount = gridSize;
-    std::unique_ptr<uint8_t> gridBuffer(new uint8_t[ gridCount * inkCount ]);
-    uint8_t *gridData = gridBuffer.get();
+    int gridCount = gridSize;
+    std::unique_ptr<float> gridBuffer(new float[ gridCount * inkCount ]);
+    float *gridData = gridBuffer.get();
+
+	int planeStep = gridPoints*gridPoints * inkCount;
+	int rowStep = gridPoints * inkCount;
+	int colStep = inkCount;
+
 
 
 // TODO - fill in the table!
 // out of gamut - find nearest
 // in gamut, figure out ink mix using nearby ink hue angles and iterative solver
 // the result won't be perfect, but usable
+    memset(gridData,0,gridCount*inkCount*sizeof(float));
+    
+
+	for (int L = 0; L < gridPoints; ++L) {
+		// setup slices variables
+		float Lfloat = grid_to_L( L, gridPoints );
+		
+		//special case less < darkest and > brightest
+		if ( Lfloat <= inkSet.darkColor.L) {    // fill with darkest
+			for (int A = 0; A < gridPoints; ++A)
+				for (int B = 0; B < gridPoints; ++B) {
+                    for (int c = 0; c < inkCount; ++c)
+                        gridData[ L * planeStep + A * rowStep + B*colStep + c ] = 1.0;
+                }
+			
+			continue;
+        }
+		if ( Lfloat >= inkSet.paperColor.L) {   // fill with paper
+			for (int A = 0; A < gridPoints; ++A)
+				for (int B = 0; B < gridPoints; ++B) {
+                    for (int c = 0; c < inkCount; ++c)
+                        gridData[ L * planeStep + A * rowStep + B*colStep + c ] = 0.0;
+                }
+			
+			continue;
+        }
+		
+		// interpolate splines in L to get points along this AB plane
+		PointList planeSpline;
+		for ( const auto &oneSpline: splines ) {
+			float A1, B1;
+			SearchSpline( oneSpline, Lfloat, A1, B1 );
+			planeSpline.push_back( Point( A1, B1 ) );
+        }
+		
+		// create interpolated point list from the splines
+		PointList planePoints;
+        PointListFromFloatSpline( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
+
+		// now iterate over this plane/slice
+		for (int A = 0; A < gridPoints; ++A) {
+			float Afloat = grid_to_AB( A, gridPoints );
+			
+			for (int B = 0; B < gridPoints; ++B) {
+				float Bfloat = grid_to_AB( B, gridPoints );
+
+				// find closest point in our line/point list
+				Point thisSpot( Afloat, Bfloat );
+
+                // use closest point outside or for 1 or 2 inks
+// TODO - need ink value not AB coordinate!
+                Point result = FindClosestPointInList( planePoints, thisSpot );
+                
+                // for 3 or more inks, test for inside polygon, interpolate inside
+                if (inkCount > 2) {
+                    bool inside = pointInPoly( planePoints, thisSpot );
+                    if (inside) {
+// TODO - WRITE ME!
+                        result = thisSpot;
+                    }
+                }
+
+#if 0
+				// save the values
+				gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = Lfloat;
+				gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = result.a;
+				gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = result.b;
+#endif
+				
+				}   // end for B
+			}   // end for A
+		}   // end for L
 
 
-// smooth the table
+
+
+// smooth the floating point table
+	// smooth the 3D table data
+	SmoothOneDirection( gridData, planeStep, rowStep, colStep, inkCount );
+	SmoothOneDirection( gridData, rowStep, colStep, planeStep, inkCount );
+	SmoothOneDirection( gridData, colStep, planeStep, rowStep, inkCount );
+
+// convert the float table to integer
+    std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount * inkCount ]);
+    uint8_t *outData = outBuffer.get();
+
+    // oganize data for ICC profile
+    for (int L = 0; L < gridPoints; ++L) {
+        for (int A = 0; A < gridPoints; ++A) {
+			for (int B = 0; B < gridPoints; ++B) {
+                for (int c = 0; c < inkCount; ++c) {
+                    outData[c] =float_to_file255( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
+                }
+                outData += inkCount;
+            }
+        }
+    }
 
 
     tableFormat myTable;
@@ -1372,7 +1512,7 @@ void createB2A_table( const inkColorSet &inkSet, const spline_list &splines, int
     myTable.tableGridPoints = gridPoints;
     myTable.tableDimensions = 3;                // input
     myTable.tableChannels = (int)inkCount;      // output
-    myTable.tableData = std::move(gridBuffer);
+    myTable.tableData = std::move(outBuffer);
     myProfile.tables.emplace_back(myTable);
 }
 
@@ -1452,7 +1592,8 @@ void create_abstract_profile( const inkColorSet &inkSet, const spline_list &spli
 
 
 // DEBUG the last set generated to check the gamut shape and area
-DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
+//DumpPointList( std::string("pointSplines_") + std::to_string(L), planeSpline );
+//DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 
 
 		// now iterate over this plane/slice
@@ -1488,14 +1629,11 @@ DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 		}   // end for L
 
 	
-#if 1
 	// smooth the 3D table data
-// TODO - make this work with arbitrary dimensions!
-// TODO - make this work with arbitraray channel counts!
-	SmoothOneDirection( gridData, planeStep, rowStep, colStep );
-	SmoothOneDirection( gridData, rowStep, colStep, planeStep );
-	SmoothOneDirection( gridData, colStep, planeStep, rowStep );
-#endif
+	SmoothOneDirection( gridData, planeStep, rowStep, colStep, 3 );
+	SmoothOneDirection( gridData, rowStep, colStep, planeStep, 3 );
+	SmoothOneDirection( gridData, colStep, planeStep, rowStep, 3 );
+    
 
 
     size_t bufferSize = gridPoints*gridPoints*gridPoints * 3;
