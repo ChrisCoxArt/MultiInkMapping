@@ -112,10 +112,12 @@ public:
 };
 
 struct inkMixPair {
-    size_t inkIndex1;  // always valid
+    size_t inkIndex1;
     size_t inkIndex2;
     float ink1Fraction;
     float ink2Fraction;
+    
+    bool operator==(const inkMixPair& other) const = default;
 };
 
 typedef std::vector< Point > PointList;
@@ -982,6 +984,7 @@ void SplineInterpList( const size_t subdivisions, const PointList &input, PointL
 		Point newPoint;
 		newPoint.a = SplineInterp( t, input[p0].a, input[p1].a, input[p2].a, input[p3].a );
 		newPoint.b = SplineInterp( t, input[p0].b, input[p1].b, input[p2].b, input[p3].b );
+// mix is between p1 and p2, just need t and 1-t
 		
 		result.emplace_back( newPoint );
 		}
@@ -1023,6 +1026,7 @@ void LinearInterpList( const size_t subdivisions, const PointList &input, PointL
         Point newPoint;
         newPoint.a = LERP( t, input[p1].a, input[p2].a );
         newPoint.b = LERP( t, input[p1].b, input[p2].b );
+// mix is between p1 and p2, just need t and 1-t
         
         result.emplace_back( newPoint );
     }   // end for subdivisions
@@ -1030,7 +1034,7 @@ void LinearInterpList( const size_t subdivisions, const PointList &input, PointL
 
 /********************************************************************************/
 
-void PointListFromFloatSpline( const size_t subdivisions, const PointList &input, PointList &result,
+void PointListFromSplines( const size_t subdivisions, const PointList &input, PointList &result,
                                 bool wrapAround)
 {
 	// evaluate the spline at a fixed number of points, put those into a list of points
@@ -1048,22 +1052,93 @@ void PointListFromFloatSpline( const size_t subdivisions, const PointList &input
         LinearInterpList( subdivisions, input, result, wrapAround );
     else
         SplineInterpList( subdivisions, input, result, wrapAround );
-
-	// remove duplicate points that result from some duplicated spline points and precision issues
-    auto last = std::unique(result.begin(), result.end());
-    result.erase(last, result.end());
-
 }
 
 /********************************************************************************/
 
-Point FindClosestPointInList( const PointList &list, Point &input )
+void InterpMixList( const size_t subdivisions, const spline_mix_data &input, spline_mix_data &result,
+                        bool wrapAround )
+{
+    const int pointCount = (int)input.size();
+    
+    result.reserve( subdivisions+1 );
+    
+    for (size_t i = 0; i <= subdivisions; ++i) {
+        /// which input points are we between?
+        float floatIndex = ((float)pointCount * i) / (float)subdivisions;
+        int pointIndex = int( floatIndex );
+        
+        int p1 = pointIndex;
+        int p2 = pointIndex + 1;
+
+        if (wrapAround) {
+            // wrap around if inks > 2, so we get a solid shape
+            if (p1 < 0)
+                p1 = p1 + pointCount;
+            if (p1 >= pointCount)
+                p1 = p1 - pointCount;
+            if (p2 >= pointCount)
+                p2 = p2 - pointCount;
+        } else {
+            // clamp
+            if (p1 < 0) p1 = 0;
+            if (p1 >= pointCount) p1 = pointCount-1;
+            if (p2 >= pointCount) p2 = pointCount-1;
+        }
+        
+        float t = floatIndex - pointIndex;
+        
+        // I need the ink numbers, not spline numbers!
+        // could have 2 or 3 different inks specified (on boundaries)
+        // need to figure out which pair we're interpolating
+        size_t index1 = input[p1].inkIndex1;
+        size_t index2 = input[p1].inkIndex2;
+        
+        if (input[p2].ink1Fraction > input[p1].ink1Fraction)
+            index1 = input[p2].inkIndex1;
+        
+        if (input[p2].ink2Fraction > input[p1].ink2Fraction)
+            index2 = input[p2].inkIndex1;
+        
+        float fraction1 = LERP( t, input[p1].ink1Fraction, input[p2].ink1Fraction );
+        float fraction2 = LERP( t, input[p1].ink2Fraction, input[p2].ink2Fraction );
+
+        // double check that fractions add up to unity
+        assert( fabsf(fraction1 + fraction2 - 1.0f) < 1e-3 );
+        
+        result.emplace_back( inkMixPair(index1,index2,fraction1,fraction2 ) );
+        
+    }   // end for subdivisions
+}
+
+/********************************************************************************/
+
+void MixPointsFromSplines( const size_t subdivisions, const spline_mix_data &input, spline_mix_data &result,
+                                bool wrapAround)
+{
+	// evaluate the spline at a fixed number of points, put those into a list of points
+    const int pointCount = (int)input.size();
+    
+    if (pointCount == 1) {
+        // nothing to interpolate
+        result = input;
+        return;
+    }
+    
+	result.clear();
+ 
+    InterpMixList( subdivisions, input, result, wrapAround );
+}
+
+/********************************************************************************/
+
+size_t FindClosestPointInList( const PointList &list, Point &input )
 {
 	// ccox - start with brute force linear search
 	// TODO - find a way to accelerate the search
 	
 	float closest_dist = 256.0*256.0*256.0;		// much greater than our maximum possible distance
-	size_t closest_index = -1;
+	size_t closest_index = -1;  // really largest positive value because it is unsigned
 	
 	size_t count = list.size();
 	assert( count > 0);
@@ -1080,7 +1155,7 @@ Point FindClosestPointInList( const PointList &list, Point &input )
     }
 	
 	assert( closest_index >= 0);
-	return list[closest_index];
+    return closest_index;
 }
 
 /********************************************************************************/
@@ -1154,13 +1229,19 @@ inline void Smooth3( std::vector<float> &a, const std::vector<float> &b, const s
         a[i] = Smooth3(a[i],b[i],c[i]);
 }
 
+inline void Smooth3( float *a, float *b, float *c, int channels)
+{
+    for (int i = 0; i < channels; ++i)
+        a[i] = Smooth3(a[i],b[i],c[i]);
+}
+
 // filter in place, in one dimension, for 3 channels
-void SmoothOneDirection3( float *data, int planeStep, int rowStep, int colStep )
+void SmoothOneDirection3( float *data, int gridPoints, int planeStep, int rowStep, int colStep )
 {
 	int i, j, k;
     
-	for (i = 0; i < gDataGridPoints; ++i) {
-		for (j = 0; j < gDataGridPoints; ++j) {
+	for (i = 0; i < gridPoints; ++i) {
+		for (j = 0; j < gridPoints; ++j) {
 			k = 0;
 			
 			// special case first value
@@ -1176,7 +1257,7 @@ void SmoothOneDirection3( float *data, int planeStep, int rowStep, int colStep )
 			float next0 = 0, next1 = 0, next2 = 0;
 			float result0, result1, result2;
 			
-			for (k = 0; k < (gDataGridPoints-1); ++k) {
+			for (k = 0; k < (gridPoints-1); ++k) {
 				
 				next0 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 0 ];
 				next1 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 1 ];
@@ -1218,58 +1299,69 @@ void SmoothOneDirection3( float *data, int planeStep, int rowStep, int colStep )
 }
 
 // filter in place, in one dimension, for arbitrary channel counts
-void SmoothOneDirection( float *data, int planeStep, int rowStep, int colStep, int channels )
+void SmoothOneDirection( float *data, int gridPoints, int planeStep, int rowStep, int colStep, int channels )
 {
     assert(channels > 0);
     assert(channels <= 15);
  
     if (channels == 3) {
-        SmoothOneDirection3( data, planeStep, rowStep, colStep );
+        SmoothOneDirection3( data, gridPoints, planeStep, rowStep, colStep );
         return;
     }
     
-    // there has to be a better way to do this for arbitrary channel counts
-// TODO - can I just use pointers and rotate those?
+    // there isn't an easy way to do this for arbitrary channel counts
     std::vector<float> last(15);
     std::vector<float> current(15);
     std::vector<float> next(15);
+
+    float *lastp = &last[0];
+    float *currentp = &current[0];
+    float *nextp = &next[0];
 	
-	for (int i = 0; i < gDataGridPoints; ++i) {
-		for (int j = 0; j < gDataGridPoints; ++j) {
+	for (int i = 0; i < gridPoints; ++i) {
+ 
+		for (int j = 0; j < gridPoints; ++j) {
             int k = 0;
             
 			// special case first value
-            for (int c = 0; c < channels; ++c)
-                last[c] = data[ i * planeStep + j * rowStep + j * colStep + c ];
+            for (int c = 0; c < channels; ++c) {
+                auto value = data[ i * planeStep + j * rowStep + j * colStep + c ];
+                lastp[c] = value;
+                currentp[c] = value;
+            }
 			
-			current = last;
-			
-			for (k = 0; k < (gDataGridPoints-1); ++k) {
+			for (k = 0; k < (gridPoints-1); ++k) {
             
                 for (int c = 0; c < channels; ++c)
-                    next[c] = data[ i * planeStep + j * rowStep + (k+1)*colStep + c ];
+                    nextp[c] = data[ i * planeStep + j * rowStep + (k+1)*colStep + c ];
 				
-				Smooth3( last, current, next, channels );
+				Smooth3( lastp, currentp, nextp, channels );
 				
 				// write back smoothed result
                 for (int c = 0; c < channels; ++c)
-                   data[ i * planeStep + j * rowStep + k*colStep + c ] = last[c];
+                   data[ i * planeStep + j * rowStep + k*colStep + c ] = lastp[c];
 				
-				// rotate
-				last = current;
-				current = next;
+				// rotate pointers
+                float *tempp = lastp;
+				lastp = currentp;
+				currentp = nextp;
+                nextp = tempp;
             }
 			
 			// special case last k value
-			// next == current already
+			// next == current, duplicating end value
+            for (int c = 0; c < channels; ++c)
+               nextp[c] = currentp[c];
+            
             Smooth3( last, current, next, channels );
 			
 			// write back smoothed result
             for (int c = 0; c < channels; ++c)
                data[ i * planeStep + j * rowStep + k*colStep + c ] = last[c];
-        }
+            
+        }   // end j loop
 		
-    }
+    }   // end i loop
 
 }
 
@@ -1434,6 +1526,9 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     // zero the table, just in case
     // can probably remove this after debugging
     memset(gridData,0,gridCount*inkCount*sizeof(float));
+    
+    std::vector<float> inkWeights( inkCount );
+    std::vector<float> neutralWeights( inkCount );
 
 	for (int L = 0; L < gridPoints; ++L) {
 		// setup slices variables
@@ -1462,11 +1557,17 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
         // interpolate dark and paper in L to get neutral mix
         float tNeutral = (Lfloat - inkSet.darkColor.L) / (inkSet.paperColor.L - inkSet.darkColor.L);
         labColor neutral = interp2inks( tNeutral, inkSet.darkColor, inkSet.paperColor );
-        // neutral.L should be very close to Lfloat
+        // neutral.L should be very, very close to Lfloat
+        
+        // create an ink mixture for our neutral, assuming all inks at 100% for darkColor (not realistic)
+        // and we know that inks = 0 for paperColor
+        for (int c = 0; c < inkCount; ++c)
+            neutralWeights[c] = (1.0 - tNeutral);
   
   
 		// interpolate splines in L to get points along this AB plane
 		PointList planeSpline;
+        planeSpline.reserve( inkSet.splines.size() );
 		for ( const auto &oneSpline: inkSet.splines ) {
 			float A1, B1;
 			SearchSpline( oneSpline, Lfloat, A1, B1 );
@@ -1475,7 +1576,14 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 		
 		// create interpolated point list from the splines
 		PointList planePoints;
-        PointListFromFloatSpline( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
+        PointListFromSplines( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
+
+        spline_mix_data mixPoints;
+        MixPointsFromSplines( 50*inkCount, inkSet.mixData, mixPoints, (inkCount > 2) );
+      
+        // make sure mixPoints and planePoints have the same size!
+        assert( planePoints.size() == mixPoints.size() );
+
 
 		// now iterate over this plane/slice
 		for (int A = 0; A < gridPoints; ++A) {
@@ -1488,12 +1596,16 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 				Point thisSpot( Afloat, Bfloat );
 
                 // use closest point outside or for 1 or 2 inks
-// TODO - need ink value not AB coordinate!
-// keep parallel structure with interpolated inks? (should be 2 at a time, still need neutral mix for L)
-// so I need a mix value for each spline to start with, then interpolate that with the point list
-
-                Point result = FindClosestPointInList( planePoints, thisSpot );
+                size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
+                Point result = planePoints[ closestIndex ];
+                inkMixPair resultMix = mixPoints[ closestIndex ];
                 
+                std::fill( inkWeights.begin(), inkWeights.end(), 0 );
+                inkWeights[ resultMix.inkIndex1 ] = resultMix.ink1Fraction;
+                inkWeights[ resultMix.inkIndex2 ] = resultMix.ink2Fraction;
+// TODO - still need to add neutral mix!
+
+
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
                     bool inside = pointInPoly( planePoints, thisSpot );
@@ -1506,25 +1618,24 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                     }
                 }
 
-#if 0
-				// save the values
-				gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = Lfloat;
-				gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = result.a;
-				gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = result.b;
-#endif
+
+                // write values to the grid
+                for (int c = 0; c < inkCount; ++c)
+                    gridData[ L * planeStep + A * rowStep + B*colStep + c ] = inkWeights[c];
 				
-				}   // end for B
-			}   // end for A
-		}   // end for L
+            }   // end for B
+        }   // end for A
+    }   // end for L
 
 
 
 
-// smooth the floating point table
-	// smooth the 3D table data
-	SmoothOneDirection( gridData, planeStep, rowStep, colStep, inkCount );
-	SmoothOneDirection( gridData, rowStep, colStep, planeStep, inkCount );
-	SmoothOneDirection( gridData, colStep, planeStep, rowStep, inkCount );
+    // smooth the floating point table
+	SmoothOneDirection( gridData, gridPoints, planeStep, rowStep, colStep, inkCount );
+	SmoothOneDirection( gridData, gridPoints, rowStep, colStep, planeStep, inkCount );
+	SmoothOneDirection( gridData, gridPoints, colStep, planeStep, rowStep, inkCount );
+
+
 
 // convert the float table to integer
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount * inkCount ]);
@@ -1535,7 +1646,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
         for (int A = 0; A < gridPoints; ++A) {
 			for (int B = 0; B < gridPoints; ++B) {
                 for (int c = 0; c < inkCount; ++c) {
-                    outData[c] =float_to_file255( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
+                    outData[c] = float_to_file255( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
                 }
                 outData += inkCount;
             }
@@ -1625,7 +1736,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 		
 		// create interpolated point list from the splines
 		PointList planePoints;
-        PointListFromFloatSpline( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
+        PointListFromSplines( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
 
 
 // DEBUG the last set generated to check the gamut shape and area
@@ -1644,7 +1755,8 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 				Point thisSpot( Afloat, Bfloat );
 
                 // use closest point outside or for 1 or 2 inks
-                Point result = FindClosestPointInList( planePoints, thisSpot );
+                size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
+                Point result = planePoints[ closestIndex ];
                 
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
@@ -1667,9 +1779,9 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 
 	
 	// smooth the 3D table data
-	SmoothOneDirection( gridData, planeStep, rowStep, colStep, 3 );
-	SmoothOneDirection( gridData, rowStep, colStep, planeStep, 3 );
-	SmoothOneDirection( gridData, colStep, planeStep, rowStep, 3 );
+	SmoothOneDirection( gridData, gridPoints, planeStep, rowStep, colStep, 3 );
+	SmoothOneDirection( gridData, gridPoints, rowStep, colStep, planeStep, 3 );
+	SmoothOneDirection( gridData, gridPoints, colStep, planeStep, rowStep, 3 );
     
 
 
@@ -1794,7 +1906,7 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
 		
 		// create interpolated point list from the splines
 		PointList planePoints;
-        PointListFromFloatSpline( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
+        PointListFromSplines( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
 
 // DEBUG the last set generated to check the gamut shape and area
 //DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
