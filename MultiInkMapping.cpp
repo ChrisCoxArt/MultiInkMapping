@@ -111,6 +111,13 @@ public:
     bool operator==(const Point& other) const = default;
 };
 
+struct inkMixPair {
+    size_t inkIndex1;  // always valid
+    size_t inkIndex2;
+    float ink1Fraction;
+    float ink2Fraction;
+};
+
 typedef std::vector< Point > PointList;
 
 typedef std::vector< labColor > color_list;
@@ -118,6 +125,7 @@ typedef std::vector< labColor > color_list;
 typedef std::vector< labColorNamed > named_color_list;
 
 typedef std::vector< color_list > spline_list;
+typedef std::vector< inkMixPair > spline_mix_data;
 
 /******************************************************************************/
 
@@ -138,6 +146,10 @@ struct inkColorSet {
     labColor paperColor;            // lightest possible color
     labColor darkColor;             // darkest possible color from combination of inks, calculated if L <= 0
     named_color_list primaries;     // saturated hues
+
+public:
+    spline_list splines;        // built from basic ink data
+    spline_mix_data mixData;    // built from basic ink data
 };
 
 std::vector<inkColorSet> colorSets =
@@ -549,6 +561,20 @@ xyzColor interp2inks( const float t, const xyzColor &ink1, const xyzColor &ink2 
 
 /********************************************************************************/
 
+// linear interpolation in LAB - really only useful for nearby colors or neutrals
+labColor interp2inks( const float t, const labColor &ink1, const labColor &ink2 )
+{
+	labColor result;
+
+	result.L = LERP( t, ink1.L, ink2.L );
+	result.A = LERP( t, ink1.A, ink2.A );
+	result.B = LERP( t, ink1.B, ink2.B );
+	
+	return result;
+}
+
+/********************************************************************************/
+
 color_list mix_pure_ink_spline( int steps, const labColor &paperColor, const labColor &inkColor, const labColor &darkColor)
 {
     int i;
@@ -690,11 +716,15 @@ xyzColor estimate_darkest_ink_overprint( const std::vector<labColorNamed> &inkLi
 
 /********************************************************************************/
 
-void subdivide_ink_splines( const inkColorSet &inkSet, const int divisions, const int steps, const labColor &ink1, const labColor &ink2, const xyzColor &paperColor, spline_list &splines )
+void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int steps,
+            const size_t ink1Index, const size_t ink2Index, const xyzColor &paperColor )
 {
 	color_list temp;
 	labColor mixLAB;
 	xyzColor identity( 100.0, 100.0, 100.0 );
+ 
+    labColor ink1 = inkSet.primaries[ink1Index].color;
+    labColor ink2 = inkSet.primaries[ink2Index].color;
 
     xyzColor ink1Color = LAB2XYZ( ink1 );
     xyzColor ink2Color = LAB2XYZ( ink2 );
@@ -714,21 +744,21 @@ void subdivide_ink_splines( const inkColorSet &inkSet, const int divisions, cons
 
         mixLAB = XYZ2LAB( mix );
         temp = mix_pure_ink_spline( steps, inkSet.paperColor, mixLAB, inkSet.darkColor );
-        splines.push_back( temp );
+        inkSet.splines.push_back( temp );
+        inkSet.mixData.push_back( inkMixPair( ink1Index, ink2Index, (1.0-t), t ) );
     }
 }
 
 /********************************************************************************/
 
 // create splines from mixes of inks and paper colors
-spline_list mix_ink_splines( inkColorSet &inkSet )
+void mix_ink_splines( inkColorSet &inkSet )
 {
 	const int steps = 51;	// odd so we have a midpoint
     const int divisions = 4;    // even so we have a midpoint (5 splines per surface)
 	color_list temp;
 	xyzColor mix;
 	labColor mixLAB;
-    spline_list splines;
 	xyzColor identity( 100.0, 100.0, 100.0 );
 
 
@@ -758,27 +788,27 @@ spline_list mix_ink_splines( inkColorSet &inkSet )
 
     // first ink spline, always calculated
     temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[0].color, inkSet.darkColor );
-	splines.push_back( temp );
+	inkSet.splines.push_back( temp );
+    inkSet.mixData.push_back( inkMixPair( 0, 0, 1.0, 0.0 ) );
 
     // iterate any additional inks, keeping splines in order
     for (size_t k = 1; k < inkCount; ++k) {
         subdivide_ink_splines( inkSet, divisions, steps,
-            inkSet.primaries[k-1].color, inkSet.primaries[k].color,
-            paperColor, splines);
+            k-1, k,
+            paperColor);
 
         // pure ink spline paper->ink2->combined
         temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[k].color, inkSet.darkColor );
-        splines.push_back( temp );
+        inkSet.splines.push_back( temp );
+        inkSet.mixData.push_back( inkMixPair( k, 0, 1.0, 0.0 ) );
     }
     
     // if we can make a solid, then wrap around from last ink to the first!
     if (inkCount > 2) {
         subdivide_ink_splines( inkSet, divisions, steps,
-            inkSet.primaries[inkCount-1].color, inkSet.primaries[0].color,
-            paperColor, splines);
+            inkCount-1, 0,
+            paperColor);
     }
-
-    return splines;
 }
 
 /********************************************************************************/
@@ -1019,7 +1049,7 @@ void PointListFromFloatSpline( const size_t subdivisions, const PointList &input
     else
         SplineInterpList( subdivisions, input, result, wrapAround );
 
-	// remove duplicate points that result from some duplicated spline points
+	// remove duplicate points that result from some duplicated spline points and precision issues
     auto last = std::unique(result.begin(), result.end());
     result.erase(last, result.end());
 
@@ -1286,7 +1316,7 @@ A2B - inks and overprints to LAB, N-dimensional to 3 channels
     use ink mixing model and simple interpolation
     doesn't really need smoothing
 */
-void createA2B_table( const inkColorSet &inkSet, const spline_list &splines, int depth, profileData &myProfile )
+void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfile )
 {
     const int maxChannels = 15;          // ICC spec. limit
     const int maxGridPoints = 31;        // sanity limit - TODO - increase limit in release build
@@ -1383,7 +1413,7 @@ B2A - LAB to ink mixes, needs detail, 3D to N channels
     ignore GCR/UCR just write the raw mixes
     This needs smoothing.
 */
-void createB2A_table( const inkColorSet &inkSet, const spline_list &splines, int depth, int gridPoints, profileData &myProfile )
+void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, profileData &myProfile )
 {
     const int maxChannels = 15;          // ICC spec. limit
     
@@ -1401,14 +1431,9 @@ void createB2A_table( const inkColorSet &inkSet, const spline_list &splines, int
 	int rowStep = gridPoints * inkCount;
 	int colStep = inkCount;
 
-
-
-// TODO - fill in the table!
-// out of gamut - find nearest
-// in gamut, figure out ink mix using nearby ink hue angles and iterative solver
-// the result won't be perfect, but usable
+    // zero the table, just in case
+    // can probably remove this after debugging
     memset(gridData,0,gridCount*inkCount*sizeof(float));
-    
 
 	for (int L = 0; L < gridPoints; ++L) {
 		// setup slices variables
@@ -1434,9 +1459,15 @@ void createB2A_table( const inkColorSet &inkSet, const spline_list &splines, int
 			continue;
         }
 		
+        // interpolate dark and paper in L to get neutral mix
+        float tNeutral = (Lfloat - inkSet.darkColor.L) / (inkSet.paperColor.L - inkSet.darkColor.L);
+        labColor neutral = interp2inks( tNeutral, inkSet.darkColor, inkSet.paperColor );
+        // neutral.L should be very close to Lfloat
+  
+  
 		// interpolate splines in L to get points along this AB plane
 		PointList planeSpline;
-		for ( const auto &oneSpline: splines ) {
+		for ( const auto &oneSpline: inkSet.splines ) {
 			float A1, B1;
 			SearchSpline( oneSpline, Lfloat, A1, B1 );
 			planeSpline.push_back( Point( A1, B1 ) );
@@ -1458,13 +1489,19 @@ void createB2A_table( const inkColorSet &inkSet, const spline_list &splines, int
 
                 // use closest point outside or for 1 or 2 inks
 // TODO - need ink value not AB coordinate!
+// keep parallel structure with interpolated inks? (should be 2 at a time, still need neutral mix for L)
+// so I need a mix value for each spline to start with, then interpolate that with the point list
+
                 Point result = FindClosestPointInList( planePoints, thisSpot );
                 
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
                     bool inside = pointInPoly( planePoints, thisSpot );
                     if (inside) {
-// TODO - WRITE ME!
+// TODO - WRITE ME! interpolate nearest hue inks and neutral for L and chroma
+// chroma from distance between boundary and neutral
+// can't get hue directly from closest point in the interior,
+//          need to project outward - but can oversaturate then use closest point!
                         result = thisSpot;
                     }
                 }
@@ -1542,7 +1579,7 @@ std::vector<color_space> profileSpaceLookup =
 /********************************************************************************/
 
 // create LAB to LAB for color mapping/preview
-void create_abstract_profile( const inkColorSet &inkSet, const spline_list &splines, int depth, int gridPoints,
+void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoints,
                     const std::string &filename )
 {
 	int L, A, B;	// my grid iteration indices
@@ -1580,7 +1617,7 @@ void create_abstract_profile( const inkColorSet &inkSet, const spline_list &spli
 		
 		// interpolate splines in L to get points along this AB plane
 		PointList planeSpline;
-		for ( const auto &oneSpline: splines ) {
+		for ( const auto &oneSpline: inkSet.splines ) {
 			float A1, B1;
 			SearchSpline( oneSpline, Lfloat, A1, B1 );
 			planeSpline.push_back( Point( A1, B1 ) );
@@ -1717,7 +1754,7 @@ void create_abstract_profile( const inkColorSet &inkSet, const spline_list &spli
 /********************************************************************************/
 
 // full output profile: A2B, B2A, gamut
-void create_output_profile( const inkColorSet &inkSet, const spline_list &splines, int depth, int gridPoints,
+void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints,
                     const std::string &filename )
 {
 	int L, A, B;	// my grid iteration indices
@@ -1749,7 +1786,7 @@ void create_output_profile( const inkColorSet &inkSet, const spline_list &spline
 		
 		// interpolate splines in L to get points along this AB plane
 		PointList planeSpline;
-		for ( const auto &oneSpline: splines ) {
+		for ( const auto &oneSpline: inkSet.splines ) {
 			float A1, B1;
 			SearchSpline( oneSpline, Lfloat, A1, B1 );
 			planeSpline.push_back( Point( A1, B1 ) );
@@ -1812,10 +1849,10 @@ void create_output_profile( const inkColorSet &inkSet, const spline_list &spline
 
 
     // make A2B0 (ink to LAB)
-    createA2B_table( inkSet, splines, depth, myProfile );
+    createA2B_table( inkSet, depth, myProfile );
 
     // make B2A0 (LAB to ink)
-    createB2A_table( inkSet, splines, depth, gridPoints, myProfile );
+    createB2A_table( inkSet, depth, gridPoints, myProfile );
     
     
     // and point the other A2B tables back to A2B0
@@ -1921,10 +1958,12 @@ int main (int argc, char * argv[])
     for (auto &inkSet : colorSets) {
         
         // create splines from measured points using mixing model
-        auto splines = mix_ink_splines( inkSet );
+        mix_ink_splines( inkSet );
         
-        create_output_profile( inkSet, splines, gDataDepth, 21, inkSet.name );
-        create_abstract_profile( inkSet, splines, gDataDepth, 21, inkSet.name );
+        assert( inkSet.splines.size() == inkSet.mixData.size() );
+        
+        create_output_profile( inkSet, gDataDepth, 21, inkSet.name );
+        create_abstract_profile( inkSet, gDataDepth, 21, inkSet.name );
     
      }  // end for colorSets
 
