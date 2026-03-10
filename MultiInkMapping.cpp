@@ -18,7 +18,7 @@ NOTE - This started as a simulation of drawing with inks/watercolors.
 
 This assumes primaries are somewhat saturated, not too neutral, and define a convex hull.
 Primaries will be sorted by hue to make sure they are in order to make a convex hull.
-This further assumes that the primaries are really transparent, so ink order does not matter. (this is not realistic)
+This further assumes that the primaries are really transparent, so ink order does not matter. (this is NOT realistic)
 
 
 
@@ -171,6 +171,84 @@ std::vector<inkColorSet> colorSets =
         { 7.6, 2.5, 0.8 },
         { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
     },
+
+#if 0
+// Chris's experiments
+    {   "GreenGold-Magenta",
+        "GreenGold and Magenta Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Magenta", 52.0, 81.1, -1.7}, {"GreenGold", 57.1, -14.3, 54.0} }
+    },
+    
+    {   "Yellow-Teal",
+        "Yellow and Teal Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Yellow", 90.2, 2.7, 97.7}, {"Teal", 66.8, -51.5, -15.4 } }
+    },
+    
+    {   "YellowOrange-Violet",
+        "YellowORange and Violet Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"YellowOrange", 81.5, 27.9, 102.3}, {"Violet", 51.3, 58.0, -67.0} }
+    },
+    
+    {   "YellowOrange-Indigo",
+        "YellowORange and Indigo Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"YellowOrange", 81.5, 27.9, 102.3}, {"Indigo", 31, 35, -68} }
+    },
+    
+    {   "Green-Turquoise",
+        "Green and Turquoise Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Green", 71.2, -54.2, 62.9}, {"Turquoise", 44.4, -35.9, -32.5} }
+    },
+    
+    {   "Teal-PinkViolet",
+        "Teal and PinkViolet Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Teal", 66.8, -51.5, -15.4 }, {"PinkViolet", 67.0, 59.0, -25.0 } }
+    },
+    
+    {   "Violet-Orange",
+        "Violet and Orange Paint",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Orange", 62.0, 32, 58.0 }, {"Violet", 51.3, 58.0, -67.0} }
+    },
+#endif
+
+#if 0
+// changing paper color -- pale, light colors look pretty good
+    {   "Turquoise-Orange-LilacPaper",
+        "Turquoise and Orange Paint on Lilac Paper",
+        { 91.2, 17.0, -11 },
+        { -1,0,0 },
+        { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
+    },
+    
+    {   "Turquoise-Orange-LimePaper",
+        "Turquoise and Orange Paint on Lime Paper",
+        { 85.0, -25.5, 37.5 },
+        { -1,0,0 },
+        { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
+    },
+
+// Paper color needs to be lighter than the primaries, otherwise mixing fails
+// and L* prediction fails
+    {   "Turquoise-Yellow-LilacPaper",
+        "Turquoise and Yellow Paint on Lilac Paper",
+        { 91.2, 17.0, -11 },
+        { -1,0,0 },
+        { {"Yellow", 90.2, 2.7, 97.7}, {"Turquoise", 44.4, -35.9, -32.5 } }
+    },
+#endif
 
 // 3
     {   "Turquoise-Orange-Green",
@@ -1098,8 +1176,9 @@ void InterpMixList( const size_t subdivisions, const spline_mix_data &input, spl
             index1 = input[p2].inkIndex1;
         
         if (input[p2].ink2Fraction > input[p1].ink2Fraction)
-            index2 = input[p2].inkIndex1;
-        
+            index2 = input[p2].inkIndex2;
+
+// TODO - still generating too many cases where index1 == index2, even for 3 or more inks
         float fraction1 = LERP( t, input[p1].ink1Fraction, input[p2].ink1Fraction );
         float fraction2 = LERP( t, input[p1].ink2Fraction, input[p2].ink2Fraction );
 
@@ -1500,6 +1579,19 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
 
 /********************************************************************************/
 
+static
+std::vector<float> MixInkWeights( float t, std::vector<float> &a, std::vector<float> &b, const int channels )
+{
+    std::vector<float> result(15);
+    
+    for (int c = 0; c < channels; ++c)
+       result[c] = LERP( t, a[c], b[c] );
+
+    return result;
+}
+
+/********************************************************************************/
+
 /*
 B2A - LAB to ink mixes, needs detail, 3D to N channels
     ignore GCR/UCR just write the raw mixes
@@ -1529,7 +1621,8 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     
     std::vector<float> inkWeights( inkCount );
     std::vector<float> neutralWeights( inkCount );
-
+    std::vector<float> splineHueAngles( inkSet.splines.size() );
+    
 	for (int L = 0; L < gridPoints; ++L) {
 		// setup slices variables
 		float Lfloat = grid_to_L( L, gridPoints );
@@ -1573,6 +1666,12 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 			SearchSpline( oneSpline, Lfloat, A1, B1 );
 			planeSpline.push_back( Point( A1, B1 ) );
         }
+        
+        // create hue angles from points in this plane
+        for (int i = 0; i < planeSpline.size(); ++i) {
+            float hue = M_PI + atan2f( planeSpline[i].a, planeSpline[i].b );
+            splineHueAngles[i] = hue;
+        }
 		
 		// create interpolated point list from the splines
 		PointList planePoints;
@@ -1597,27 +1696,52 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 
                 // use closest point outside or for 1 or 2 inks
                 size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
-                Point result = planePoints[ closestIndex ];
+                Point closestPoint = planePoints[ closestIndex ];
+                Point result = closestPoint;
                 inkMixPair resultMix = mixPoints[ closestIndex ];
                 
                 std::fill( inkWeights.begin(), inkWeights.end(), 0 );
                 inkWeights[ resultMix.inkIndex1 ] = resultMix.ink1Fraction;
                 inkWeights[ resultMix.inkIndex2 ] = resultMix.ink2Fraction;
-// TODO - still need to add neutral mix!
+                // now we have full saturation ink mix
+
+                // use ratio of distances from neutral and outer point as chroma estimate
+                // assuming neutral is origin of AB plane
+                float pointDist = hypotf( closestPoint.a, closestPoint.b );
+                if (pointDist < 1e-6)   // just in case, avoid divide by zero
+                    pointDist = 1e-6;
+                float thisDist = hypotf( Afloat, Bfloat );
+                float tchroma = thisDist / pointDist;
+                if (tchroma > 1.0)  // clamp colors outside of gamut
+                    tchroma = 1.0;
+                MixInkWeights( tchroma, inkWeights, neutralWeights, inkCount );
 
 
+// Can I use a hue angle match for outside as well?
                 // for 3 or more inks, test for inside polygon, interpolate inside
+                // because nearest point may not be the right mix!
                 if (inkCount > 2) {
                     bool inside = pointInPoly( planePoints, thisSpot );
+                    
+                    float thisHue = M_PI + atan2f( Afloat, Bfloat );
+
+// TODO - this won't work, because the top and bottom are not necessarily around the neutral axis
+
+                    // find bounding hue angles (and handle wrap around!)
+                    auto found = upper_bound( splineHueAngles.begin(), splineHueAngles.end(), thisHue );
+                    auto index = found - splineHueAngles.begin();
+                    
+                    // interpolate to get primary ink mix
+                    
                     if (inside) {
 // TODO - WRITE ME! interpolate nearest hue inks and neutral for L and chroma
-// chroma from distance between boundary and neutral
-// can't get hue directly from closest point in the interior,
-//          need to project outward - but can oversaturate then use closest point!
+
+// Maybe use splines instead of points for hue angles?
+// Then just interpolate mix pairs?
+
                         result = thisSpot;
                     }
                 }
-
 
                 // write values to the grid
                 for (int c = 0; c < inkCount; ++c)
