@@ -1838,7 +1838,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 
                     // use ratio of distances from neutral and outer point as chroma estimate
                     // assuming neutral is origin of AB plane
-// TODO - closest is not a good measure here!
+// TODO - closest is not a good measure here! But may be good enough...
                     float pointDist = hypotf( closestPoint.a - neutral.A, closestPoint.b - neutral.B );
                     if (pointDist < 1e-6)   // just in case, avoid divide by zero
                         pointDist = 1e-2;
@@ -1852,7 +1852,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                     auto found = std::lower_bound( splineHueAngles.begin(), splineHueAngles.end(), thisHue,
                                             [](const splineHuePair &a, float b) { return a.angle < b; } );
                     long index = 0;
-                    long index1 = index - 1;
+                    long index1 = 0;
                     if (found != splineHueAngles.end()) {
                         index = (long)found->index;
                         index1 = index - 1;
@@ -1861,16 +1861,26 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                         index = (long)splineHueAngles.size() - 1;
                         index1 = 0;
                     }
+                    
                     if (index1 < 0) {
-                        index = 0;
                         index1 = (long)splineHueAngles.size() - 1;
                     }
                     
                     // interpolate to get primary ink mix
                     float angle1 = splineHueAngles[index].angle;
                     float angle2 = splineHueAngles[index1].angle;
-                    if (angle2 > angle1)
+                    if (thisHue > angle1) {
+                        angle2 += 2*M_PI;
+                    }
+                    else if (angle2 > angle1)
                         angle2 -= 2.0*M_PI;
+                    
+                    if (angle2 > angle1) {
+                        std::swap(angle2,angle1);
+                        std::swap(index,index1);
+                    }
+
+assert(angle2 <= angle1);
                     float tempDist = angle1 - angle2;
                     if (fabsf(tempDist) < 1e-6)
                         tempDist = 1e-2;
@@ -1879,8 +1889,8 @@ if (hueFraction < 0)
     hueFraction = 0;
 if (hueFraction > 1.0)
     hueFraction = 1.0;
-// TODO - this is still not working correctly!
-                    
+// TODO - still clamping far too often - still a bug along -A, +A looks good, +-B looks good
+
                     std::fill( inkWeights.begin(), inkWeights.end(), 0 );
                     inkWeights[ inkSet.mixData[index].inkIndex1 ] += inkSet.mixData[index].ink1Fraction;
                     inkWeights[ inkSet.mixData[index].inkIndex2 ] += inkSet.mixData[index].ink2Fraction;
@@ -1894,6 +1904,7 @@ if (hueFraction > 1.0)
                     // interpolate inks
                     inkWeights = MixInkWeights( hueFraction, inkWeights2, inkWeights, inkCount );
                     // scale from full inks to neutral  (aka: interp to no ink)
+// TODO - need to reduce inks to get lightness correct!
                     inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
                     // add neutralWeights to get gray component
                     inkWeights = AddInkWeights( inkWeights, neutralWeights, inkCount );
