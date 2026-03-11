@@ -291,6 +291,7 @@ std::vector<inkColorSet> colorSets =
           {"Green", 71.2, -54.2, 62.9} }
     },
 
+#if 0
 // 6
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue",
         "6 Paints",
@@ -415,6 +416,7 @@ std::vector<inkColorSet> colorSets =
           {"Cerulean", 63.3, -16.1, -35.3 }, {"GreenGold", 57.1, -14.3, 54.0},
           {"Indigo", 31, 35, -68} }
     },
+#endif
 
 };
 
@@ -885,13 +887,13 @@ void mix_ink_splines( inkColorSet &inkSet )
         // pure ink spline paper->ink2->combined
         temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[k].color, inkSet.darkColor );
         inkSet.splines.push_back( temp );
-        inkSet.mixData.push_back( inkMixPair( k, 0, 1.0, 0.0 ) );
+        inkSet.mixData.push_back( inkMixPair( k, k, 1.0, 0.0 ) );
     }
     
     // if we can make a solid, then wrap around from last ink to the first!
     if (inkCount > 2) {
         subdivide_ink_splines( inkSet, divisions, steps,
-            inkCount-1, 0,
+            inkCount-1, inkCount-1,
             paperColor);
     }
 }
@@ -1409,7 +1411,7 @@ void SmoothOneDirection( float *data, int gridPoints, int planeStep, int rowStep
             
 			// special case first value
             for (int c = 0; c < channels; ++c) {
-                auto value = data[ i * planeStep + j * rowStep + j * colStep + c ];
+                auto value = data[ i * planeStep + j * rowStep + k * colStep + c ];
                 lastp[c] = value;
                 currentp[c] = value;
             }
@@ -1494,6 +1496,9 @@ void createGamut_table( const inkColorSet &inkSet, int depth, int gridPoints, pr
 {
 	int L, A, B;	// my grid iteration indices
 
+    size_t inkCount = inkSet.primaries.size();
+    assert(inkCount > 0);
+
 	// allocate my gamut grid
     size_t gridCount =  gridPoints*gridPoints*gridPoints;
     std::unique_ptr<uint8_t> gamutBuffer(new uint8_t[ gridCount ]);
@@ -1502,59 +1507,57 @@ void createGamut_table( const inkColorSet &inkSet, int depth, int gridPoints, pr
     // set everything to out of gamut (inverted from a normal image/table, but ok...)
     memset( gamutData, 255, gridCount );
     
-    int gamutPlaneStep = gridPoints*gridPoints;
-	int gamutRowStep = gridPoints;
-	int gamutColStep = 1;
-
-    size_t inkCount = inkSet.primaries.size();
-    assert(inkCount > 0);
-	
-	for (L = 0; L < gridPoints; ++L) {
-		// setup slices variables
-		float Lfloat = grid_to_L( L, gridPoints );
-		
-		//special case less < darkest and > brightest
-		labColor clippedColor;
-		if (ClippedL( Lfloat, clippedColor, inkSet)) {
-			continue;
-        }   // end ClippedL
-		
-		// interpolate splines in L to get points along this AB plane
-		PointList planeSpline;
-		for ( const auto &oneSpline: inkSet.splines ) {
-			float A1, B1;
-			SearchSpline( oneSpline, Lfloat, A1, B1 );
-			planeSpline.push_back( Point( A1, B1 ) );
-        }
-		
-		// create interpolated point list from the splines
-		PointList planePoints;
-        PointListFromSplines( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
+    if (inkCount > 2) {
+    
+        int gamutPlaneStep = gridPoints*gridPoints;
+        int gamutRowStep = gridPoints;
+        int gamutColStep = 1;
+        
+        for (L = 0; L < gridPoints; ++L) {
+            // setup slices variables
+            float Lfloat = grid_to_L( L, gridPoints );
+            
+            //special case less < darkest and > brightest
+            labColor clippedColor;
+            if (ClippedL( Lfloat, clippedColor, inkSet)) {
+                continue;
+            }   // end ClippedL
+            
+            // interpolate splines in L to get points along this AB plane
+            PointList planeSpline;
+            for ( const auto &oneSpline: inkSet.splines ) {
+                float A1, B1;
+                SearchSpline( oneSpline, Lfloat, A1, B1 );
+                planeSpline.push_back( Point( A1, B1 ) );
+            }
+            
+            // create interpolated point list from the splines
+            PointList planePoints;
+            PointListFromSplines( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
 
 // DEBUG the last set generated to check the gamut shape and area
 //DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 
-		// now iterate over this plane/slice
-		for (A = 0; A < gridPoints; ++A) {
-			float Afloat = grid_to_AB( A, gridPoints );
-			
-			for (B = 0; B < gridPoints; ++B) {
-				float Bfloat = grid_to_AB( B, gridPoints );
-
-				// find closest point in our line/point list
-				Point thisSpot( Afloat, Bfloat );
+            // now iterate over this plane/slice
+            for (A = 0; A < gridPoints; ++A) {
+                float Afloat = grid_to_AB( A, gridPoints );
                 
-                // for 3 or more inks, test for inside polygon, interpolate inside
-                if (inkCount > 2) {
+                for (B = 0; B < gridPoints; ++B) {
+                    float Bfloat = grid_to_AB( B, gridPoints );
+
+                    // find closest point in our line/point list
+                    Point thisSpot( Afloat, Bfloat );
+                    
+                    // for 3 or more inks, test for inside polygon, interpolate inside
                     bool inside = pointInPoly( planePoints, thisSpot );
-                    if (inside) {
+                    if (inside)
                         gamutData[ L * gamutPlaneStep + A * gamutRowStep + B * gamutColStep ] = 0;
-                    }
-                }
-				
-            }   // end for B
-        }   // end for A
-    }   // end for L
+                    
+                }   // end for B
+            }   // end for A
+        }   // end for L
+
+    }   // if inks > 2
 
     tableFormat myGamut;
     myGamut.tableSig = icSigGamutTag;
@@ -1669,10 +1672,30 @@ static
 std::vector<float> MixInkWeights( float t, std::vector<float> &a, std::vector<float> &b, const int channels )
 {
     std::vector<float> result(15);
-    
     for (int c = 0; c < channels; ++c)
        result[c] = LERP( t, a[c], b[c] );
+    return result;
+}
 
+/********************************************************************************/
+
+static
+std::vector<float> AddInkWeights( std::vector<float> &a, std::vector<float> &b, const int channels )
+{
+    std::vector<float> result(15);
+    for (int c = 0; c < channels; ++c)
+       result[c] = a[c] + b[c];
+    return result;
+}
+
+/********************************************************************************/
+
+static
+std::vector<float> ScaleInkWeights( float t, std::vector<float> &a, const int channels )
+{
+    std::vector<float> result(15);
+    for (int c = 0; c < channels; ++c)
+       result[c] = t * a[c];
     return result;
 }
 
@@ -1724,7 +1747,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 		float Lfloat = grid_to_L( L, gridPoints );
 		
 		//special case less < darkest and > brightest
-		if ( Lfloat <= inkSet.darkColor.L) {    // fill with darkest
+		if ( Lfloat <= inkSet.darkColor.L) {    // fill with darkest = all inks
 			for (int A = 0; A < gridPoints; ++A)
 				for (int B = 0; B < gridPoints; ++B) {
                     for (int c = 0; c < inkCount; ++c)
@@ -1733,7 +1756,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 			
 			continue;
         }
-		if ( Lfloat >= inkSet.paperColor.L) {   // fill with paper
+		if ( Lfloat >= inkSet.paperColor.L) {   // fill with paper = no ink
 			for (int A = 0; A < gridPoints; ++A)
 				for (int B = 0; B < gridPoints; ++B) {
                     for (int c = 0; c < inkCount; ++c)
@@ -1746,7 +1769,8 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
         // interpolate dark and paper in L to get neutral mix
         float tNeutral = (Lfloat - inkSet.darkColor.L) / (inkSet.paperColor.L - inkSet.darkColor.L);
         labColor neutral = interp2inks( tNeutral, inkSet.darkColor, inkSet.paperColor );
-        // neutral.L should be very, very close to Lfloat
+        // neutral.L should be close to Lfloat/100
+        
         
         // create an ink mixture for our neutral, assuming all inks at 100% for darkColor (not realistic)
         // and we know that inks = 0 for paperColor
@@ -1795,71 +1819,86 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                 // use closest point outside or for 1 or 2 inks
                 size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
                 Point closestPoint = planePoints[ closestIndex ];
-                Point result = closestPoint;
+                //Point result = closestPoint;
                 inkMixPair resultMix = mixPoints[ closestIndex ];
                 
                 std::fill( inkWeights.begin(), inkWeights.end(), 0 );
-                inkWeights[ resultMix.inkIndex1 ] = resultMix.ink1Fraction;
-                inkWeights[ resultMix.inkIndex2 ] = resultMix.ink2Fraction;
+                inkWeights[ resultMix.inkIndex1 ] += resultMix.ink1Fraction;
+                inkWeights[ resultMix.inkIndex2 ] += resultMix.ink2Fraction;
                 // now we have full saturation ink mix
+                
+                // add neutralWeights to get gray component if this is a 1 or 2 ink mix
+                inkWeights = MixInkWeights( tNeutral, inkWeights, neutralWeights, inkCount );
 
-                // use ratio of distances from neutral and outer point as chroma estimate
-                // assuming neutral is origin of AB plane
-                float pointDist = hypotf( closestPoint.a, closestPoint.b );
-                if (pointDist < 1e-6)   // just in case, avoid divide by zero
-                    pointDist = 1e-6;
-                float thisDist = hypotf( Afloat, Bfloat );
-                float tchroma = thisDist / pointDist;
-                if (tchroma > 1.0)  // clamp colors outside of gamut
-                    tchroma = 1.0;
-                MixInkWeights( tchroma, inkWeights, neutralWeights, inkCount );
-
-
-// Can I use a hue angle match for outside as well?
                 // for 3 or more inks, test for inside polygon, interpolate inside
-                // because nearest point may not be the right mix!
                 if (inkCount > 2) {
-                    bool inside = pointInPoly( planePoints, thisSpot );
+                    //bool inside = pointInPoly( planePoints, thisSpot );
                     
                     float thisHue = M_PI + atan2f( Afloat - neutral.A, Bfloat - neutral.B );
+
+                    // use ratio of distances from neutral and outer point as chroma estimate
+                    // assuming neutral is origin of AB plane
+// TODO - closest is not a good measure here!
+                    float pointDist = hypotf( closestPoint.a - neutral.A, closestPoint.b - neutral.B );
+                    if (pointDist < 1e-6)   // just in case, avoid divide by zero
+                        pointDist = 1e-2;
+                    float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
+                    float tchroma = thisDist / pointDist;
+                    if (tchroma > 1.0)  // clamp colors outside of gamut
+                        tchroma = 1.0;
     
                     // find bounding hue angles (and handle wrap around!)
-                    auto found = upper_bound( splineHueAngles.begin(), splineHueAngles.end(), thisHue,
-                                            [](float b, const splineHuePair &a) { return b < a.angle; } );
+                    // lower and upper bound reverse the arguments to less()
+                    auto found = std::lower_bound( splineHueAngles.begin(), splineHueAngles.end(), thisHue,
+                                            [](const splineHuePair &a, float b) { return a.angle < b; } );
                     long index = 0;
-                    if (found != splineHueAngles.end())
-                        index = found->index;
                     long index1 = index - 1;
-                    if (index1 < 0)
+                    if (found != splineHueAngles.end()) {
+                        index = (long)found->index;
+                        index1 = index - 1;
+                    }
+                    else {
+                        index = (long)splineHueAngles.size() - 1;
+                        index1 = 0;
+                    }
+                    if (index1 < 0) {
+                        index = 0;
                         index1 = (long)splineHueAngles.size() - 1;
+                    }
                     
                     // interpolate to get primary ink mix
-// TODO - handle angle wraparound!  2 > 1 ?
                     float angle1 = splineHueAngles[index].angle;
                     float angle2 = splineHueAngles[index1].angle;
                     if (angle2 > angle1)
                         angle2 -= 2.0*M_PI;
-                    float tempDist = splineHueAngles[index].angle - splineHueAngles[index1].angle;
+                    float tempDist = angle1 - angle2;
                     if (fabsf(tempDist) < 1e-6)
-                        tempDist = 1e-6;
-                    float hueFraction = (thisHue - splineHueAngles[index1].angle) / tempDist;
+                        tempDist = 1e-2;
+                    float hueFraction = (thisHue - angle2) / tempDist;
+if (hueFraction < 0)
+    hueFraction = 0;
+if (hueFraction > 1.0)
+    hueFraction = 1.0;
+// TODO - this is still not working correctly!
                     
                     std::fill( inkWeights.begin(), inkWeights.end(), 0 );
-                    inkWeights[ inkSet.mixData[index].inkIndex1 ] = inkSet.mixData[index].ink1Fraction;
-                    inkWeights[ inkSet.mixData[index].inkIndex2 ] = inkSet.mixData[index].ink2Fraction;
+                    inkWeights[ inkSet.mixData[index].inkIndex1 ] += inkSet.mixData[index].ink1Fraction;
+                    inkWeights[ inkSet.mixData[index].inkIndex2 ] += inkSet.mixData[index].ink2Fraction;
                     
                     std::fill( inkWeights2.begin(), inkWeights2.end(), 0 );
-                    inkWeights2[ inkSet.mixData[index1].inkIndex1 ] = inkSet.mixData[index1].ink1Fraction;
-                    inkWeights2[ inkSet.mixData[index1].inkIndex2 ] = inkSet.mixData[index1].ink2Fraction;
-                    
-                    MixInkWeights( hueFraction, inkWeights, inkWeights2, inkCount );
-                    MixInkWeights( tchroma, inkWeights, neutralWeights, inkCount );
-                    
-                    if (inside) {
-                        result = thisSpot;
-                    }
-                }
+                    inkWeights2[ inkSet.mixData[index1].inkIndex1 ] += inkSet.mixData[index1].ink1Fraction;
+                    inkWeights2[ inkSet.mixData[index1].inkIndex2 ] += inkSet.mixData[index1].ink2Fraction;
 
+
+                    assert( tchroma >= 0.0 );
+                    // interpolate inks
+                    inkWeights = MixInkWeights( hueFraction, inkWeights2, inkWeights, inkCount );
+                    // scale from full inks to neutral  (aka: interp to no ink)
+                    inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
+                    // add neutralWeights to get gray component
+                    inkWeights = AddInkWeights( inkWeights, neutralWeights, inkCount );
+                }
+                
                 // write values to the grid
                 for (int c = 0; c < inkCount; ++c)
                     gridData[ L * planeStep + A * rowStep + B*colStep + c ] = inkWeights[c];
@@ -1870,19 +1909,42 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 
 
 
-
+#if 0
+// works now
     // smooth the floating point table
 	SmoothOneDirection( gridData, gridPoints, planeStep, rowStep, colStep, inkCount );
 	SmoothOneDirection( gridData, gridPoints, rowStep, colStep, planeStep, inkCount );
 	SmoothOneDirection( gridData, gridPoints, colStep, planeStep, rowStep, inkCount );
-
+#endif
 
 
 // convert the float table to integer
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount * inkCount ]);
     uint8_t *outData = outBuffer.get();
 
+#if 1
+    // order the data for easy viewing as an image
+    outData = outBuffer.get();
+    for (int A = 0; A < gridPoints; ++A) {
+        for (int L = 0; L < gridPoints; ++L) {
+			for (int B = 0; B < gridPoints; ++B) {
+                for (int c = 0; c < inkCount; ++c) {
+                    outData[c] = float_to_file255( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
+                }
+                outData += inkCount;
+            }
+        }
+    }
+    
+    // write TIFF File
+    uint32_t mode = (inkCount < 4) ? TIFF_MODE_GRAY_WHITEZERO : TIFF_MODE_CMYK;
+    WriteTIFF( inkSet.name + "_B2A.tiff", 96.0, mode, outBuffer.get(),
+                gridPoints*gridPoints, gridPoints, inkCount, 8 );
+#endif
+
+
     // oganize data for ICC profile
+    outData = outBuffer.get();
     for (int L = 0; L < gridPoints; ++L) {
         for (int A = 0; A < gridPoints; ++A) {
 			for (int B = 0; B < gridPoints; ++B) {
@@ -2030,8 +2092,9 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ bufferSize ]);
     uint8_t *outPtr = outBuffer.get();
 
-#if 0
+#if 1
     // order the data for easy viewing as an image
+    outPtr = outBuffer.get();
     for (A = 0; A < gridPoints; ++A) {
         for (L = 0; L < gridPoints; ++L) {
 			for (B = 0; B < gridPoints; ++B) {
@@ -2051,7 +2114,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     }
     
     // write TIFF File
-    WriteTIFF( filename + ".tiff", 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
+    WriteTIFF( filename + "_abstract.tiff", 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
                 gridPoints*gridPoints, gridPoints, 3, 8 );
 #endif
 
@@ -2134,14 +2197,14 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     myProfile.otherText = otherText;
 
 
-    // make gamut (LAB to bool)
-    createGamut_table( inkSet, depth, gridPoints, myProfile );
-
     // make A2B0 (ink to LAB)
     createA2B_table( inkSet, depth, myProfile );
 
     // make B2A0 (LAB to ink)
     createB2A_table( inkSet, depth, gridPoints, myProfile );
+
+    // make gamut (LAB to bool)
+    createGamut_table( inkSet, depth, gridPoints, myProfile );
     
     
     // and point the other A2B tables back to A2B0
