@@ -1488,6 +1488,87 @@ void DumpPointList( const std::string &name, const PointList &planePoints )
 /********************************************************************************/
 
 /*
+gamut -- LAB to boolean mapping
+*/
+void createGamut_table( const inkColorSet &inkSet, int depth, int gridPoints, profileData &myProfile )
+{
+	int L, A, B;	// my grid iteration indices
+
+	// allocate my gamut grid
+    size_t gridCount =  gridPoints*gridPoints*gridPoints;
+    std::unique_ptr<uint8_t> gamutBuffer(new uint8_t[ gridCount ]);
+    uint8_t *gamutData = gamutBuffer.get();
+    
+    // set everything to out of gamut (inverted from a normal image/table, but ok...)
+    memset( gamutData, 255, gridCount );
+    
+    int gamutPlaneStep = gridPoints*gridPoints;
+	int gamutRowStep = gridPoints;
+	int gamutColStep = 1;
+
+    size_t inkCount = inkSet.primaries.size();
+    assert(inkCount > 0);
+	
+	for (L = 0; L < gridPoints; ++L) {
+		// setup slices variables
+		float Lfloat = grid_to_L( L, gridPoints );
+		
+		//special case less < darkest and > brightest
+		labColor clippedColor;
+		if (ClippedL( Lfloat, clippedColor, inkSet)) {
+			continue;
+        }   // end ClippedL
+		
+		// interpolate splines in L to get points along this AB plane
+		PointList planeSpline;
+		for ( const auto &oneSpline: inkSet.splines ) {
+			float A1, B1;
+			SearchSpline( oneSpline, Lfloat, A1, B1 );
+			planeSpline.push_back( Point( A1, B1 ) );
+        }
+		
+		// create interpolated point list from the splines
+		PointList planePoints;
+        PointListFromSplines( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
+
+// DEBUG the last set generated to check the gamut shape and area
+//DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
+
+		// now iterate over this plane/slice
+		for (A = 0; A < gridPoints; ++A) {
+			float Afloat = grid_to_AB( A, gridPoints );
+			
+			for (B = 0; B < gridPoints; ++B) {
+				float Bfloat = grid_to_AB( B, gridPoints );
+
+				// find closest point in our line/point list
+				Point thisSpot( Afloat, Bfloat );
+                
+                // for 3 or more inks, test for inside polygon, interpolate inside
+                if (inkCount > 2) {
+                    bool inside = pointInPoly( planePoints, thisSpot );
+                    if (inside) {
+                        gamutData[ L * gamutPlaneStep + A * gamutRowStep + B * gamutColStep ] = 0;
+                    }
+                }
+				
+            }   // end for B
+        }   // end for A
+    }   // end for L
+
+    tableFormat myGamut;
+    myGamut.tableSig = icSigGamutTag;
+    myGamut.tableDepth = 8;
+    myGamut.tableGridPoints = gridPoints;
+    myGamut.tableDimensions = 3;    // input
+    myGamut.tableChannels = 1;      // output
+    myGamut.tableData = std::move(gamutBuffer);
+    myProfile.tables.emplace_back(myGamut);
+}
+
+/********************************************************************************/
+
+/*
 A2B - inks and overprints to LAB, N-dimensional to 3 channels
     use ink mixing model and simple interpolation
     doesn't really need smoothing
@@ -1949,7 +2030,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ bufferSize ]);
     uint8_t *outPtr = outBuffer.get();
 
-#if 1
+#if 0
     // order the data for easy viewing as an image
     for (A = 0; A < gridPoints; ++A) {
         for (L = 0; L < gridPoints; ++L) {
@@ -2029,70 +2110,8 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints,
                     const std::string &filename )
 {
-	int L, A, B;	// my grid iteration indices
-
-	// allocate my gamut grid
-    size_t gridCount =  gridPoints*gridPoints*gridPoints;
-    std::unique_ptr<uint8_t> gamutBuffer(new uint8_t[ gridCount ]);
-    uint8_t *gamutData = gamutBuffer.get();
-    
-    // set everything to out of gamut (inverted from a normal image/table, but ok...)
-    memset( gamutData, 255, gridCount );
-    
-    int gamutPlaneStep = gridPoints*gridPoints;
-	int gamutRowStep = gridPoints;
-	int gamutColStep = 1;
-
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
-	
-	for (L = 0; L < gridPoints; ++L) {
-		// setup slices variables
-		float Lfloat = grid_to_L( L, gridPoints );
-		
-		//special case less < darkest and > brightest
-		labColor clippedColor;
-		if (ClippedL( Lfloat, clippedColor, inkSet)) {
-			continue;
-        }   // end ClippedL
-		
-		// interpolate splines in L to get points along this AB plane
-		PointList planeSpline;
-		for ( const auto &oneSpline: inkSet.splines ) {
-			float A1, B1;
-			SearchSpline( oneSpline, Lfloat, A1, B1 );
-			planeSpline.push_back( Point( A1, B1 ) );
-        }
-		
-		// create interpolated point list from the splines
-		PointList planePoints;
-        PointListFromSplines( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
-
-// DEBUG the last set generated to check the gamut shape and area
-//DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
-
-		// now iterate over this plane/slice
-		for (A = 0; A < gridPoints; ++A) {
-			float Afloat = grid_to_AB( A, gridPoints );
-			
-			for (B = 0; B < gridPoints; ++B) {
-				float Bfloat = grid_to_AB( B, gridPoints );
-
-				// find closest point in our line/point list
-				Point thisSpot( Afloat, Bfloat );
-                
-                // for 3 or more inks, test for inside polygon, interpolate inside
-                if (inkCount > 2) {
-                    bool inside = pointInPoly( planePoints, thisSpot );
-                    if (inside) {
-                        gamutData[ L * gamutPlaneStep + A * gamutRowStep + B * gamutColStep ] = 0;
-                    }
-                }
-				
-            }   // end for B
-        }   // end for A
-    }   // end for L
-
 
 
     // write ICC output profiles
@@ -2115,16 +2134,8 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     myProfile.otherText = otherText;
 
 
-// TODO - explicit gamut creation
-    tableFormat myGamut;
-    myGamut.tableSig = icSigGamutTag;
-    myGamut.tableDepth = 8;
-    myGamut.tableGridPoints = gridPoints;
-    myGamut.tableDimensions = 3;    // input
-    myGamut.tableChannels = 1;      // output
-    myGamut.tableData = std::move(gamutBuffer);
-    myProfile.tables.emplace_back(myGamut);
-
+    // make gamut (LAB to bool)
+    createGamut_table( inkSet, depth, gridPoints, myProfile );
 
     // make A2B0 (ink to LAB)
     createA2B_table( inkSet, depth, myProfile );
@@ -2151,7 +2162,6 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     myFake.tableSig = icSigBToA2Tag;
     myFake.pointsBackTo = icSigBToA0Tag;
     myProfile.tables.emplace_back(myFake);
-
 
 
     writeICCProfile( filename+"_output.icc", myProfile );
