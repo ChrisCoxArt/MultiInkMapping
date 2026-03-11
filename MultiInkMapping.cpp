@@ -120,6 +120,11 @@ struct inkMixPair {
     bool operator==(const inkMixPair& other) const = default;
 };
 
+struct splineHuePair {
+    float angle;
+    size_t index;
+};
+
 typedef std::vector< Point > PointList;
 
 typedef std::vector< labColor > color_list;
@@ -1592,6 +1597,15 @@ std::vector<float> MixInkWeights( float t, std::vector<float> &a, std::vector<fl
 
 /********************************************************************************/
 
+bool splineHueIndexLess(const splineHuePair &a, const splineHuePair &b)
+{
+    if (a.angle == b.angle)
+        return a.index < b.index;
+    return a.angle < b.angle;
+}
+
+/********************************************************************************/
+
 /*
 B2A - LAB to ink mixes, needs detail, 3D to N channels
     ignore GCR/UCR just write the raw mixes
@@ -1620,8 +1634,9 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     memset(gridData,0,gridCount*inkCount*sizeof(float));
     
     std::vector<float> inkWeights( inkCount );
+    std::vector<float> inkWeights2( inkCount );
     std::vector<float> neutralWeights( inkCount );
-    std::vector<float> splineHueAngles( inkSet.splines.size() );
+    std::vector<splineHuePair> splineHueAngles( inkSet.splines.size() );
     
 	for (int L = 0; L < gridPoints; ++L) {
 		// setup slices variables
@@ -1668,10 +1683,12 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
         }
         
         // create hue angles from points in this plane
-        for (int i = 0; i < planeSpline.size(); ++i) {
-            float hue = M_PI + atan2f( planeSpline[i].a, planeSpline[i].b );
-            splineHueAngles[i] = hue;
+        for (size_t i = 0; i < planeSpline.size(); ++i) {
+            float hue = M_PI + atan2f( planeSpline[i].a - neutral.A, planeSpline[i].b - neutral.B );
+            splineHueAngles[i] = { hue, i };
         }
+        
+        std::sort( splineHueAngles.begin(), splineHueAngles.end(), splineHueIndexLess );
 		
 		// create interpolated point list from the splines
 		PointList planePoints;
@@ -1723,22 +1740,41 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                 if (inkCount > 2) {
                     bool inside = pointInPoly( planePoints, thisSpot );
                     
-                    float thisHue = M_PI + atan2f( Afloat, Bfloat );
-
-// TODO - this won't work, because the top and bottom are not necessarily around the neutral axis
-
+                    float thisHue = M_PI + atan2f( Afloat - neutral.A, Bfloat - neutral.B );
+    
                     // find bounding hue angles (and handle wrap around!)
-                    auto found = upper_bound( splineHueAngles.begin(), splineHueAngles.end(), thisHue );
-                    auto index = found - splineHueAngles.begin();
+                    auto found = upper_bound( splineHueAngles.begin(), splineHueAngles.end(), thisHue,
+                                            [](float b, const splineHuePair &a) { return b < a.angle; } );
+                    long index = 0;
+                    if (found != splineHueAngles.end())
+                        index = found->index;
+                    long index1 = index - 1;
+                    if (index1 < 0)
+                        index1 = (long)splineHueAngles.size() - 1;
                     
                     // interpolate to get primary ink mix
+// TODO - handle angle wraparound!  2 > 1 ?
+                    float angle1 = splineHueAngles[index].angle;
+                    float angle2 = splineHueAngles[index1].angle;
+                    if (angle2 > angle1)
+                        angle2 -= 2.0*M_PI;
+                    float tempDist = splineHueAngles[index].angle - splineHueAngles[index1].angle;
+                    if (fabsf(tempDist) < 1e-6)
+                        tempDist = 1e-6;
+                    float hueFraction = (thisHue - splineHueAngles[index1].angle) / tempDist;
+                    
+                    std::fill( inkWeights.begin(), inkWeights.end(), 0 );
+                    inkWeights[ inkSet.mixData[index].inkIndex1 ] = inkSet.mixData[index].ink1Fraction;
+                    inkWeights[ inkSet.mixData[index].inkIndex2 ] = inkSet.mixData[index].ink2Fraction;
+                    
+                    std::fill( inkWeights2.begin(), inkWeights2.end(), 0 );
+                    inkWeights2[ inkSet.mixData[index1].inkIndex1 ] = inkSet.mixData[index1].ink1Fraction;
+                    inkWeights2[ inkSet.mixData[index1].inkIndex2 ] = inkSet.mixData[index1].ink2Fraction;
+                    
+                    MixInkWeights( hueFraction, inkWeights, inkWeights2, inkCount );
+                    MixInkWeights( tchroma, inkWeights, neutralWeights, inkCount );
                     
                     if (inside) {
-// TODO - WRITE ME! interpolate nearest hue inks and neutral for L and chroma
-
-// Maybe use splines instead of points for hue angles?
-// Then just interpolate mix pairs?
-
                         result = thisSpot;
                     }
                 }
@@ -2063,7 +2099,6 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     profileData myProfile;
     myProfile.description = inkSet.description;
     myProfile.copyright = "Copyright (c) Chris Cox 2026";
-    myProfile.otherText = inkSet.name;
     myProfile.profileClass = kClassOutput;
     myProfile.colorSpace = profileSpaceLookup[ inkCount ];
     myProfile.pcsSpace = kSpaceLAB;
@@ -2071,6 +2106,13 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     myProfile.platform = 'APPL';
     myProfile.manufacturer = 'none';
     myProfile.creator = 'ccox';
+    
+    // for output, we need to know what the order of ink channels is
+    // but not using a V4 profile yet, so don't have that tag
+    std::string otherText = "Name: " + inkSet.name + "\nOrder: ";
+    for ( const auto &ink : inkSet.primaries )
+        otherText += ink.name + " ";
+    myProfile.otherText = otherText;
 
 
 // TODO - explicit gamut creation
