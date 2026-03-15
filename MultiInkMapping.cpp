@@ -177,7 +177,7 @@ std::vector<inkColorSet> colorSets =
         { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
     },
 
-#if 0
+#if 1
 // Chris's experiments
     {   "GreenGold-Magenta",
         "GreenGold and Magenta Paint",
@@ -229,7 +229,7 @@ std::vector<inkColorSet> colorSets =
     },
 #endif
 
-#if 0
+#if 1
 // changing paper color -- pale, light colors look pretty good
     {   "Turquoise-Orange-LilacPaper",
         "Turquoise and Orange Paint on Lilac Paper",
@@ -291,7 +291,7 @@ std::vector<inkColorSet> colorSets =
           {"Green", 71.2, -54.2, 62.9} }
     },
 
-#if 0
+#if 1
 // 6
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue",
         "6 Paints",
@@ -1719,7 +1719,8 @@ void AdjustInkMixForL( float Ltarget, const std::vector<labColor> &inkList,
             std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
     const float tolerance = 0.1;
-    const float step = 0.9;     // determined by trial and error, probably not optimal
+// TODO - this needs work to guarantee convergence or bail
+    const float step = 0.7;     // determined by trial and error, probably not optimal
     
     std::vector<float> neutralWeights( inkCount );
     for (int c = 0; c < inkCount; ++c)
@@ -1758,12 +1759,12 @@ void AdjustInkMixForL( float Ltarget, const std::vector<labColor> &inkList,
             // too light, blend toward neutral (all 1s) mix, or reduce light
             if (Lcurrent <= Lstart) {
                 // we need neutral, increase that
-                tDark += step * delta/100.0;
+                tDark += 0.7 * step * delta/100.0;
                 if (tDark > 1.0)
                     tDark = 1.0;
             } else {
                 // we added paper, reduce that
-                tPaper -= step * delta/100.0;
+                tPaper -= 0.7 * step * delta/100.0;
                 if (tPaper < 0.0)
                     tPaper = 0.0;
             }
