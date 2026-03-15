@@ -31,10 +31,11 @@ Always smooth the resulting 3D table
 
 
 
-TODO
-TODO - violet seems a bit too desaturated
 
-TODO - write XML profile data, once I have A2B and B2A working
+TODO - data depth is currently ignored!
+
+TODO - write XML profile data, once I have V4 working
+
 
 TODO - write a makefile, or CMakefile
 
@@ -47,6 +48,9 @@ TODO - would be nice to add measured overprint colors
     What about tints and shades?  need percentages of mixes, plus measurement.
     Um, special case for "paper" and "dark"?
     { "Ink1", 0.25, "Ink2", 0.75, measuredOverprint }
+
+    Do I really want to support full IT8 profile data?
+
 
 TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
     take max chroma points for hull?
@@ -177,7 +181,7 @@ std::vector<inkColorSet> colorSets =
         { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
     },
 
-#if 1
+#if 0
 // Chris's experiments
     {   "GreenGold-Magenta",
         "GreenGold and Magenta Paint",
@@ -229,7 +233,7 @@ std::vector<inkColorSet> colorSets =
     },
 #endif
 
-#if 1
+#if 0
 // changing paper color -- pale, light colors look pretty good
     {   "Turquoise-Orange-LilacPaper",
         "Turquoise and Orange Paint on Lilac Paper",
@@ -291,7 +295,7 @@ std::vector<inkColorSet> colorSets =
           {"Green", 71.2, -54.2, 62.9} }
     },
 
-#if 1
+#if 0
 // 6
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue",
         "6 Paints",
@@ -423,8 +427,8 @@ std::vector<inkColorSet> colorSets =
 /********************************************************************************/
 
 // our global variables, just because it was quicker to write it this way
-int gDataDepth = 8;
-int gDataGridPoints = 17;
+int gDataDepth = 16;
+int gDataGridPoints = 21;
 
 /********************************************************************************/
 
@@ -1297,7 +1301,7 @@ int floatAB_to_fileAB16( float A )
 {
 	if (A > 127.0) return 65280;
 	if (A < -128.0) return 0;
-	return (int)( A + 32768.0 );
+	return (int)( A*256.0 + 32768.0 );
 }
 
 /********************************************************************************/
@@ -1624,9 +1628,11 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
 
 	xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
 
+    assert( depth == 8 || depth == 16 );
     size_t gridCount = gridSize;
-    std::unique_ptr<uint8_t> gridBuffer(new uint8_t[ gridCount * 3 ]);
+    std::unique_ptr<uint8_t> gridBuffer(new uint8_t[ gridCount * 3 * (depth/8) ]);
     uint8_t *gridData = gridBuffer.get();
+    uint16_t *grid16Ptr = (uint16_t*)gridData;
     
     std::fill( loopCounters.begin(), loopCounters.end(), 0 );
     
@@ -1639,12 +1645,26 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
         
         xyzColor resultXYZ = estimate_fractional_ink_mix( inkList, inkFractions, paperColor, inkCount );
         labColor resultLAB = XYZ2LAB( resultXYZ );
-        int Lout =   floatL_to_fileL8( resultLAB.L );
-        int Aout = floatAB_to_fileAB8( resultLAB.A );
-        int Bout = floatAB_to_fileAB8( resultLAB.B );
-        gridData[ 3*index + 0 ] = Lout;
-        gridData[ 3*index + 1 ] = Aout;
-        gridData[ 3*index + 2 ] = Bout;
+        
+        if (depth == 16) {
+            // convert to integer output values
+            int Lout =   floatL_to_fileL16( resultLAB.L );
+            int Aout = floatAB_to_fileAB16( resultLAB.A );
+            int Bout = floatAB_to_fileAB16( resultLAB.B  );
+            
+            // write value out to file (interleaved)
+            grid16Ptr[ 3*index + 0 ] = (uint16_t)Lout;
+            grid16Ptr[ 3*index + 1 ] = (uint16_t)Aout;
+            grid16Ptr[ 3*index + 2 ] = (uint16_t)Bout;
+        
+        } else {
+            int Lout =   floatL_to_fileL8( resultLAB.L );
+            int Aout = floatAB_to_fileAB8( resultLAB.A );
+            int Bout = floatAB_to_fileAB8( resultLAB.B );
+            gridData[ 3*index + 0 ] = (uint8_t)Lout;
+            gridData[ 3*index + 1 ] = (uint8_t)Aout;
+            gridData[ 3*index + 2 ] = (uint8_t)Bout;
+        }
         
         // increment last counter
         //    if incremented is >= gridPoints, reset and roll upward in list
@@ -1662,7 +1682,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
 
     tableFormat myTable;
     myTable.tableSig = icSigAToB0Tag;
-    myTable.tableDepth = 8;
+    myTable.tableDepth = depth;
     myTable.tableGridPoints = gridPoints;
     myTable.tableDimensions = (int)inkCount;    // input
     myTable.tableChannels = 3;                  // output
@@ -2189,10 +2209,11 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 	SmoothOneDirection( gridData, gridPoints, colStep, planeStep, rowStep, 3 );
     
 
-
-    size_t bufferSize = gridPoints*gridPoints*gridPoints * 3;
+    assert( depth == 8 || depth == 16 );
+    size_t bufferSize = gridPoints*gridPoints*gridPoints * 3 * (depth/8);
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ bufferSize ]);
     uint8_t *outPtr = outBuffer.get();
+    uint16_t *out16Ptr = (uint16_t*)outPtr;
 
 #if 1
     // order the data for easy viewing as an image
@@ -2223,20 +2244,36 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 
     // oganize data for ICC profile
     outPtr = outBuffer.get();
+    out16Ptr = (uint16_t*)outPtr;
     for (L = 0; L < gridPoints; ++L) {
         for (A = 0; A < gridPoints; ++A) {
 			for (B = 0; B < gridPoints; ++B) {
 
-				// convert to integer output values
-				int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
-				int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
-				int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
-				
-				// write value out to file (interleaved)
-                outPtr[0] = (uint8_t)Lout;
-                outPtr[1] = (uint8_t)Aout;
-                outPtr[2] = (uint8_t)Bout;
-                outPtr += 3;
+                if (depth == 16) {
+                    // convert to integer output values
+                    int Lout =   floatL_to_fileL16( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
+                    int Aout = floatAB_to_fileAB16( gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
+                    int Bout = floatAB_to_fileAB16( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
+                    
+                    // write value out to file (interleaved)
+                    out16Ptr[0] = (uint16_t)Lout;
+                    out16Ptr[1] = (uint16_t)Aout;
+                    out16Ptr[2] = (uint16_t)Bout;
+                    out16Ptr += 3;
+                
+                } else {
+                    // depth == 8
+                    // convert to integer output values
+                    int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
+                    int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
+                    int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
+                    
+                    // write value out to file (interleaved)
+                    outPtr[0] = (uint8_t)Lout;
+                    outPtr[1] = (uint8_t)Aout;
+                    outPtr[2] = (uint8_t)Bout;
+                    outPtr += 3;
+                }
             }
         }
     }
@@ -2246,7 +2283,6 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     profileData myProfile;
     myProfile.description = inkSet.description;
     myProfile.copyright = "Copyright (c) Chris Cox 2026";
-    myProfile.otherText = inkSet.name;
     myProfile.profileClass = kClassAbstract;
     myProfile.colorSpace = kSpaceLAB;
     myProfile.pcsSpace = kSpaceLAB;
@@ -2257,7 +2293,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 
     tableFormat myTable;
     myTable.tableSig = icSigAToB0Tag;
-    myTable.tableDepth = 8;
+    myTable.tableDepth = depth;
     myTable.tableGridPoints = gridPoints;
     myTable.tableDimensions = 3;    // input
     myTable.tableChannels = 3;      // output
@@ -2290,14 +2326,6 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     myProfile.platform = 'APPL';
     myProfile.manufacturer = 'none';
     myProfile.creator = 'ccox';
-    
-    // for output, we need to know what the order of ink channels is
-    // but not using a V4 profile yet, so don't have that tag
-    std::string otherText = "Name: " + inkSet.name + "\nOrder: ";
-    for ( const auto &ink : inkSet.primaries )
-        otherText += ink.name + " ";
-    myProfile.otherText = otherText;
-
 
     // make A2B0 (ink to LAB)
     createA2B_table( inkSet, depth, myProfile );
@@ -2327,6 +2355,20 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     myFake.tableSig = icSigBToA2Tag;
     myFake.pointsBackTo = icSigBToA0Tag;
     myProfile.tables.emplace_back(myFake);
+
+    // colorant table, showing order, names, and LAB values
+    colorantTableFormat clrTable;
+    clrTable.tableSig = icSigColorantTableTag;
+    clrTable.colorants.resize(inkCount);
+    for (int i = 0; i < inkCount; ++i) {
+        namedICCLAB16 temp;
+        temp.name = inkSet.primaries[i].name;
+        temp.L = floatL_to_fileL16(inkSet.primaries[i].color.L);
+        temp.a = floatAB_to_fileAB16(inkSet.primaries[i].color.A);
+        temp.b = floatAB_to_fileAB16(inkSet.primaries[i].color.B);
+        clrTable.colorants[i] = temp;
+    }
+    myProfile.colorantTables.emplace_back(clrTable);
 
 
     writeICCProfile( filename+"_output.icc", myProfile );
@@ -2363,8 +2405,8 @@ static void parse_arguments( int argc, char *argv[] )
 			gDataGridPoints = atoi( argv[c+1] );
             if (gDataGridPoints < 2)
                 gDataGridPoints = 2;
-            if (gDataGridPoints > 256)
-                gDataGridPoints = 256;
+            if (gDataGridPoints > 255)
+                gDataGridPoints = 255;
 			++c;
 			}
 		else if ( (strcmp( argv[c], "-depth" ) == 0 || strcmp( argv[c], "-d" ) == 0 )
@@ -2415,8 +2457,8 @@ int main (int argc, char * argv[])
         
         assert( inkSet.splines.size() == inkSet.mixData.size() );
         
-        create_output_profile( inkSet, gDataDepth, 21, inkSet.name );
-        create_abstract_profile( inkSet, gDataDepth, 21, inkSet.name );
+        create_output_profile( inkSet, gDataDepth, gDataGridPoints, inkSet.name );
+        create_abstract_profile( inkSet, gDataDepth, gDataGridPoints, inkSet.name );
     
      }  // end for colorSets
 

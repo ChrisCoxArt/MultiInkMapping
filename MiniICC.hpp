@@ -80,14 +80,17 @@ typedef enum : uint32_t  {
     
     icSigGamutTag                          = 0x67616D74,  /* 'gamt' */
 
+    icSigColorantTableTag                  = 0x636C7274,  /* 'clrt' */
+    icSigColorantTableOutTag               = 0x636C6F74,  /* 'clot' */
+
+    icSigMultiLocalizedUnicodeType          = 0x6D6C7563,  /* 'mluc' */
+
 // maybe v4 bits
     icSigColorSpaceNameTag                 = 0x63736e6d,  /* 'csnm' */
     icSigColorantInfoTag                   = 0x636c696e,  /* 'clin' */
     icSigColorantInfoOutTag                = 0x636c696f,  /* 'clio' */
     icSigColorantOrderTag                  = 0x636C726F,  /* 'clro' */
     icSigColorantOrderOutTag               = 0x636c6f6f,  /* 'cloo' */
-    icSigColorantTableTag                  = 0x636C7274,  /* 'clrt' */
-    icSigColorantTableOutTag               = 0x636C6F74,  /* 'clot' */
 
 
     icSigUnknown = 0,
@@ -113,6 +116,25 @@ struct tableFormat {
 
 /********************************************************************************/
 
+struct namedICCLAB16 {
+    std::string name;
+    uint16_t L;
+    uint16_t a;
+    uint16_t b;
+};
+
+// all pointers are passed in, not owned
+struct colorantTableFormat {
+
+    colorantTableFormat() : tableSig(icSigUnknown) {}
+
+    profile_sig     tableSig;
+    
+    std::vector< namedICCLAB16 > colorants;
+};
+
+/********************************************************************************/
+
 // all pointers are passed in, not owned
 struct profileData {
 
@@ -129,9 +151,11 @@ struct profileData {
     color_space		colorSpace;         // required
     color_space		pcsSpace;           // required
 
-    std::string     otherText;          // optional
+    std::string     otherText;          // optional, can be empty
     
     std::vector<tableFormat> tables;
+
+    std::vector<colorantTableFormat> colorantTables;
 };
 
 

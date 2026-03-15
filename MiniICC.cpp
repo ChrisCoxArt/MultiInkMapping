@@ -105,6 +105,44 @@ uint32_t constexpr SwabLong( uint32_t x )
 
 /********************************************************************************/
 
+// MultiLocalizedUniCode
+static
+void add_mluc_tag( profileDataInner &data, uint32_t signature, const std::string &desc )
+{
+    const uint16_t iso_english = (uint16_t)((uint16_t)'e' << 8) | (uint16_t)'n';
+    const uint16_t iso_unitedstates = (uint16_t)((uint16_t)'u' << 8) | (uint16_t)'s';
+
+	// figure out the size we need
+	// strings are ASCII, NULL terminated
+	uint32_t stringLength = (uint32_t)desc.length() + 1;
+
+	uint32_t myDataSize = 16 + 12 + 2*stringLength ;   // not using the other localizations
+	uint8_t *myData = new uint8_t[ myDataSize ];
+	
+	memset( myData, 0, myDataSize );
+
+	// fill in the data
+	*((uint32_t *)(myData + 0)) = (uint32_t)SwabLong( icSigMultiLocalizedUnicodeType );	// type signature
+	*((uint32_t *)(myData + 4)) = 0;								// reserved
+	*((uint32_t *)(myData + 8)) = (uint32_t)SwabLong(1);			// count of strings
+	*((uint32_t *)(myData + 12)) = (uint32_t)SwabLong(12);			// record size, fixed
+    
+    *((uint16_t*)(myData+16)) = (uint16_t)SwabShort(iso_english);        // language
+    *((uint16_t*)(myData+18)) = (uint16_t)SwabShort(iso_unitedstates);   // country
+    *((uint32_t *)(myData + 20)) = (uint32_t)SwabLong( 2*stringLength ); // bytes in string
+    *((uint32_t *)(myData + 24)) = (uint32_t)SwabLong( 28 );             // offset of string
+    
+    const char *bStringPtr = desc.c_str();
+    uint16_t *wStringPtr = (uint16_t*)(myData+28);
+    for (uint32_t i = 0; i < stringLength-1; ++i)
+        wStringPtr[i] = (uint16_t)SwabShort( bStringPtr[i] );
+    // already set to NULL for last bytes
+	
+	data.tagInfo.emplace_back( ICCTag( signature, myDataSize, myData ) );
+}
+
+/********************************************************************************/
+
 static
 void add_description_tag( profileDataInner &data, uint32_t signature, const std::string &desc )
 {
@@ -166,6 +204,38 @@ void add_xyz_tag( profileDataInner &data, uint32_t signature, int32_t X, int32_t
 	*((uint32_t *)(myData +  12)) = (uint32_t) SwabLong( Y );
 	*((uint32_t *)(myData +  16)) = (uint32_t) SwabLong( Z );
 	
+	data.tagInfo.emplace_back( ICCTag( signature, myDataSize, myData ) );
+}
+
+/********************************************************************************/
+
+static
+void add_colorantTable_tag( profileDataInner &data, uint32_t signature, const std::vector< namedICCLAB16 > &colorants )
+{
+	// figure out the size we need
+    uint32_t inkCount = (uint32_t)colorants.size();
+	uint32_t myDataSize = 12 + 38*inkCount;
+	uint8_t *myData = new uint8_t[ myDataSize ];
+	
+	memset( myData, 0, myDataSize );
+
+	// fill in the data
+	*((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( signature );	// type signature
+	*((uint32_t *)(myData +  4)) = 0;								// reserved
+	*((uint32_t *)(myData +  8)) = (uint32_t) SwabLong( inkCount );
+    
+    char *stringPtr = (char *)(myData + 12);
+    uint16_t *labPtr = (uint16_t *)(myData + 12 + 32);
+    
+    for ( uint32_t i = 0; i < inkCount; ++i ) {
+        strncpy( stringPtr, colorants[i].name.c_str(), 31 );
+        labPtr[0] = SwabShort(colorants[i].L);
+        labPtr[1] = SwabShort(colorants[i].a);
+        labPtr[2] = SwabShort(colorants[i].b);
+        stringPtr += 38;
+        labPtr += 38/2;
+    }
+    
 	data.tagInfo.emplace_back( ICCTag( signature, myDataSize, myData ) );
 }
 
@@ -260,6 +330,11 @@ void add_lut16_tag( profileDataInner &data, uint32_t signature, int inChannels, 
 	// LUT data assumed to already be in order!
 	// RGB, XYZ, LAB, etc.
 	memcpy( myData + current, clut, clutSize );
+    
+    // byte order swap!
+    uint16_t *lutPtr = (uint16_t*)(myData + current);
+    for (uint32_t i = 0; i < clutSize/2; ++i)
+        lutPtr[i] = SwabShort( lutPtr[i] );
 	
 	current += clutSize;
 	
@@ -413,17 +488,20 @@ void write_tag_table( profileDataInner &data, FILE *output )
 static
 void create_tags( profileDataInner &data )
 {
-	add_description_tag( data, icSigProfileDescriptionTag, data.description );
-	
-	add_text_tag( data, icSigCopyrightTag, data.copyright );
+
+    // V2 and up always required: description, copyright, mediawhitepoint
+    // V4 chromaticAdaptation  9.2.11 ????  Seems only required if adapted, which we won't be
+    add_mluc_tag( data, icSigProfileDescriptionTag, data.description );
+	add_mluc_tag( data, icSigCopyrightTag, data.copyright );
  
     if (data.otherText.length() != 0)
         add_text_tag( data, 'note', data.otherText );
+    
+    // white point 'wtpt'
+    add_xyz_tag( data, icSigMediaWhitePointTag, 0x0000F6D6, 0x00010000, 0x0000D32D );	// D50
 	
 	// change the rest based on type of profile
 	if ( data.profileClass == kClassAbstract ) {
-		// white point 'wtpt'
-		add_xyz_tag( data, icSigMediaWhitePointTag, 0x0000F6D6, 0x00010000, 0x0000D32D );	// D50
 		
 		assert( data.colorSpace == kSpaceLAB || data.colorSpace == kSpaceXYZ );
 		assert( data.pcsSpace == kSpaceLAB || data.pcsSpace == kSpaceXYZ );
@@ -440,19 +518,24 @@ void create_tags( profileDataInner &data )
         
 		// try leaving the sequence out - because we don't really have a sequence
 		//	profileSequenceDesc		'pseq'	v2 6.3.4.1, 6.5.12,    V4? 9.2.32, 10.16
+        // NOTE - so far fake/empty profilesequence tags break one thing or another
         
         // A2B0 only
+        
+        // V4 ColorantTable 9.2.14  if xCLR
+        // V4 colorantTableOutTag  9.2.14.1 if xCLR
     }
 	else if ( data.profileClass == kClassOutput ) {
-		add_xyz_tag( data, icSigMediaWhitePointTag, 0x0000F6D6, 0x00010000, 0x0000D32D );	// D50
-        
         // A2B0,A2B1,A2B2
         // B2A0,B2A1,B2A2
         // gamut
+        
+        // V4 ColorantTable 9.2.14, 10.4 definition
+        
+        
+        // V4 single channel shall have a grayTRC tag  9.2.19
     }
 	else if ( data.profileClass == kClassSpace ) {
-		add_xyz_tag( data, icSigMediaWhitePointTag, 0x0000F6D6, 0x00010000, 0x0000D32D );	// D50
-        
         // A2B0
         // B2A0
     }
@@ -460,6 +543,10 @@ void create_tags( profileDataInner &data )
 		fprintf(stderr,"Other profile types not implemented yet\n");
 		return;
     }
+    
+    // write colorant tables
+    for ( auto &table : data.colorantTables )
+        add_colorantTable_tag( data, table.tableSig, table.colorants );
 
     // write tables
     for ( auto &table : data.tables ) {
@@ -496,7 +583,8 @@ void write_header( const profileDataInner &data, FILE *output )
 	fwrite( &temp, 4, 1, output );
 	
 	// 4 byte profile version number
-	uint32_t profile_version = 0x02100000;	// 2.1.0
+	//uint32_t profile_version = 0x02100000;	// 2.1.0
+	uint32_t profile_version = 0x04200000;	    // 4.2.0
 	temp = SwabLong( profile_version );
 	fwrite( &temp, 4, 1, output );
 	
@@ -649,7 +737,7 @@ int writeICCProfile( const std::string &filename, profileData &profileInfo  )
  
     // release our tag data
     for ( auto &i : thisProfileData.tagInfo )
-        delete i.data;
+        delete[] i.data;
     
     thisProfileData.tagInfo.clear();
  
