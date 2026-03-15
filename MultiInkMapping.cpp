@@ -1303,18 +1303,23 @@ int floatAB_to_fileAB16( float A )
 /********************************************************************************/
 
 // really simple tent
-inline float Smooth3( float a, float b, float c)
+inline
+float Smooth3( float a, float b, float c)
 {
 	return (a + 4*b + c) / 6.0;
 }
 
-inline void Smooth3( std::vector<float> &a, const std::vector<float> &b, const std::vector<float> &c, int channels)
+// prev, current, next
+inline
+void Smooth3( std::vector<float> &a, const std::vector<float> &b, const std::vector<float> &c, int channels)
 {
     for (int i = 0; i < channels; ++i)
         a[i] = Smooth3(a[i],b[i],c[i]);
 }
 
-inline void Smooth3( float *a, float *b, float *c, int channels)
+// prev, current, next
+inline
+void Smooth3( float *a, float *b, float *c, int channels)
 {
     for (int i = 0; i < channels; ++i)
         a[i] = Smooth3(a[i],b[i],c[i]);
@@ -1438,11 +1443,11 @@ void SmoothOneDirection( float *data, int gridPoints, int planeStep, int rowStep
             for (int c = 0; c < channels; ++c)
                nextp[c] = currentp[c];
             
-            Smooth3( last, current, next, channels );
+            Smooth3( lastp, currentp, nextp, channels );
 			
 			// write back smoothed result
             for (int c = 0; c < channels; ++c)
-               data[ i * planeStep + j * rowStep + k*colStep + c ] = last[c];
+               data[ i * planeStep + j * rowStep + k*colStep + c ] = lastp[c];
             
         }   // end j loop
 		
@@ -2006,8 +2011,7 @@ assert(angle2 <= angle1);
 
 
 
-#if 0
-// works now
+#if 1
     // smooth the floating point table
 	SmoothOneDirection( gridData, gridPoints, planeStep, rowStep, colStep, inkCount );
 	SmoothOneDirection( gridData, gridPoints, rowStep, colStep, planeStep, inkCount );
