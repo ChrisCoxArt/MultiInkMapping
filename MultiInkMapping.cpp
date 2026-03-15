@@ -746,12 +746,11 @@ xyzColor estimate_ink_mix( const std::vector<labColor> &inkList, const xyzColor 
 
 // trying to estimate appearance of overprints among arbitrary inks
 xyzColor estimate_fractional_ink_mix( const std::vector<labColor> &inkList,
-            const std::vector<float> &inkFractionList, const xyzColor &paperColor )
+            const std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
 	xyzColor identity( 100.0, 100.0, 100.0 );
     
     xyzColor overprint = identity;
-    size_t inkCount = inkList.size();
     for (int i = 0; i < inkCount; ++i) {
         auto &ink = inkList[i];
         float thisFraction = inkFractionList[i];
@@ -1633,7 +1632,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
         for (size_t k = 0; k < inkCount; ++k)
             inkFractions[k] = (float)loopCounters[k] / (float)(gridPoints-1);
         
-        xyzColor resultXYZ = estimate_fractional_ink_mix( inkList, inkFractions, paperColor );
+        xyzColor resultXYZ = estimate_fractional_ink_mix( inkList, inkFractions, paperColor, inkCount );
         labColor resultLAB = XYZ2LAB( resultXYZ );
         int Lout =   floatL_to_fileL8( resultLAB.L );
         int Aout = floatAB_to_fileAB8( resultLAB.A );
@@ -1724,7 +1723,7 @@ void AdjustInkMixForL( float Ltarget, const std::vector<labColor> &inkList,
     std::vector<float> workingList = inkFractionList;
 
     // calc initial L*
-    xyzColor tempXYZ = estimate_fractional_ink_mix( inkList, inkFractionList, paperColor );
+    xyzColor tempXYZ = estimate_fractional_ink_mix( inkList, inkFractionList, paperColor, inkCount );
     labColor tempLAB = XYZ2LAB( tempXYZ );
     float Lstart = tempLAB.L;
     float Lcurrent = Lstart;
@@ -1778,7 +1777,7 @@ void AdjustInkMixForL( float Ltarget, const std::vector<labColor> &inkList,
         if (tDark == 1.0 || tPaper == 1.0)
             break;
         
-        tempXYZ = estimate_fractional_ink_mix( inkList, workingList, paperColor );
+        tempXYZ = estimate_fractional_ink_mix( inkList, workingList, paperColor, inkCount );
         tempLAB = XYZ2LAB( tempXYZ );
         Lcurrent = tempLAB.L;
     }
