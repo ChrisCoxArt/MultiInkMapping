@@ -746,7 +746,7 @@ xyzColor estimate_ink_mix( const std::vector<labColor> &inkList, const xyzColor 
 
 // trying to estimate appearance of overprints among arbitrary inks
 xyzColor estimate_fractional_ink_mix( const std::vector<labColor> &inkList,
-            const std::vector<float> inkFractionList, const xyzColor &paperColor )
+            const std::vector<float> &inkFractionList, const xyzColor &paperColor )
 {
 	xyzColor identity( 100.0, 100.0, 100.0 );
     
@@ -1710,6 +1710,84 @@ bool splineHueIndexLess(const splineHuePair &a, const splineHuePair &b)
 
 /********************************************************************************/
 
+static
+void AdjustInkMixForL( float Ltarget, const std::vector<labColor> &inkList,
+            std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
+{
+    const float tolerance = 0.1;
+    const float step = 0.9;     // determined by trial and error, probably not optimal
+    
+    std::vector<float> neutralWeights( inkCount );
+    for (int c = 0; c < inkCount; ++c)
+        neutralWeights[c] = 1.0;
+    
+    std::vector<float> workingList = inkFractionList;
+
+    // calc initial L*
+    xyzColor tempXYZ = estimate_fractional_ink_mix( inkList, inkFractionList, paperColor );
+    labColor tempLAB = XYZ2LAB( tempXYZ );
+    float Lstart = tempLAB.L;
+    float Lcurrent = Lstart;
+    float delta = 0;
+    float tPaper = 0.0;
+    float tDark = 0.0;
+    
+    // iteratively adjust mix to target L*
+    while ((delta = fabs(Lcurrent - Ltarget)) > tolerance) {
+    
+        workingList = inkFractionList;
+        
+        if (Lcurrent < Ltarget) {
+            // too dark, blend toward paper or reduce dark
+            if (Lcurrent < Lstart) {
+                // we added neutral, reduce that
+                tDark -= step * delta/100.0;
+                if (tDark < 0.0)
+                    tDark = 0.0;
+            } else {
+                // we added paper, increase that
+                tPaper += step * delta/100.0;
+                if (tPaper > 1.0)
+                    tPaper = 1.0;
+            }
+        }  else {
+            // too light, blend toward neutral (all 1s) mix, or reduce light
+            if (Lcurrent <= Lstart) {
+                // we need neutral, increase that
+                tDark += step * delta/100.0;
+                if (tDark > 1.0)
+                    tDark = 1.0;
+            } else {
+                // we added paper, reduce that
+                tPaper -= step * delta/100.0;
+                if (tPaper < 0.0)
+                    tPaper = 0.0;
+            }
+        }
+        
+        // adjust new blend
+        // these should be exclusive!
+        if (tPaper > 0.0)
+            workingList = ScaleInkWeights( (1.0-tPaper), workingList, inkCount );
+        
+        if (tDark > 0.0)
+            workingList = MixInkWeights( tDark, workingList, neutralWeights, inkCount );
+        
+        // sometimes our estimates just don't match expectations
+        // but we don't want to loop forever on a goal we can't reach
+        if (tDark == 1.0 || tPaper == 1.0)
+            break;
+        
+        tempXYZ = estimate_fractional_ink_mix( inkList, workingList, paperColor );
+        tempLAB = XYZ2LAB( tempXYZ );
+        Lcurrent = tempLAB.L;
+    }
+    
+    inkFractionList = workingList;
+}
+
+/********************************************************************************/
+
 /*
 B2A - LAB to ink mixes, needs detail, 3D to N channels
     ignore GCR/UCR just write the raw mixes
@@ -1722,6 +1800,12 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     int inkCount = (int)inkSet.primaries.size();
     assert(inkCount > 0);
     assert(inkCount <= maxChannels);
+    
+    std::vector<labColor> inkList(maxChannels);
+    for (size_t i = 0; i < inkCount; ++i)
+        inkList[i] = inkSet.primaries[i].color;
+
+	xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
 
     int gridSize = pow( gridPoints, 3 );
 
@@ -1885,29 +1969,32 @@ assert(angle2 <= angle1);
                     if (fabsf(tempDist) < 1e-6)
                         tempDist = 1e-2;
                     float hueFraction = (thisHue - angle2) / tempDist;
-if (hueFraction < 0)
-    hueFraction = 0;
-if (hueFraction > 1.0)
-    hueFraction = 1.0;
-// TODO - still clamping far too often - still a bug along -A, +A looks good, +-B looks good
+
+// TODO - still clamping too often for negative hue angle!
+// not getting the right index from search.
+                    if (hueFraction < 0)
+                        hueFraction = 0;
+                    if (hueFraction > 1.0)
+                        hueFraction = 1.0;
 
                     std::fill( inkWeights.begin(), inkWeights.end(), 0 );
+                    std::fill( inkWeights2.begin(), inkWeights2.end(), 0 );
+                    
                     inkWeights[ inkSet.mixData[index].inkIndex1 ] += inkSet.mixData[index].ink1Fraction;
                     inkWeights[ inkSet.mixData[index].inkIndex2 ] += inkSet.mixData[index].ink2Fraction;
                     
-                    std::fill( inkWeights2.begin(), inkWeights2.end(), 0 );
                     inkWeights2[ inkSet.mixData[index1].inkIndex1 ] += inkSet.mixData[index1].ink1Fraction;
                     inkWeights2[ inkSet.mixData[index1].inkIndex2 ] += inkSet.mixData[index1].ink2Fraction;
 
-
-                    assert( tchroma >= 0.0 );
+                    
                     // interpolate inks
                     inkWeights = MixInkWeights( hueFraction, inkWeights2, inkWeights, inkCount );
+
                     // scale from full inks to neutral  (aka: interp to no ink)
-// TODO - need to reduce inks to get lightness correct!
+                    assert( tchroma >= 0.0 );
                     inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
-                    // add neutralWeights to get gray component
-                    inkWeights = AddInkWeights( inkWeights, neutralWeights, inkCount );
+
+                    AdjustInkMixForL( Lfloat, inkList, inkWeights, paperColor, inkCount );
                 }
                 
                 // write values to the grid
