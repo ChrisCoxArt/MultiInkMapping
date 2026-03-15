@@ -160,6 +160,8 @@ void WriteTIFF( const std::string &name, float dpi, int color_model, uint8_t *bu
     // some readers break if the bitsPerSample is not a short value
     if (channels == 1)
         putIFDLong( TIFF_BITSPERSAMPLE, TIFF_LONG, 1, bits, outfile );
+    else if (channels == 2)
+        putIFDLong( TIFF_BITSPERSAMPLE, TIFF_SHORT, channels, ((uint32_t)bits << 16) | bits, outfile );
     else
         putIFDLong( TIFF_BITSPERSAMPLE, TIFF_SHORT, channels, bits_offset, outfile );
 
