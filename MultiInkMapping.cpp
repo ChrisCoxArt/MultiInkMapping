@@ -181,7 +181,7 @@ std::vector<inkColorSet> colorSets =
         { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
     },
 
-#if 0
+#if 1
 // Chris's experiments
     {   "GreenGold-Magenta",
         "GreenGold and Magenta Paint",
@@ -233,7 +233,7 @@ std::vector<inkColorSet> colorSets =
     },
 #endif
 
-#if 0
+#if 1
 // changing paper color -- pale, light colors look pretty good
     {   "Turquoise-Orange-LilacPaper",
         "Turquoise and Orange Paint on Lilac Paper",
@@ -295,7 +295,7 @@ std::vector<inkColorSet> colorSets =
           {"Green", 71.2, -54.2, 62.9} }
     },
 
-#if 0
+#if 1
 // 6
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue",
         "6 Paints",
@@ -423,12 +423,6 @@ std::vector<inkColorSet> colorSets =
 #endif
 
 };
-
-/********************************************************************************/
-
-// our global variables, just because it was quicker to write it this way
-int gDataDepth = 16;
-int gDataGridPoints = 21;
 
 /********************************************************************************/
 
@@ -1283,7 +1277,14 @@ uint8_t float_to_file255( float A )
 {
 	if (A > 1.0) return 255;
 	if (A < 0.0) return 0;
-	return (int)( A * 255.0 );
+	return (uint8_t)( A * 255.0 );
+}
+
+uint16_t float_to_file65535( float A )
+{
+	if (A > 1.0) return 65535;
+	if (A < 0.0) return 0;
+	return (uint16_t)( A * 65535.0 );
 }
 
 /********************************************************************************/
@@ -1302,6 +1303,24 @@ int floatAB_to_fileAB16( float A )
 	if (A > 127.0) return 65280;
 	if (A < -128.0) return 0;
 	return (int)( A*256.0 + 32768.0 );
+}
+
+/********************************************************************************/
+
+// convert 0..100 representation to file representation
+// ICC version 4 colorant table, not the mlut encodings
+int floatL_to_fileL65535( float L )
+{
+	if (L <= 0.0) return 0;
+	if (L >= 100.0) return 65535;
+	return (int)( (65535.0 / 100.0) * L + 0.5 );
+}
+
+int floatAB_to_fileAB65535( float A )
+{
+	if (A > 127.0) return 65535;
+	if (A < -128.0) return 0;
+	return (int)( (A + 128.0)*257.0 );
 }
 
 /********************************************************************************/
@@ -1499,8 +1518,9 @@ void DumpPointList( const std::string &name, const PointList &planePoints )
 
 /*
 gamut -- LAB to boolean mapping
+always 8 bit
 */
-void createGamut_table( const inkColorSet &inkSet, int depth, int gridPoints, profileData &myProfile )
+void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoints, profileData &myProfile )
 {
 	int L, A, B;	// my grid iteration indices
 
@@ -1588,7 +1608,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
 {
     const int maxChannels = 15;          // ICC spec. limit
     const int maxGridPoints = 31;        // sanity limit - TODO - increase limit in release build
-    const int maxGridSize = 1024*1024;   // limit 1 Meg, 20 Meg?
+    const int maxGridSize = 1024*1024;   // limit 1 Meg points for now (3 Meg in file)
     
     int inkCount = (int)inkSet.primaries.size();
     assert(inkCount > 0);
@@ -2041,8 +2061,10 @@ assert(angle2 <= angle1);
 
 
 // convert the float table to integer
-    std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount * inkCount ]);
+    assert( depth == 8 || depth == 16 );
+    std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount * inkCount * (depth/8) ]);
     uint8_t *outData = outBuffer.get();
+    uint16_t *out16Ptr = (uint16_t*)outData;
 
 #if 1
     // order the data for easy viewing as an image
@@ -2071,9 +2093,13 @@ assert(angle2 <= angle1);
         for (int A = 0; A < gridPoints; ++A) {
 			for (int B = 0; B < gridPoints; ++B) {
                 for (int c = 0; c < inkCount; ++c) {
-                    outData[c] = float_to_file255( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
+                    if (depth == 16)
+                        out16Ptr[c] = float_to_file65535( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
+                    else
+                        outData[c] = float_to_file255( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
                 }
                 outData += inkCount;
+                out16Ptr += inkCount;
             }
         }
     }
@@ -2081,7 +2107,7 @@ assert(angle2 <= angle1);
 
     tableFormat myTable;
     myTable.tableSig = icSigBToA0Tag;
-    myTable.tableDepth = 8;
+    myTable.tableDepth = depth;
     myTable.tableGridPoints = gridPoints;
     myTable.tableDimensions = 3;                // input
     myTable.tableChannels = (int)inkCount;      // output
@@ -2186,11 +2212,8 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
                     bool inside = pointInPoly( planePoints, thisSpot );
-                    if (inside) {
-// TODO - interpolate ink mixture!  the AB value may be in gamut, but how did we mix it?
-// this needs a mixing model.  or some quick heuristics...
+                    if (inside)
                         result = thisSpot;
-                    }
                 }
                 
 				// save the values
@@ -2327,7 +2350,7 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     myProfile.manufacturer = 'none';
     myProfile.creator = 'ccox';
 
-    // make A2B0 (ink to LAB)
+    // make A2B0 (ink to LAB) - determines grid size internally
     createA2B_table( inkSet, depth, myProfile );
 
     // make B2A0 (LAB to ink)
@@ -2363,9 +2386,9 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     for (int i = 0; i < inkCount; ++i) {
         namedICCLAB16 temp;
         temp.name = inkSet.primaries[i].name;
-        temp.L = floatL_to_fileL16(inkSet.primaries[i].color.L);
-        temp.a = floatAB_to_fileAB16(inkSet.primaries[i].color.A);
-        temp.b = floatAB_to_fileAB16(inkSet.primaries[i].color.B);
+        temp.L = floatL_to_fileL65535(inkSet.primaries[i].color.L);
+        temp.a = floatAB_to_fileAB65535(inkSet.primaries[i].color.A);
+        temp.b = floatAB_to_fileAB65535(inkSet.primaries[i].color.B);
         clrTable.colorants[i] = temp;
     }
     myProfile.colorantTables.emplace_back(clrTable);
@@ -2379,6 +2402,12 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
 
 /******************************************************************************/
 /******************************************************************************/
+
+// our global variables, just because it was quicker to write it this way
+int gDataDepth = 8;
+int gDataGridPoints = 21;
+
+/********************************************************************************/
 
 static void print_usage(char *argv[])
 {

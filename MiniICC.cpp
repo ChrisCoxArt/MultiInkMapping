@@ -143,6 +143,8 @@ void add_mluc_tag( profileDataInner &data, uint32_t signature, const std::string
 
 /********************************************************************************/
 
+#if 0
+// Version 2 profiles
 static
 void add_description_tag( profileDataInner &data, uint32_t signature, const std::string &desc )
 {
@@ -163,6 +165,7 @@ void add_description_tag( profileDataInner &data, uint32_t signature, const std:
 	
 	data.tagInfo.emplace_back( ICCTag( signature, myDataSize, myData ) );
 }
+#endif
 
 /********************************************************************************/
 
@@ -490,7 +493,7 @@ void create_tags( profileDataInner &data )
 {
 
     // V2 and up always required: description, copyright, mediawhitepoint
-    // V4 chromaticAdaptation  9.2.11 ????  Seems only required if adapted, which we won't be
+    // V4 chromaticAdaptation  9.2.11 ????  Only required if adapted, which we won't be
     add_mluc_tag( data, icSigProfileDescriptionTag, data.description );
 	add_mluc_tag( data, icSigCopyrightTag, data.copyright );
  
@@ -532,8 +535,7 @@ void create_tags( profileDataInner &data )
         
         // V4 ColorantTable 9.2.14, 10.4 definition
         
-        
-        // V4 single channel shall have a grayTRC tag  9.2.19
+        // V4 single channel shall have a grayTRC tag  9.2.19 ????
     }
 	else if ( data.profileClass == kClassSpace ) {
         // A2B0
