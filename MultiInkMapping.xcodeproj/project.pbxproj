@@ -270,6 +270,7 @@
 				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_UNROLL_LOOPS = YES;
 				LLVM_LTO = YES;
+				"OTHER_CFLAGS[arch=*]" = "-DNDEBUG";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

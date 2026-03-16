@@ -31,6 +31,20 @@ Always smooth the resulting 3D table
 
 
 
+TODO - estimate_ink_mix and estimate_fractional_ink_mix reconvert LAB to XYZ constantly
+    change inlists to XYZ and pass those in
+Currently 1.3 seconds for ALL profiles and TIFF files - so not exactly slow to start with.
+DONE -
+798.30 ms  100.0%	0 s	  Main Thread  0x1359666
+157.10 ms  19.7%	0 s	   cbrtf
+129.70 ms  16.2%	0 s	   FindClosestPointInList(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point&)
+107.00 ms  13.4%	0 s	   pointInPoly(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point)
+61.20 ms   7.7%	0 s	   createA2B_table(inkColorSet const&, int, profileData&)
+45.80 ms   5.7%	0 s	   nanov2_malloc
+36.90 ms   4.6%	0 s	   _nanov2_free
+
+
+
 TODO - write XML profile data, once I have V4 working?
 
 TODO - write a makefile, or CMakefile
@@ -68,7 +82,7 @@ TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
 
 /******************************************************************************/
 
-const char kVersionString[] = "0.6a";
+const char kVersionString[] = "0.8a";
 
 /******************************************************************************/
 
@@ -133,16 +147,6 @@ typedef std::vector< labColorNamed > named_color_list;
 
 typedef std::vector< color_list > spline_list;
 typedef std::vector< inkMixPair > spline_mix_data;
-
-/******************************************************************************/
-
-color_list ConvertNamedColorList2ColorList( const named_color_list &input )
-{
-    color_list result( input.size() );
-    for (size_t i = 0; i < input.size(); ++i)
-        result[i] = input[i].color;
-    return result;
-}
 
 /******************************************************************************/
 
@@ -457,7 +461,7 @@ float CIECurve( const float input )
 
 float CIEReverseCurve( const float input )
 {
-	const float scale = 1.0 / 7.787037;		// 0.128418549  // 3.0 * pow( 6.0/29.0, 2.0);
+	const float scale = 1.0 / 7.787037;		// 0.128418549  // 3.0 * powf( 6.0/29.0, 2.0);
 	const float breakpoint = 6.0/29.0;
 	
 	if (input > breakpoint)
@@ -526,12 +530,28 @@ inline xyzColor operator*( const float &scale, const xyzColor &b)
  
 /********************************************************************************/
 
+inline xyzColor& operator*=( xyzColor &a, float s)
+{
+	a.X *= s;
+	a.Y *= s;
+	a.Z *= s;
+	return a;
+}
+
+/********************************************************************************/
+
 inline xyzColor operator*( const xyzColor &a, const xyzColor &b)
 {
 	xyzColor result;
+#if 1
+	result.X = a.X * b.X * (1.0f / 100.0f);
+	result.Y = a.Y * b.Y * (1.0f / 100.0f);
+	result.Z = a.Z * b.Z * (1.0f / 100.0f);
+#else
 	result.X = a.X * b.X / 100.0;
 	result.Y = a.Y * b.Y / 100.0;
 	result.Z = a.Z * b.Z / 100.0;
+#endif
 	return result;
 }
  
@@ -539,19 +559,15 @@ inline xyzColor operator*( const xyzColor &a, const xyzColor &b)
 
 inline xyzColor& operator*=( xyzColor &a, const xyzColor &b)
 {
+#if 1
+	a.X = a.X * b.X * (1.0f / 100.0f);
+	a.Y = a.Y * b.Y * (1.0f / 100.0f);
+	a.Z = a.Z * b.Z * (1.0f / 100.0f);
+#else
 	a.X = a.X * b.X / 100.0;
 	a.Y = a.Y * b.Y / 100.0;
 	a.Z = a.Z * b.Z / 100.0;
-	return a;
-}
- 
-/********************************************************************************/
-
-inline xyzColor& operator*=( xyzColor &a, float s)
-{
-	a.X = a.X * s;
-	a.Y = a.Y * s;
-	a.Z = a.Z * s;
+#endif
 	return a;
 }
  
@@ -713,23 +729,23 @@ bool labHueLess(const labColorNamed &a, const labColorNamed &b)
 /********************************************************************************/
 
 // here we want chromatic mixes, not darks
-xyzColor estimate_ink_mix( const std::vector<labColor> &inkList, const xyzColor &paperColor )
+xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
 {
 	xyzColor identity( 100.0, 100.0, 100.0 );
     
     xyzColor overprint = identity;
     xyzColor average(0,0,0);
     for ( const auto &ink : inkList ) {
-        xyzColor inkColor = LAB2XYZ( ink );
-        average += inkColor;
-        xyzColor inkFilter = inkColor / paperColor;
-        overprint *= inkFilter;
+        average += ink;
+        overprint *= ink;
     }
     overprint *= paperColor;
     average /= (float)inkList.size();
+    average *= paperColor;
 
-// TODO - find best parameter, 0.5 isn't enough, 1.0 is too much
+// TODO - find best parameter
 // 0.0 leads to some crazy intermediate colors, and crazier splines
+// 0.5 doesn't seem high enough, still some crazy splines
 // 1.0 leads to blah.
     xyzColor mix = interp2inks( 0.6, overprint, average );
     
@@ -739,7 +755,7 @@ xyzColor estimate_ink_mix( const std::vector<labColor> &inkList, const xyzColor 
 /********************************************************************************/
 
 // trying to estimate appearance of overprints among arbitrary inks
-xyzColor estimate_fractional_ink_mix( const std::vector<labColor> &inkList,
+xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
             const std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
 	xyzColor identity( 100.0, 100.0, 100.0 );
@@ -749,9 +765,7 @@ xyzColor estimate_fractional_ink_mix( const std::vector<labColor> &inkList,
         auto &ink = inkList[i];
         float thisFraction = inkFractionList[i];
         if (thisFraction > 0.0) {
-            xyzColor inkColor = LAB2XYZ( ink );
-            xyzColor inkFilter = inkColor / paperColor;
-            xyzColor fractionalInk = interp2inks( thisFraction, identity, inkFilter );
+            xyzColor fractionalInk = interp2inks( thisFraction, identity, ink );
             overprint *= fractionalInk;
         }
     }
@@ -764,16 +778,14 @@ xyzColor estimate_fractional_ink_mix( const std::vector<labColor> &inkList,
 /********************************************************************************/
 
 // here, we want the darkest possible result
-xyzColor estimate_darkest_ink_overprint( const std::vector<labColor> &inkList, const xyzColor &paperColor )
+xyzColor estimate_darkest_ink_overprint( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
 {
     const float Ylimit = 1.3;
 	xyzColor identity( 100.0, 100.0, 100.0 );
     
     xyzColor overprint = identity;
     for ( const auto &ink : inkList ) {
-        xyzColor inkColor = LAB2XYZ( ink );
-        xyzColor inkFilter = inkColor / paperColor;
-        overprint *= inkFilter;
+        overprint *= ink;
     }
     overprint *= paperColor;
     
@@ -788,10 +800,16 @@ xyzColor estimate_darkest_ink_overprint( const std::vector<labColor> &inkList, c
     return overprint;
 }
 
+/********************************************************************************/
+
 // convenience converter
 xyzColor estimate_darkest_ink_overprint( const std::vector<labColorNamed> &inkList, const xyzColor &paperColor )
 {
-    return estimate_darkest_ink_overprint( ConvertNamedColorList2ColorList(inkList), paperColor );
+    std::vector<xyzColor> tempListXYZ( inkList.size() );
+    for (size_t i = 0; i < inkList.size(); ++i)
+        tempListXYZ[i] = LAB2XYZ( inkList[i].color ) / paperColor;
+    
+    return estimate_darkest_ink_overprint( tempListXYZ, paperColor );
 }
 
 /********************************************************************************/
@@ -809,7 +827,7 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
     xyzColor ink1Color = LAB2XYZ( ink1 );
     xyzColor ink2Color = LAB2XYZ( ink2 );
 
-    xyzColor halfwayMix = estimate_ink_mix( { ink1, ink2 }, paperColor );
+    xyzColor halfwayMix = estimate_ink_mix( { ink1Color/paperColor, ink2Color/paperColor }, paperColor );
 
     // d == 0 is the last pure ink spline
     // d == division is this pure ink spline (handled elsewhere)
@@ -1205,13 +1223,27 @@ void MixPointsFromSplines( const size_t subdivisions, const spline_mix_data &inp
 size_t FindClosestPointInList( const PointList &list, Point &input )
 {
 	// ccox - start with brute force linear search
-	// DEFERRED - find a way to accelerate the search
-	
+/*
+DEFERRED - find a way to accelerate the search
+    list is always more or less circular
+    needs to work with points inside and outside, and FAR outside
+    
+        But we only execute this for one slice at a time -- so 21x21 points
+            then change data
+        
+        Could use radial projection for angles, with precomputed angles - we don't have the center here
+        Could use grid to narrow search - with aux data structure
+        Could limit the points by removing those closer than 0.1 deltaE
+        Count is between 1 and 15*50=750
+ */
+	size_t count = list.size();
+	assert( count > 0 );
+ 
+    if (count == 1)
+        return 0;
+
 	float closest_dist = 256.0*256.0*256.0;		// much greater than our maximum possible distance
 	size_t closest_index = -1;  // really largest positive value because it is unsigned
-	
-	size_t count = list.size();
-	assert( count > 0);
 	
 	for (size_t i = 0; i < count; ++i) {
 		float distA = input.a - list[i].a;
@@ -1628,12 +1660,12 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
         --index;
     }
 #endif
-    
-    std::vector<labColor> inkList(maxChannels);
-    for (size_t i = 0; i < inkCount; ++i)
-        inkList[i] = inkSet.primaries[i].color;
 
 	xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
+    
+    std::vector<xyzColor> inkListXYZ(maxChannels);
+    for (size_t i = 0; i < inkCount; ++i)
+        inkListXYZ[i] = LAB2XYZ(inkSet.primaries[i].color) / paperColor;
 
     assert( depth == 8 || depth == 16 );
     size_t gridCount = gridSize;
@@ -1645,12 +1677,14 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
     
     // iterate virtual loop to fill table  (faster than doing a dozen divides and modulos)
     // i[k] = (index / (int)pow(gridPoints,(inkCount-1)-k)) % gridPoints;   // loopSteps can be precalcuated, but the divides cannot
+// NOTE - I could optimize this for N >= 2 by putting a more predictable loop inside using counters[inkCount-1)]
+//      then incrementing above that, that gives the compiler a better chance at vectorization
     for (uint32_t index = 0; loopCounters[0] < gridPoints; ++index ) {
         
         for (size_t k = 0; k < inkCount; ++k)
             inkFractions[k] = (float)loopCounters[k] / (float)(gridPoints-1);
         
-        xyzColor resultXYZ = estimate_fractional_ink_mix( inkList, inkFractions, paperColor, inkCount );
+        xyzColor resultXYZ = estimate_fractional_ink_mix( inkListXYZ, inkFractions, paperColor, inkCount );
         labColor resultLAB = XYZ2LAB( resultXYZ );
         
         if (depth == 16) {
@@ -1684,7 +1718,8 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
                 loopCounters[j] = temp;
                 break;
             }
-        }
+        }   // end loop counter update
+    
     }   // overall table loop using a vector of counters
 
 
@@ -1767,7 +1802,7 @@ bool splineHueIndexLess(const splineHuePair &a, const splineHuePair &b)
 /********************************************************************************/
 
 static
-void AdjustInkMixForL( float Ltarget, const std::vector<labColor> &inkList,
+void AdjustInkMixForL( float Ltarget, const std::vector<xyzColor> &inkListXYZ,
             std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
     const float tolerance = 0.1;
@@ -1782,7 +1817,7 @@ void AdjustInkMixForL( float Ltarget, const std::vector<labColor> &inkList,
     std::vector<float> workingList = inkFractionList;
 
     // calc initial L*
-    xyzColor tempXYZ = estimate_fractional_ink_mix( inkList, inkFractionList, paperColor, inkCount );
+    xyzColor tempXYZ = estimate_fractional_ink_mix( inkListXYZ, inkFractionList, paperColor, inkCount );
     labColor tempLAB = XYZ2LAB( tempXYZ );
     float Lstart = tempLAB.L;
     float Lcurrent = Lstart;
@@ -1836,7 +1871,7 @@ void AdjustInkMixForL( float Ltarget, const std::vector<labColor> &inkList,
         if (tDark == 1.0 || tPaper == 1.0)
             break;
         
-        tempXYZ = estimate_fractional_ink_mix( inkList, workingList, paperColor, inkCount );
+        tempXYZ = estimate_fractional_ink_mix( inkListXYZ, workingList, paperColor, inkCount );
         tempLAB = XYZ2LAB( tempXYZ );
         Lcurrent = tempLAB.L;
     }
@@ -1858,12 +1893,12 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     int inkCount = (int)inkSet.primaries.size();
     assert(inkCount > 0);
     assert(inkCount <= maxChannels);
-    
-    std::vector<labColor> inkList(maxChannels);
-    for (size_t i = 0; i < inkCount; ++i)
-        inkList[i] = inkSet.primaries[i].color;
 
 	xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
+    
+    std::vector<xyzColor> inkListXYZ(maxChannels);
+    for (size_t i = 0; i < inkCount; ++i)
+        inkListXYZ[i] = LAB2XYZ(inkSet.primaries[i].color) / paperColor;
 
     int gridSize = pow( gridPoints, 3 );
 
@@ -1939,10 +1974,11 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 		
 		// create interpolated point list from the splines
 		PointList planePoints;
-        PointListFromSplines( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
+        size_t subDivisions = std::min( 300, 50*inkCount );
+        PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
         spline_mix_data mixPoints;
-        MixPointsFromSplines( 50*inkCount, inkSet.mixData, mixPoints, (inkCount > 2) );
+        MixPointsFromSplines( subDivisions, inkSet.mixData, mixPoints, (inkCount > 2) );
       
         // make sure mixPoints and planePoints have the same size!
         assert( planePoints.size() == mixPoints.size() );
@@ -2055,7 +2091,7 @@ assert(angle2 <= angle1);
                     assert( tchroma >= 0.0 );
                     inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
 
-                    AdjustInkMixForL( Lfloat, inkList, inkWeights, paperColor, inkCount );
+                    AdjustInkMixForL( Lfloat, inkListXYZ, inkWeights, paperColor, inkCount );
                 }
                 
                 // write values to the grid
