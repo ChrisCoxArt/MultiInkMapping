@@ -31,11 +31,7 @@ Always smooth the resulting 3D table
 
 
 
-
-TODO - data depth is currently ignored!
-
-TODO - write XML profile data, once I have V4 working
-
+TODO - write XML profile data, once I have V4 working?
 
 TODO - write a makefile, or CMakefile
 
@@ -428,7 +424,7 @@ std::vector<inkColorSet> colorSets =
 
 void VerifyDecreasingL( const color_list &list )
 {
-// TODO - debugging aid only
+// NOTE - this is just a debugging aid
 #if 1
 	size_t count = list.size();
 	for (size_t i = 1; i < count; ++i)
@@ -925,9 +921,7 @@ float SplineInterp( float t, float A, float B, float C, float D )
 // need function to search spline for correct point and return interpolated values
 // given L*, binary search the spline and return the A and B values that go with it
 
-// splineL, splineA, splineB - search L, use t parameter for A and B
-
-void SearchSpline( const color_list &spline, float L, float &A, float &B )
+void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
 {
 	// find points in list that bracket L
 	// list is greatest to least (white to black)
@@ -935,11 +929,11 @@ void SearchSpline( const color_list &spline, float L, float &A, float &B )
 	int index = 1;
 	for ( ; index < spline.size(); ++index)
 		{
-		if (spline[index].L <= L)
+		if (spline[index].L <= Ltarget)
 			break;
 		}
 	
-	assert( index < spline.size());
+	assert( index < spline.size() );
 	
 	// find t that gives the correct L to within tolerance (between index-1 and index)
 
@@ -956,38 +950,31 @@ void SearchSpline( const color_list &spline, float L, float &A, float &B )
 	// quick and dirty binary search
 
 	float t = 0.5;
-//	if (sample1 != sample2)
-		{
-		const float Ltolerance = 0.1;	// ccox - TODO - what tolerance do we need?
-		
-		float Ltop = spline[sample1].L;
-		float Ttop = 0.0;
-		
-		float Lbottom = spline[sample2].L;
-		float Tbottom = 1.0;
-	
-		float Ltest = SplineInterp( t, spline[sample0].L, spline[sample1].L, spline[sample2].L, spline[sample3].L );
-		
-		while ( fabs( Ltest - L ) > Ltolerance)
-			{
-			if (Ltest < L)
-				{
-				// between top and current
-				Lbottom = Ltest;
-				Tbottom = t;
-				}
-			else
-				{
-				// between current and bottom
-				Ltop = Ltest;
-				Ttop = t;
-				}
-			
-			t = (Ttop + Tbottom) * 0.5;
-			Ltest = SplineInterp( t, spline[sample0].L, spline[sample1].L, spline[sample2].L, spline[sample3].L );
-			
-			}
-		}
+    const float Ltolerance = 0.1;   // this seems to be good enough
+    
+    float Ltop = spline[sample1].L;
+    float Ttop = 0.0;
+    
+    float Lbottom = spline[sample2].L;
+    float Tbottom = 1.0;
+
+    float Ltest = SplineInterp( t, spline[sample0].L, spline[sample1].L, spline[sample2].L, spline[sample3].L );
+    
+    // quick and dirty binary search
+    while ( fabs( Ltest - Ltarget ) > Ltolerance) {
+        if (Ltest < Ltarget) {
+            // between top and current
+            Lbottom = Ltest;
+            Tbottom = t;
+        } else {
+            // between current and bottom
+            Ltop = Ltest;
+            Ttop = t;
+        }
+        
+        t = (Ttop + Tbottom) * 0.5;
+        Ltest = SplineInterp( t, spline[sample0].L, spline[sample1].L, spline[sample2].L, spline[sample3].L );
+    }
 	
 	// interpolate colors and return result
 	A = SplineInterp( t, spline[sample0].A, spline[sample1].A, spline[sample2].A, spline[sample3].A );
@@ -1218,7 +1205,7 @@ void MixPointsFromSplines( const size_t subdivisions, const spline_mix_data &inp
 size_t FindClosestPointInList( const PointList &list, Point &input )
 {
 	// ccox - start with brute force linear search
-	// TODO - find a way to accelerate the search
+	// DEFERRED - find a way to accelerate the search
 	
 	float closest_dist = 256.0*256.0*256.0;		// much greater than our maximum possible distance
 	size_t closest_index = -1;  // really largest positive value because it is unsigned
@@ -1607,7 +1594,7 @@ A2B - inks and overprints to LAB, N-dimensional to 3 channels
 void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfile )
 {
     const int maxChannels = 15;          // ICC spec. limit
-    const int maxGridPoints = 31;        // sanity limit - TODO - increase limit in release build
+    const int maxGridPoints = 31;        // sanity limit (could be increased)
     const int maxGridSize = 1024*1024;   // limit 1 Meg points for now (3 Meg in file)
     
     int inkCount = (int)inkSet.primaries.size();
@@ -1686,9 +1673,10 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
             gridData[ 3*index + 2 ] = (uint8_t)Bout;
         }
         
-        // increment last counter
+        // increment last counters
         //    if incremented is >= gridPoints, reset and roll upward in list
-        for (int j = (int)(inkCount-1); j >= 0; --j) {
+        //    if we don't overflow, save the incremented value and break out of the loop
+        for (int j = (inkCount-1); j >= 0; --j) {
             int temp = loopCounters[j] + 1;
             if (temp >= gridPoints && j != 0)   // we want counter 0 to overflow, to end the big loop
                 loopCounters[j] = 0;
@@ -1745,6 +1733,30 @@ std::vector<float> ScaleInkWeights( float t, std::vector<float> &a, const int ch
 
 /********************************************************************************/
 
+// this is mostly for debugging, but at one point I had some > 1.0 values
+static
+std::vector<float> ClipInkWeights( std::vector<float> &a, const int channels )
+{
+    std::vector<float> result(a);
+    float maxVal = a[0];
+    float minVal = a[0];
+    for (int c = 1; c < channels; ++c) {
+        maxVal = std::max( a[c], maxVal );
+        minVal = std::min( a[c], minVal );
+    }
+    
+    if (maxVal > 1.0) {     // haven't hit this case yet, yay!
+        float scale = 1.0 / maxVal;
+        result = ScaleInkWeights( scale, a, channels );
+    }
+    
+    assert(minVal >= 0.0);
+    
+    return result;
+}
+
+/********************************************************************************/
+
 bool splineHueIndexLess(const splineHuePair &a, const splineHuePair &b)
 {
     if (a.angle == b.angle)
@@ -1759,7 +1771,8 @@ void AdjustInkMixForL( float Ltarget, const std::vector<labColor> &inkList,
             std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
     const float tolerance = 0.1;
-// TODO - this needs work to guarantee convergence or bail
+// TODO - this needs work to guarantee convergence or bail, and be faster!
+// would a simple binary search be easier and faster?
     const float step = 0.7;     // determined by trial and error, probably not optimal
     
     std::vector<float> neutralWeights( inkCount );
@@ -1798,13 +1811,13 @@ void AdjustInkMixForL( float Ltarget, const std::vector<labColor> &inkList,
         }  else {
             // too light, blend toward neutral (all 1s) mix, or reduce light
             if (Lcurrent <= Lstart) {
-                // we need neutral, increase that
-                tDark += 0.7 * step * delta/100.0;
+                // we need more neutral, increase that
+                tDark += 0.7 * step * delta/100.0;  // asymmetrical to prevent infinite loops
                 if (tDark > 1.0)
                     tDark = 1.0;
             } else {
                 // we added paper, reduce that
-                tPaper -= 0.7 * step * delta/100.0;
+                tPaper -= 0.7 * step * delta/100.0;  // asymmetrical to prevent infinite loops
                 if (tPaper < 0.0)
                     tPaper = 0.0;
             }
@@ -2034,6 +2047,9 @@ assert(angle2 <= angle1);
                     
                     // interpolate inks
                     inkWeights = MixInkWeights( hueFraction, inkWeights2, inkWeights, inkCount );
+                    
+                    // pin inks in case we have some out of range (also a debugging check)
+                    inkWeights = ClipInkWeights( inkWeights, inkCount );
 
                     // scale from full inks to neutral  (aka: interp to no ink)
                     assert( tchroma >= 0.0 );
