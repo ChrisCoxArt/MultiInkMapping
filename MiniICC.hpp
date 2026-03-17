@@ -18,42 +18,42 @@
 /********************************************************************************/
 
 typedef enum : uint32_t  {
-	kClassInput = 'scnr',
-	kClassMonitor = 'mntr',
-	kClassOutput = 'prtr',
-	kClassDeviceLink = 'link',
-	kClassSpace = 'spac',
-	kClassAbstract = 'abst',
-	kClassNamed = 'nmcl',
+    kClassInput = 'scnr',
+    kClassMonitor = 'mntr',
+    kClassOutput = 'prtr',
+    kClassDeviceLink = 'link',
+    kClassSpace = 'spac',
+    kClassAbstract = 'abst',
+    kClassNamed = 'nmcl',
 } profile_class;
 
 typedef enum : uint32_t {
-	kSpaceXYZ = 'XYZ ',
-	kSpaceLAB = 'Lab ',
-	kSpaceLUV = 'Luv ',
-	kSpaceYCbCr = 'YCbr',
-	kSpaceYxy = 'Yxy ',
-	kSpaceRGB = 'RGB ',
-	kSpaceGray = 'GRAY',
-	kSpaceHSV = 'HSV ',
-	kSpaceHLS = 'HLS ',
-	kSpaceCMYK = 'CMYK',
-	kSpaceCMY = 'CMY ',
-	kSpace1CLR = '1CLR',
-	kSpace2CLR = '2CLR',
-	kSpace3CLR = '3CLR',
-	kSpace4CLR = '4CLR',
-	kSpace5CLR = '5CLR',
-	kSpace6CLR = '6CLR',
-	kSpace7CLR = '7CLR',
-	kSpace8CLR = '8CLR',
-	kSpace9CLR = '9CLR',
-	kSpaceACLR = 'ACLR',
-	kSpaceBCLR = 'BCLR',
-	kSpaceCCLR = 'CCLR',
-	kSpaceDCLR = 'DCLR',
-	kSpaceECLR = 'ECLR',
-	kSpaceFCLR = 'FCLR',
+    kSpaceXYZ = 'XYZ ',
+    kSpaceLAB = 'Lab ',
+    kSpaceLUV = 'Luv ',
+    kSpaceYCbCr = 'YCbr',
+    kSpaceYxy = 'Yxy ',
+    kSpaceRGB = 'RGB ',
+    kSpaceGray = 'GRAY',
+    kSpaceHSV = 'HSV ',
+    kSpaceHLS = 'HLS ',
+    kSpaceCMYK = 'CMYK',
+    kSpaceCMY = 'CMY ',
+    kSpace1CLR = '1CLR',
+    kSpace2CLR = '2CLR',
+    kSpace3CLR = '3CLR',
+    kSpace4CLR = '4CLR',
+    kSpace5CLR = '5CLR',
+    kSpace6CLR = '6CLR',
+    kSpace7CLR = '7CLR',
+    kSpace8CLR = '8CLR',
+    kSpace9CLR = '9CLR',
+    kSpaceACLR = 'ACLR',
+    kSpaceBCLR = 'BCLR',
+    kSpaceCCLR = 'CCLR',
+    kSpaceDCLR = 'DCLR',
+    kSpaceECLR = 'ECLR',
+    kSpaceFCLR = 'FCLR',
 } color_space;
 
 typedef enum : uint32_t  {
@@ -99,8 +99,8 @@ struct tableFormat {
     profile_sig     tableSig;
     profile_sig     pointsBackTo;   // so we have A2B1 and A2B2 refer back to A2B0
     
-    int				tableDepth;
-    int				tableGridPoints;
+    int                tableDepth;
+    int                tableGridPoints;
     int             tableDimensions;
     int             tableChannels;
     std::shared_ptr<uint8_t> tableData;
@@ -132,19 +132,19 @@ struct profileData {
 
     profileData() : preferredCMM('ICCD'), platform('APPL'), manufacturer('none'), creator('ccox') {}
 
-    std::string	    description;        // required
+    std::string     description;        // required
     std::string     copyright;          // required
     uint32_t        preferredCMM;       // required, default set
     uint32_t        platform;           // required, default set
     uint32_t        manufacturer;       // required, default set
     uint32_t        creator;            // required, default set
 
-    profile_class	profileClass;       // required
-    color_space		colorSpace;         // required
-    color_space		pcsSpace;           // required
+    profile_class   profileClass;       // required
+    color_space     colorSpace;         // required
+    color_space     pcsSpace;           // required
 
     std::string     otherText;          // optional, can be empty
-    
+
     std::vector<tableFormat> LUTtables;
 
     std::vector<colorantTableFormat> colorantTables;

@@ -21,13 +21,13 @@ PERFORMANCE - estimate_ink_mix and estimate_fractional_ink_mix reconvert LAB to 
     change inlists to XYZ and pass those in
 Currently 1.3 seconds for ALL profiles and TIFF files - so not exactly slow to start with.
 DONE -
-798.30 ms  100.0%	0 s	  Main Thread  0x1359666
-157.10 ms  19.7%	0 s	   cbrtf
-129.70 ms  16.2%	0 s	   FindClosestPointInList(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point&)
-107.00 ms  13.4%	0 s	   pointInPoly(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point)
-61.20 ms   7.7%	0 s	   createA2B_table(inkColorSet const&, int, profileData&)
-45.80 ms   5.7%	0 s	   nanov2_malloc
-36.90 ms   4.6%	0 s	   _nanov2_free
+798.30 ms  100.0%    0 s      Main Thread  0x1359666
+157.10 ms  19.7%    0 s       cbrtf
+129.70 ms  16.2%    0 s       FindClosestPointInList(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point&)
+107.00 ms  13.4%    0 s       pointInPoly(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point)
+61.20 ms   7.7%    0 s       createA2B_table(inkColorSet const&, int, profileData&)
+45.80 ms   5.7%    0 s       nanov2_malloc
+36.90 ms   4.6%    0 s       _nanov2_free
 
 
 
@@ -73,40 +73,40 @@ const char kVersionString[] = "0.8a";
 /******************************************************************************/
 
 struct labColor {
-	float L;
-	float A;
-	float B;
-	
+    float L;
+    float A;
+    float B;
+    
 public:
-	labColor() {};
-	labColor( float l, float a, float b) : L(l), A(a), B(b) {}
+    labColor() {};
+    labColor( float l, float a, float b) : L(l), A(a), B(b) {}
 };
 
 struct labColorNamed {
     std::string name;
     labColor color;
-	
+    
 public:
-	labColorNamed( const std::string &n, float l, float a, float b) : name(n), color(l,a,b) {}
+    labColorNamed( const std::string &n, float l, float a, float b) : name(n), color(l,a,b) {}
 };
 
 struct xyzColor {
-	float X;
-	float Y;
-	float Z;
-	
+    float X;
+    float Y;
+    float Z;
+    
 public:
-	xyzColor() {};
-	xyzColor( float x, float y, float z) : X(x), Y(y), Z(z) {}
+    xyzColor() {};
+    xyzColor( float x, float y, float z) : X(x), Y(y), Z(z) {}
 };
 
 struct Point {
-	float a;
-	float b;
+    float a;
+    float b;
 
 public:
-	Point() {};
-	Point( float A, float B ) : a(A), b(B) {}
+    Point() {};
+    Point( float A, float B ) : a(A), b(B) {}
     
     bool operator==(const Point& other) const = default;
 };
@@ -454,11 +454,11 @@ void VerifyDecreasingL( const color_list &list )
 {
 // NOTE - this is just a debugging aid
 #if !NDEBUG
-	size_t count = list.size();
-	for (size_t i = 1; i < count; ++i) {
-		float currentL = list[i].L;
-		float previousL = list[i-1].L;
-		assert( currentL <= previousL);
+    size_t count = list.size();
+    for (size_t i = 1; i < count; ++i) {
+        float currentL = list[i].L;
+        float previousL = list[i-1].L;
+        assert( currentL <= previousL);
     }
 #endif
 }
@@ -471,111 +471,111 @@ const float ZD50 = 82.5188;
 
 float CIECurve( const float input )
 {
-	const float scale = 7.787037;	        // powf( 29.0/6.0, 2.0) / 3.0;
-	const float breakpoint = 0.008856;		// powf( 6.0/29.0, 3.0 );
-	
-	if (input > breakpoint)
-		return cbrtf( input );
-	else
-		return (input * scale + (4.0/29.0));
+    const float scale = 7.787037;            // powf( 29.0/6.0, 2.0) / 3.0;
+    const float breakpoint = 0.008856;        // powf( 6.0/29.0, 3.0 );
+    
+    if (input > breakpoint)
+        return cbrtf( input );
+    else
+        return (input * scale + (4.0/29.0));
 }
 
 /********************************************************************************/
 
 float CIEReverseCurve( const float input )
 {
-	const float scale = 1.0 / 7.787037;		// 0.128418549  // 3.0 * powf( 6.0/29.0, 2.0);
-	const float breakpoint = 6.0/29.0;
-	
-	if (input > breakpoint)
-		return input*input*input;   // powf(input,3);
-	else
-		return scale*(input - (4.0/29.0));
+    const float scale = 1.0 / 7.787037;        // 0.128418549  // 3.0 * powf( 6.0/29.0, 2.0);
+    const float breakpoint = 6.0/29.0;
+    
+    if (input > breakpoint)
+        return input*input*input;   // powf(input,3);
+    else
+        return scale*(input - (4.0/29.0));
 }
 
 /********************************************************************************/
 
 xyzColor LAB2XYZ( const labColor &input )
 {
-	xyzColor result;
-	
-	float tempY = (input.L + 16)/116.0;
+    xyzColor result;
+    
+    float tempY = (input.L + 16)/116.0;
 
-	float Y = YD50 * CIEReverseCurve( tempY );
-	float X = XD50 * CIEReverseCurve( tempY + input.A / 500.0 );
-	float Z = ZD50 * CIEReverseCurve( tempY - input.B / 200.0 );
+    float Y = YD50 * CIEReverseCurve( tempY );
+    float X = XD50 * CIEReverseCurve( tempY + input.A / 500.0 );
+    float Z = ZD50 * CIEReverseCurve( tempY - input.B / 200.0 );
 
-	result.X = X;
-	result.Y = Y;
-	result.Z = Z;
+    result.X = X;
+    result.Y = Y;
+    result.Z = Z;
 
-	return result;
+    return result;
 }
 
 /********************************************************************************/
 
 labColor XYZ2LAB( const xyzColor &input )
 {
-	labColor result;
-	
-	float tempY = CIECurve( input.Y / YD50 );
-	float tempX = CIECurve( input.X / XD50 );
-	float tempZ = CIECurve( input.Z / ZD50 );
+    labColor result;
+    
+    float tempY = CIECurve( input.Y / YD50 );
+    float tempX = CIECurve( input.X / XD50 );
+    float tempZ = CIECurve( input.Z / ZD50 );
 
-	float L = 116.0 * tempY - 16.0;
-	float a = 500 * ( tempX - tempY );
-	float b = 200 * ( tempY - tempZ );
+    float L = 116.0 * tempY - 16.0;
+    float a = 500 * ( tempX - tempY );
+    float b = 200 * ( tempY - tempZ );
 
-	result.L = L;
-	result.A = a;
-	result.B = b;
+    result.L = L;
+    result.A = a;
+    result.B = b;
 
-	return result;
+    return result;
 }
 
 /********************************************************************************/
 
 float LERP( const float t, const float x1, const float x2 )
 {
-	return x1 + t*(x2-x1);
+    return x1 + t*(x2-x1);
 }
  
 /********************************************************************************/
 
 inline xyzColor operator*( const float &scale, const xyzColor &b)
 {
-	xyzColor result;
-	result.X = scale * b.X;
-	result.Y = scale * b.Y;
-	result.Z = scale * b.Z;
-	return result;
+    xyzColor result;
+    result.X = scale * b.X;
+    result.Y = scale * b.Y;
+    result.Z = scale * b.Z;
+    return result;
 }
  
 /********************************************************************************/
 
 inline xyzColor& operator*=( xyzColor &a, float s)
 {
-	a.X *= s;
-	a.Y *= s;
-	a.Z *= s;
-	return a;
+    a.X *= s;
+    a.Y *= s;
+    a.Z *= s;
+    return a;
 }
 
 /********************************************************************************/
 
 inline xyzColor operator*( const xyzColor &a, const xyzColor &b)
 {
-	xyzColor result;
+    xyzColor result;
 #if 1
-	result.X = a.X * b.X * (1.0f / 100.0f);
-	result.Y = a.Y * b.Y * (1.0f / 100.0f);
-	result.Z = a.Z * b.Z * (1.0f / 100.0f);
+    result.X = a.X * b.X * (1.0f / 100.0f);
+    result.Y = a.Y * b.Y * (1.0f / 100.0f);
+    result.Z = a.Z * b.Z * (1.0f / 100.0f);
 #else
-	result.X = a.X * b.X / 100.0;
-	result.Y = a.Y * b.Y / 100.0;
-	result.Z = a.Z * b.Z / 100.0;
+    result.X = a.X * b.X / 100.0;
+    result.Y = a.Y * b.Y / 100.0;
+    result.Z = a.Z * b.Z / 100.0;
 #endif
-	return result;
+    return result;
 }
  
 /********************************************************************************/
@@ -583,88 +583,88 @@ inline xyzColor operator*( const xyzColor &a, const xyzColor &b)
 inline xyzColor& operator*=( xyzColor &a, const xyzColor &b)
 {
 #if 1
-	a.X = a.X * b.X * (1.0f / 100.0f);
-	a.Y = a.Y * b.Y * (1.0f / 100.0f);
-	a.Z = a.Z * b.Z * (1.0f / 100.0f);
+    a.X = a.X * b.X * (1.0f / 100.0f);
+    a.Y = a.Y * b.Y * (1.0f / 100.0f);
+    a.Z = a.Z * b.Z * (1.0f / 100.0f);
 #else
-	a.X = a.X * b.X / 100.0;
-	a.Y = a.Y * b.Y / 100.0;
-	a.Z = a.Z * b.Z / 100.0;
+    a.X = a.X * b.X / 100.0;
+    a.Y = a.Y * b.Y / 100.0;
+    a.Z = a.Z * b.Z / 100.0;
 #endif
-	return a;
+    return a;
 }
  
 /********************************************************************************/
 
 inline xyzColor operator/( const xyzColor &a, const xyzColor &b)
 {
-	xyzColor result;
-	result.X = 100.0 * a.X / b.X;
-	result.Y = 100.0 * a.Y / b.Y;
-	result.Z = 100.0 * a.Z / b.Z;
-	return result;
+    xyzColor result;
+    result.X = 100.0 * a.X / b.X;
+    result.Y = 100.0 * a.Y / b.Y;
+    result.Z = 100.0 * a.Z / b.Z;
+    return result;
 }
  
 /********************************************************************************/
 
 inline xyzColor& operator/=( xyzColor &a, const xyzColor &b)
 {
-	a.X = 100.0 * a.X / b.X;
-	a.Y = 100.0 * a.Y / b.Y;
-	a.Z = 100.0 * a.Z / b.Z;
-	return a;
+    a.X = 100.0 * a.X / b.X;
+    a.Y = 100.0 * a.Y / b.Y;
+    a.Z = 100.0 * a.Z / b.Z;
+    return a;
 }
  
 /********************************************************************************/
 
 inline xyzColor& operator/=( xyzColor &a, const float s)
 {
-	a.X /= s;
-	a.Y /= s;
-	a.Z /= s;
-	return a;
+    a.X /= s;
+    a.Y /= s;
+    a.Z /= s;
+    return a;
 }
 
 /********************************************************************************/
 
 inline xyzColor operator+( const xyzColor &a, const xyzColor &b)
 {
-	xyzColor result;
-	result.X = a.X + b.X;
-	result.Y = a.Y + b.Y;
-	result.Z = a.Z + b.Z;
-	return result;
+    xyzColor result;
+    result.X = a.X + b.X;
+    result.Y = a.Y + b.Y;
+    result.Z = a.Z + b.Z;
+    return result;
 }
  
 /********************************************************************************/
 
 inline xyzColor& operator+=( xyzColor &a, const xyzColor &b)
 {
-	a.X += b.X;
-	a.Y += b.Y;
-	a.Z += b.Z;
-	return a;
+    a.X += b.X;
+    a.Y += b.Y;
+    a.Z += b.Z;
+    return a;
 }
  
 /********************************************************************************/
 
 inline xyzColor operator-( const xyzColor &a, const xyzColor &b)
 {
-	xyzColor result;
-	result.X = a.X - b.X;
-	result.Y = a.Y - b.Y;
-	result.Z = a.Z - b.Z;
-	return result;
+    xyzColor result;
+    result.X = a.X - b.X;
+    result.Y = a.Y - b.Y;
+    result.Z = a.Z - b.Z;
+    return result;
 }
  
 /********************************************************************************/
 
 inline xyzColor& operator-=( xyzColor &a, const xyzColor &b)
 {
-	a.X -= b.X;
-	a.Y -= b.Y;
-	a.Z -= b.Z;
-	return a;
+    a.X -= b.X;
+    a.Y -= b.Y;
+    a.Z -= b.Z;
+    return a;
 }
 
 /********************************************************************************/
@@ -672,11 +672,11 @@ inline xyzColor& operator-=( xyzColor &a, const xyzColor &b)
 // linear interpolation
 xyzColor interp2inks( const float t, const xyzColor &ink1, const xyzColor &ink2 )
 {
-	xyzColor result;
+    xyzColor result;
 
-	result = ink1 + t * (ink2 - ink1);
-	
-	return result;
+    result = ink1 + t * (ink2 - ink1);
+    
+    return result;
 }
 
 /********************************************************************************/
@@ -684,13 +684,13 @@ xyzColor interp2inks( const float t, const xyzColor &ink1, const xyzColor &ink2 
 // linear interpolation in LAB - really only useful for nearby colors or neutrals
 labColor interp2inks( const float t, const labColor &ink1, const labColor &ink2 )
 {
-	labColor result;
+    labColor result;
 
-	result.L = LERP( t, ink1.L, ink2.L );
-	result.A = LERP( t, ink1.A, ink2.A );
-	result.B = LERP( t, ink1.B, ink2.B );
-	
-	return result;
+    result.L = LERP( t, ink1.L, ink2.L );
+    result.A = LERP( t, ink1.A, ink2.A );
+    result.B = LERP( t, ink1.B, ink2.B );
+    
+    return result;
 }
 
 /********************************************************************************/
@@ -698,39 +698,39 @@ labColor interp2inks( const float t, const labColor &ink1, const labColor &ink2 
 color_list mix_pure_ink_spline( int steps, const labColor &paperColor, const labColor &inkColor, const labColor &darkColor)
 {
     int i;
-	xyzColor mix;
-	labColor mixLAB;
-	color_list temp;
+    xyzColor mix;
+    labColor mixLAB;
+    color_list temp;
     
-	xyzColor paperColorXYZ = LAB2XYZ( paperColor );
-	xyzColor darkColorXYZ = LAB2XYZ( darkColor );
+    xyzColor paperColorXYZ = LAB2XYZ( paperColor );
+    xyzColor darkColorXYZ = LAB2XYZ( darkColor );
     
-	xyzColor inkColorXYZ = LAB2XYZ( inkColor );
+    xyzColor inkColorXYZ = LAB2XYZ( inkColor );
 
-	// exact paper
-	temp.push_back( paperColor );
+    // exact paper
+    temp.push_back( paperColor );
     
     // interp paper->ink
-	for (i=1; i < (steps/2); ++i) {
-		float t = (float) i / (float) (steps/2);
-		mix = interp2inks( t, paperColorXYZ, inkColorXYZ );
-		mixLAB = XYZ2LAB( mix );
-		temp.push_back( mixLAB );
+    for (i=1; i < (steps/2); ++i) {
+        float t = (float) i / (float) (steps/2);
+        mix = interp2inks( t, paperColorXYZ, inkColorXYZ );
+        mixLAB = XYZ2LAB( mix );
+        temp.push_back( mixLAB );
     }
     
-	// exact ink
-	temp.push_back( inkColor );
+    // exact ink
+    temp.push_back( inkColor );
  
     // interp ink->dark
-	for (i=(steps/2)+1; i < (steps-1); ++i) {
-		float t = (float) (i - (steps/2)) / (float) (steps/2);
-		mix = interp2inks( t, inkColorXYZ, darkColorXYZ );
-		mixLAB = XYZ2LAB( mix );
-		temp.push_back( mixLAB );
+    for (i=(steps/2)+1; i < (steps-1); ++i) {
+        float t = (float) (i - (steps/2)) / (float) (steps/2);
+        mix = interp2inks( t, inkColorXYZ, darkColorXYZ );
+        mixLAB = XYZ2LAB( mix );
+        temp.push_back( mixLAB );
     }
     
-	// exact dark
-	temp.push_back( darkColor );
+    // exact dark
+    temp.push_back( darkColor );
  
     // error checking
     VerifyDecreasingL(temp);
@@ -752,7 +752,7 @@ bool labHueLess(const labColorNamed &a, const labColorNamed &b)
 // here we want chromatic mixes, not darks
 xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
 {
-	xyzColor identity( 100.0, 100.0, 100.0 );
+    xyzColor identity( 100.0, 100.0, 100.0 );
     
     xyzColor overprint = identity;
     xyzColor average(0,0,0);
@@ -779,7 +779,9 @@ xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor 
 xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
             const std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
-	xyzColor identity( 100.0, 100.0, 100.0 );
+    xyzColor identity( 100.0, 100.0, 100.0 );
+ 
+    assert( inkCount >= 1 && inkCount <= 15 );
     
     xyzColor overprint = identity;
     for (int i = 0; i < inkCount; ++i) {
@@ -802,7 +804,7 @@ xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
 xyzColor estimate_darkest_ink_overprint( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
 {
     const float Ylimit = 1.3;
-	xyzColor identity( 100.0, 100.0, 100.0 );
+    xyzColor identity( 100.0, 100.0, 100.0 );
     
     xyzColor overprint = identity;
     for ( const auto &ink : inkList ) {
@@ -838,9 +840,9 @@ xyzColor estimate_darkest_ink_overprint( const std::vector<labColorNamed> &inkLi
 void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int steps,
             const size_t ink1Index, const size_t ink2Index, const xyzColor &paperColor )
 {
-	color_list temp;
-	labColor mixLAB;
-	xyzColor identity( 100.0, 100.0, 100.0 );
+    color_list temp;
+    labColor mixLAB;
+    xyzColor identity( 100.0, 100.0, 100.0 );
  
     labColor ink1 = inkSet.primaries[ink1Index].color;
     labColor ink2 = inkSet.primaries[ink2Index].color;
@@ -873,12 +875,12 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
 // create splines from mixes of inks and paper colors
 void mix_ink_splines( inkColorSet &inkSet )
 {
-	const int steps = 51;	// odd so we have a midpoint
+    const int steps = 51;    // odd so we have a midpoint
     const int divisions = 4;    // even so we have a midpoint (5 splines per surface)
-	color_list temp;
-	xyzColor mix;
-	labColor mixLAB;
-	xyzColor identity( 100.0, 100.0, 100.0 );
+    color_list temp;
+    xyzColor mix;
+    labColor mixLAB;
+    xyzColor identity( 100.0, 100.0, 100.0 );
 
 
     size_t inkCount = inkSet.primaries.size();
@@ -888,14 +890,14 @@ void mix_ink_splines( inkColorSet &inkSet )
     // Need inks in hue angle order so the splines will be in order for hull
     std::sort( inkSet.primaries.begin(), inkSet.primaries.end(), labHueLess );
 
-	xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
+    xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
 
 
     // If the combined color has 0 L, estimate it from primaries
     // so we can get something sort of realistic for the mix
     if (inkSet.darkColor.L <= 0) {
         mix = estimate_darkest_ink_overprint( inkSet.primaries, paperColor );
-		mixLAB = XYZ2LAB( mix );
+        mixLAB = XYZ2LAB( mix );
 #if 1
         printf("Estimated overprint for %s is (%f, %f, %f)\n",
             inkSet.name.c_str(),
@@ -907,7 +909,7 @@ void mix_ink_splines( inkColorSet &inkSet )
 
     // first ink spline, always calculated
     temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[0].color, inkSet.darkColor );
-	inkSet.splines.push_back( temp );
+    inkSet.splines.push_back( temp );
     inkSet.mixData.push_back( inkMixPair( 0, 0, 1.0, 0.0 ) );
 
     // iterate any additional inks, keeping splines in order
@@ -939,19 +941,19 @@ float SplineInterp( float t, float A, float B, float C, float D )
 
 // catmull rom - cardinal spline with tension = 0.5
 // needs scaling by 0.5 at end
-	const float	M11 = -1.0, M12 = 3.0, M13 = -3.0, M14 = 1.0;
-	const float	M21 = 2.0, M22 = -5.0, M23 = 4.0, M24 = -1.0;
-	const float	M31 = -1.0, M32 = 0.0, M33 = 1.0, M34 = 0.0;
-	const float	M41 = 0.0, M42 = 2.0, M43 = 0.0, M44 = 0.0;
-	
-	// cubic interp
-	float value;
-	value  = A * (M41 + t * (M31 + t * (M21 + t*M11) ) );
-	value += B * (M42 + t * (M32 + t * (M22 + t*M12) ) );
-	value += C * (M43 + t * (M33 + t * (M23 + t*M13) ) );
-	value += D * (M44 + t * (M34 + t * (M24 + t*M14) ) );
-	
-	return 0.5 * value;
+    const float    M11 = -1.0, M12 = 3.0, M13 = -3.0, M14 = 1.0;
+    const float    M21 = 2.0, M22 = -5.0, M23 = 4.0, M24 = -1.0;
+    const float    M31 = -1.0, M32 = 0.0, M33 = 1.0, M34 = 0.0;
+    const float    M41 = 0.0, M42 = 2.0, M43 = 0.0, M44 = 0.0;
+    
+    // cubic interp
+    float value;
+    value  = A * (M41 + t * (M31 + t * (M21 + t*M11) ) );
+    value += B * (M42 + t * (M32 + t * (M22 + t*M12) ) );
+    value += C * (M43 + t * (M33 + t * (M23 + t*M13) ) );
+    value += D * (M44 + t * (M34 + t * (M24 + t*M14) ) );
+    
+    return 0.5 * value;
 }
 
 /********************************************************************************/
@@ -962,32 +964,32 @@ float SplineInterp( float t, float A, float B, float C, float D )
 
 void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
 {
-	// find points in list that bracket L
-	// list is greatest to least (white to black)
-	// ccox - start with a simple linear search
-	int index = 1;
-	for ( ; index < spline.size(); ++index) {
-		if (spline[index].L <= Ltarget)
-			break;
+    // find points in list that bracket L
+    // list is greatest to least (white to black)
+    // ccox - start with a simple linear search
+    int index = 1;
+    for ( ; index < spline.size(); ++index) {
+        if (spline[index].L <= Ltarget)
+            break;
     }
-	
-	assert( index < spline.size() );
-	
-	// find t that gives the correct L to within tolerance (between index-1 and index)
+    
+    assert( index < spline.size() );
+    
+    // find t that gives the correct L to within tolerance (between index-1 and index)
 
-	int sample0 = index - 2;
-	int sample1 = index - 1;
-	int sample2 = index;
-	int sample3 = index + 1;
-	
-	// clip to end points
-	if (sample0 < 0) sample0 = 0;
-	if (sample1 < 0) sample1 = 0;
-	if (sample3 > (int)(spline.size())-1)	sample3 = (int)(spline.size())-1;
-	
-	// quick and dirty binary search
+    int sample0 = index - 2;
+    int sample1 = index - 1;
+    int sample2 = index;
+    int sample3 = index + 1;
+    
+    // clip to end points
+    if (sample0 < 0) sample0 = 0;
+    if (sample1 < 0) sample1 = 0;
+    if (sample3 > (int)(spline.size())-1)    sample3 = (int)(spline.size())-1;
+    
+    // quick and dirty binary search
 
-	float t = 0.5;
+    float t = 0.5;
     const float Ltolerance = 0.1;   // this seems to be good enough
     
     float Ttop = 0.0;
@@ -1009,10 +1011,10 @@ void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
         t = (Ttop + Tbottom) * 0.5;
         Ltest = SplineInterp( t, spline[sample0].L, spline[sample1].L, spline[sample2].L, spline[sample3].L );
     }
-	
-	// interpolate colors and return result
-	A = SplineInterp( t, spline[sample0].A, spline[sample1].A, spline[sample2].A, spline[sample3].A );
-	B = SplineInterp( t, spline[sample0].B, spline[sample1].B, spline[sample2].B, spline[sample3].B );
+    
+    // interpolate colors and return result
+    A = SplineInterp( t, spline[sample0].A, spline[sample1].A, spline[sample2].A, spline[sample3].A );
+    B = SplineInterp( t, spline[sample0].B, spline[sample1].B, spline[sample2].B, spline[sample3].B );
 
 }
 
@@ -1021,21 +1023,21 @@ void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
 // are we less than our darkest, or greater than our brightest point?
 bool ClippedL( float Linput, labColor &output, const inkColorSet &inkSet )
 {
-	output.L = 0.0;
-	output.A = 0.0;
-	output.B = 0.0;
-	
-	if (Linput < inkSet.darkColor.L) {
-		output = inkSet.darkColor;
-		return true;
+    output.L = 0.0;
+    output.A = 0.0;
+    output.B = 0.0;
+    
+    if (Linput < inkSet.darkColor.L) {
+        output = inkSet.darkColor;
+        return true;
     }
 
-	if (Linput > inkSet.paperColor.L) {
-		output = inkSet.paperColor;
-		return true;
+    if (Linput > inkSet.paperColor.L) {
+        output = inkSet.paperColor;
+        return true;
     }
 
-	return false;
+    return false;
 }
 
 
@@ -1048,16 +1050,16 @@ void SplineInterpList( const size_t subdivisions, const PointList &input, PointL
     
     result.reserve( subdivisions+1 );
     
-	// iterate through list
-	for (size_t i = 0; i <= subdivisions; ++i) {
-		/// which input points are we between?
-		float floatIndex = ((float)pointCount * i) / (float)subdivisions;
-		int pointIndex = int( floatIndex );
-		
-		int p0 = pointIndex - 1;
-		int p1 = pointIndex;
-		int p2 = pointIndex + 1;
-		int p3 = pointIndex + 2;
+    // iterate through list
+    for (size_t i = 0; i <= subdivisions; ++i) {
+        /// which input points are we between?
+        float floatIndex = ((float)pointCount * i) / (float)subdivisions;
+        int pointIndex = int( floatIndex );
+        
+        int p0 = pointIndex - 1;
+        int p1 = pointIndex;
+        int p2 = pointIndex + 1;
+        int p3 = pointIndex + 2;
 
         if (wrapAround) {
             // wrap around if inks > 2, so we get a solid shape
@@ -1073,19 +1075,19 @@ void SplineInterpList( const size_t subdivisions, const PointList &input, PointL
                 p3 = p3 - pointCount;
         } else {
             // clamp
-            if (p0 < 0)	p0 = 0;
+            if (p0 < 0)    p0 = 0;
             if (p1 < 0) p1 = 0;
             if (p1 >= pointCount) p1 = pointCount-1;
             if (p2 >= pointCount) p2 = pointCount-1;
             if (p3 >= pointCount) p3 = pointCount-1;
         }
         
-		float t = floatIndex - pointIndex;
-		Point newPoint;
-		newPoint.a = SplineInterp( t, input[p0].a, input[p1].a, input[p2].a, input[p3].a );
-		newPoint.b = SplineInterp( t, input[p0].b, input[p1].b, input[p2].b, input[p3].b );
-		
-		result.emplace_back( newPoint );
+        float t = floatIndex - pointIndex;
+        Point newPoint;
+        newPoint.a = SplineInterp( t, input[p0].a, input[p1].a, input[p2].a, input[p3].a );
+        newPoint.b = SplineInterp( t, input[p0].b, input[p1].b, input[p2].b, input[p3].b );
+        
+        result.emplace_back( newPoint );
     }   // end for subdivisions
 }
 
@@ -1135,7 +1137,7 @@ void LinearInterpList( const size_t subdivisions, const PointList &input, PointL
 void PointListFromSplines( const size_t subdivisions, const PointList &input, PointList &result,
                                 bool wrapAround)
 {
-	// evaluate the spline at a fixed number of points, put those into a list of points
+    // evaluate the spline at a fixed number of points, put those into a list of points
     const int pointCount = (int)input.size();
     
     if (pointCount == 1) {
@@ -1144,7 +1146,7 @@ void PointListFromSplines( const size_t subdivisions, const PointList &input, Po
         return;
     }
     
-	result.clear();
+    result.clear();
  
     if (pointCount < 4)
         LinearInterpList( subdivisions, input, result, wrapAround );
@@ -1215,7 +1217,7 @@ void InterpMixList( const size_t subdivisions, const spline_mix_data &input, spl
 void MixPointsFromSplines( const size_t subdivisions, const spline_mix_data &input, spline_mix_data &result,
                                 bool wrapAround)
 {
-	// evaluate the spline at a fixed number of points, put those into a list of points
+    // evaluate the spline at a fixed number of points, put those into a list of points
     const int pointCount = (int)input.size();
     
     if (pointCount == 1) {
@@ -1224,7 +1226,7 @@ void MixPointsFromSplines( const size_t subdivisions, const spline_mix_data &inp
         return;
     }
     
-	result.clear();
+    result.clear();
  
     InterpMixList( subdivisions, input, result, wrapAround );
 }
@@ -1233,7 +1235,7 @@ void MixPointsFromSplines( const size_t subdivisions, const spline_mix_data &inp
 
 size_t FindClosestPointInList( const PointList &list, Point &input )
 {
-	// ccox - start with brute force linear search
+    // ccox - start with brute force linear search
 /*
 DEFERRED - find a way to accelerate the search
     list is always more or less circular
@@ -1247,27 +1249,27 @@ DEFERRED - find a way to accelerate the search
         Could limit the points by removing those closer than 0.1 deltaE
         Count is between 1 and 15*50=750
  */
-	size_t count = list.size();
-	assert( count > 0 );
+    size_t count = list.size();
+    assert( count > 0 );
  
     if (count == 1)
         return 0;
 
-	float closest_dist = 256.0*256.0*256.0;		// much greater than our maximum possible distance
-	size_t closest_index = -1;  // really largest positive value because it is unsigned
-	
-	for (size_t i = 0; i < count; ++i) {
-		float distA = input.a - list[i].a;
-		float distB = input.b - list[i].b;
-		float dist = distA*distA + distB*distB;	// leave it squared
-		
-		if (dist < closest_dist) {
-			closest_dist = dist;
-			closest_index = i;
+    float closest_dist = 256.0*256.0*256.0;        // much greater than our maximum possible distance
+    size_t closest_index = -1;  // really largest positive value because it is unsigned
+    
+    for (size_t i = 0; i < count; ++i) {
+        float distA = input.a - list[i].a;
+        float distB = input.b - list[i].b;
+        float dist = distA*distA + distB*distB;    // leave it squared
+        
+        if (dist < closest_dist) {
+            closest_dist = dist;
+            closest_index = i;
         }
     }
-	
-	assert( closest_index >= 0);
+    
+    assert( closest_index >= 0);
     return closest_index;
 }
 
@@ -1276,14 +1278,14 @@ DEFERRED - find a way to accelerate the search
 // interpolate between 0 and 100.0
 float grid_to_L( int grid_value, int gridPoints )
 {
-	return (100.0 * (float)grid_value) / (float)(gridPoints - 1);
+    return (100.0 * (float)grid_value) / (float)(gridPoints - 1);
 }
 
 // ccox - FIX ME - cheap version for now -- refine if needed
 float grid_to_AB( int grid_value, int gridPoints )
 {
-	float middle = 0.5 * gridPoints;
-	return (127.0 * ((float)grid_value - middle)) / middle;
+    float middle = 0.5 * gridPoints;
+    return (127.0 * ((float)grid_value - middle)) / middle;
 }
 
 /********************************************************************************/
@@ -1291,30 +1293,30 @@ float grid_to_AB( int grid_value, int gridPoints )
 // convert 0..100 representation to file representation
 int floatL_to_fileL8( float L )
 {
-	if (L <= 0.0) return 0;
-	if (L >= 100.0) return 255;
-	return (int)( (255.0 / 100.0) * L + 0.5 );
+    if (L <= 0.0) return 0;
+    if (L >= 100.0) return 255;
+    return (int)( (255.0 / 100.0) * L + 0.5 );
 }
 
 int floatAB_to_fileAB8( float A )
 {
-	if (A > 127.0) return 255;
-	if (A < -128.0) return 0;
-	return (int)( A + 128.0 );
+    if (A > 127.0) return 255;
+    if (A < -128.0) return 0;
+    return (int)( A + 128.0 );
 }
 
 uint8_t float_to_file255( float A )
 {
-	if (A > 1.0) return 255;
-	if (A < 0.0) return 0;
-	return (uint8_t)( A * 255.0 );
+    if (A > 1.0) return 255;
+    if (A < 0.0) return 0;
+    return (uint8_t)( A * 255.0 );
 }
 
 uint16_t float_to_file65535( float A )
 {
-	if (A > 1.0) return 65535;
-	if (A < 0.0) return 0;
-	return (uint16_t)( A * 65535.0 );
+    if (A > 1.0) return 65535;
+    if (A < 0.0) return 0;
+    return (uint16_t)( A * 65535.0 );
 }
 
 /********************************************************************************/
@@ -1323,16 +1325,16 @@ uint16_t float_to_file65535( float A )
 // ICC version 2 profile encoding for LAB 16 bit  --- not usable in TIFF
 int floatL_to_fileL16( float L )
 {
-	if (L <= 0.0) return 0;
-	if (L >= 100.0) return 65280;
-	return (int)( (65280.0 / 100.0) * L + 0.5 );
+    if (L <= 0.0) return 0;
+    if (L >= 100.0) return 65280;
+    return (int)( (65280.0 / 100.0) * L + 0.5 );
 }
 
 int floatAB_to_fileAB16( float A )
 {
-	if (A > 127.0) return 65280;
-	if (A < -128.0) return 0;
-	return (int)( A*256.0 + 32768.0 );
+    if (A > 127.0) return 65280;
+    if (A < -128.0) return 0;
+    return (int)( A*256.0 + 32768.0 );
 }
 
 /********************************************************************************/
@@ -1341,16 +1343,16 @@ int floatAB_to_fileAB16( float A )
 // ICC version 4 colorant table, not the mlut encodings
 int floatL_to_fileL65535( float L )
 {
-	if (L <= 0.0) return 0;
-	if (L >= 100.0) return 65535;
-	return (int)( (65535.0 / 100.0) * L + 0.5 );
+    if (L <= 0.0) return 0;
+    if (L >= 100.0) return 65535;
+    return (int)( (65535.0 / 100.0) * L + 0.5 );
 }
 
 int floatAB_to_fileAB65535( float A )
 {
-	if (A > 127.0) return 65535;
-	if (A < -128.0) return 0;
-	return (int)( (A + 128.0)*257.0 );
+    if (A > 127.0) return 65535;
+    if (A < -128.0) return 0;
+    return (int)( (A + 128.0)*257.0 );
 }
 
 /********************************************************************************/
@@ -1359,7 +1361,7 @@ int floatAB_to_fileAB65535( float A )
 inline
 float Smooth3( float a, float b, float c)
 {
-	return (a + 4*b + c) / 6.0;
+    return (a + 4*b + c) / 6.0;
 }
 
 // prev, current, next
@@ -1381,62 +1383,62 @@ void Smooth3( float *a, float *b, float *c, int channels)
 // filter in place, in one dimension, for 3 channels
 void SmoothOneDirection3( float *data, int gridPoints, int planeStep, int rowStep, int colStep )
 {
-	int i, j, k;
+    int i, j, k;
     
-	for (i = 0; i < gridPoints; ++i) {
-		for (j = 0; j < gridPoints; ++j) {
-			k = 0;
-			
-			// special case first value
+    for (i = 0; i < gridPoints; ++i) {
+        for (j = 0; j < gridPoints; ++j) {
+            k = 0;
             
-			float last0 = data[ i * planeStep + j * rowStep + k*colStep + 0 ];
-			float last1 = data[ i * planeStep + j * rowStep + k*colStep + 1 ];
-			float last2 = data[ i * planeStep + j * rowStep + k*colStep + 2 ];
-			
-			float current0 = last0;
-			float current1 = last1;
-			float current2 = last2;
-			
-			float next0 = 0, next1 = 0, next2 = 0;
-			float result0, result1, result2;
-			
-			for (k = 0; k < (gridPoints-1); ++k) {
-				
-				next0 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 0 ];
-				next1 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 1 ];
-				next2 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 2 ];
-				
-				result0 =  Smooth3( last0, current0, next0 );
-				result1 =  Smooth3( last1, current1, next1 );
-				result2 =  Smooth3( last2, current2, next2 );
-				
-				// write back smoothed result
-				data[ i * planeStep + j * rowStep + k*colStep + 0 ] = result0;
-				data[ i * planeStep + j * rowStep + k*colStep + 1 ] = result1;
-				data[ i * planeStep + j * rowStep + k*colStep + 2 ] = result2;
-				
-				// rotate
-				last0 = current0;
-				last1 = current1;
-				last2 = current2;
-				
-				current0 = next0;
-				current1 = next1;
-				current2 = next2;
+            // special case first value
+            
+            float last0 = data[ i * planeStep + j * rowStep + k*colStep + 0 ];
+            float last1 = data[ i * planeStep + j * rowStep + k*colStep + 1 ];
+            float last2 = data[ i * planeStep + j * rowStep + k*colStep + 2 ];
+            
+            float current0 = last0;
+            float current1 = last1;
+            float current2 = last2;
+            
+            float next0 = 0, next1 = 0, next2 = 0;
+            float result0, result1, result2;
+            
+            for (k = 0; k < (gridPoints-1); ++k) {
+                
+                next0 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 0 ];
+                next1 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 1 ];
+                next2 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 2 ];
+                
+                result0 =  Smooth3( last0, current0, next0 );
+                result1 =  Smooth3( last1, current1, next1 );
+                result2 =  Smooth3( last2, current2, next2 );
+                
+                // write back smoothed result
+                data[ i * planeStep + j * rowStep + k*colStep + 0 ] = result0;
+                data[ i * planeStep + j * rowStep + k*colStep + 1 ] = result1;
+                data[ i * planeStep + j * rowStep + k*colStep + 2 ] = result2;
+                
+                // rotate
+                last0 = current0;
+                last1 = current1;
+                last2 = current2;
+                
+                current0 = next0;
+                current1 = next1;
+                current2 = next2;
             }
-			
-			// special case last k value
-			// next == current already
-			result0 =  Smooth3( last0, current0, next0 );
-			result1 =  Smooth3( last1, current1, next1 );
-			result2 =  Smooth3( last2, current2, next2 );
-			
-			// write back smoothed result
-			data[ i * planeStep + j * rowStep + k*colStep + 0 ] = result0;
-			data[ i * planeStep + j * rowStep + k*colStep + 1 ] = result1;
-			data[ i * planeStep + j * rowStep + k*colStep + 2 ] = result2;
+            
+            // special case last k value
+            // next == current already
+            result0 =  Smooth3( last0, current0, next0 );
+            result1 =  Smooth3( last1, current1, next1 );
+            result2 =  Smooth3( last2, current2, next2 );
+            
+            // write back smoothed result
+            data[ i * planeStep + j * rowStep + k*colStep + 0 ] = result0;
+            data[ i * planeStep + j * rowStep + k*colStep + 1 ] = result1;
+            data[ i * planeStep + j * rowStep + k*colStep + 2 ] = result2;
         }
-		
+        
     }
 
 }
@@ -1460,50 +1462,50 @@ void SmoothOneDirection( float *data, int gridPoints, int planeStep, int rowStep
     float *lastp = &last[0];
     float *currentp = &current[0];
     float *nextp = &next[0];
-	
-	for (int i = 0; i < gridPoints; ++i) {
+    
+    for (int i = 0; i < gridPoints; ++i) {
  
-		for (int j = 0; j < gridPoints; ++j) {
+        for (int j = 0; j < gridPoints; ++j) {
             int k = 0;
             
-			// special case first value
+            // special case first value
             for (int c = 0; c < channels; ++c) {
                 auto value = data[ i * planeStep + j * rowStep + k * colStep + c ];
                 lastp[c] = value;
                 currentp[c] = value;
             }
-			
-			for (k = 0; k < (gridPoints-1); ++k) {
+            
+            for (k = 0; k < (gridPoints-1); ++k) {
             
                 for (int c = 0; c < channels; ++c)
                     nextp[c] = data[ i * planeStep + j * rowStep + (k+1)*colStep + c ];
-				
-				Smooth3( lastp, currentp, nextp, channels );
-				
-				// write back smoothed result
+                
+                Smooth3( lastp, currentp, nextp, channels );
+                
+                // write back smoothed result
                 for (int c = 0; c < channels; ++c)
                    data[ i * planeStep + j * rowStep + k*colStep + c ] = lastp[c];
-				
-				// rotate pointers
+                
+                // rotate pointers
                 float *tempp = lastp;
-				lastp = currentp;
-				currentp = nextp;
+                lastp = currentp;
+                currentp = nextp;
                 nextp = tempp;
             }
-			
-			// special case last k value
-			// next == current, duplicating end value
+            
+            // special case last k value
+            // next == current, duplicating end value
             for (int c = 0; c < channels; ++c)
                nextp[c] = currentp[c];
             
             Smooth3( lastp, currentp, nextp, channels );
-			
-			// write back smoothed result
+            
+            // write back smoothed result
             for (int c = 0; c < channels; ++c)
                data[ i * planeStep + j * rowStep + k*colStep + c ] = lastp[c];
             
         }   // end j loop
-		
+        
     }   // end i loop
 
 }
@@ -1551,12 +1553,12 @@ always 8 bit
 */
 void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoints, profileData &myProfile )
 {
-	int L, A, B;	// my grid iteration indices
+    int L, A, B;    // my grid iteration indices
 
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
 
-	// allocate my gamut grid
+    // allocate my gamut grid
     size_t gridCount =  gridPoints*gridPoints*gridPoints;
     std::unique_ptr<uint8_t> gamutBuffer(new uint8_t[ gridCount ]);
     uint8_t *gamutData = gamutBuffer.get();
@@ -1671,7 +1673,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
     }
 #endif
 
-	xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
+    xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
     
     std::vector<xyzColor> inkListXYZ(maxChannels);
     for (size_t i = 0; i < inkCount; ++i)
@@ -1904,7 +1906,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     assert(inkCount > 0);
     assert(inkCount <= maxChannels);
 
-	xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
+    xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
     
     std::vector<xyzColor> inkListXYZ(maxChannels);
     for (size_t i = 0; i < inkCount; ++i)
@@ -1916,9 +1918,9 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     std::unique_ptr<float> gridBuffer(new float[ gridCount * inkCount ]);
     float *gridData = gridBuffer.get();
 
-	int planeStep = gridPoints*gridPoints * inkCount;
-	int rowStep = gridPoints * inkCount;
-	int colStep = inkCount;
+    int planeStep = gridPoints*gridPoints * inkCount;
+    int rowStep = gridPoints * inkCount;
+    int colStep = inkCount;
 
     // zero the table, just in case
     // can probably remove this after debugging
@@ -1929,30 +1931,30 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     std::vector<float> neutralWeights( inkCount );
     std::vector<splineHuePair> splineHueAngles( inkSet.splines.size() );
     
-	for (int L = 0; L < gridPoints; ++L) {
-		// setup slices variables
-		float Lfloat = grid_to_L( L, gridPoints );
-		
-		//special case less < darkest and > brightest
-		if ( Lfloat <= inkSet.darkColor.L) {    // fill with darkest = all inks
-			for (int A = 0; A < gridPoints; ++A)
-				for (int B = 0; B < gridPoints; ++B) {
+    for (int L = 0; L < gridPoints; ++L) {
+        // setup slices variables
+        float Lfloat = grid_to_L( L, gridPoints );
+        
+        //special case less < darkest and > brightest
+        if ( Lfloat <= inkSet.darkColor.L) {    // fill with darkest = all inks
+            for (int A = 0; A < gridPoints; ++A)
+                for (int B = 0; B < gridPoints; ++B) {
                     for (int c = 0; c < inkCount; ++c)
                         gridData[ L * planeStep + A * rowStep + B*colStep + c ] = 1.0;
                 }
-			
-			continue;
+            
+            continue;
         }
-		if ( Lfloat >= inkSet.paperColor.L) {   // fill with paper = no ink
-			for (int A = 0; A < gridPoints; ++A)
-				for (int B = 0; B < gridPoints; ++B) {
+        if ( Lfloat >= inkSet.paperColor.L) {   // fill with paper = no ink
+            for (int A = 0; A < gridPoints; ++A)
+                for (int B = 0; B < gridPoints; ++B) {
                     for (int c = 0; c < inkCount; ++c)
                         gridData[ L * planeStep + A * rowStep + B*colStep + c ] = 0.0;
                 }
-			
-			continue;
+            
+            continue;
         }
-		
+        
         // interpolate dark and paper in L to get neutral mix
         float tNeutral = (Lfloat - inkSet.darkColor.L) / (inkSet.paperColor.L - inkSet.darkColor.L);
         labColor neutral = interp2inks( tNeutral, inkSet.darkColor, inkSet.paperColor );
@@ -1965,13 +1967,13 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
             neutralWeights[c] = (1.0 - tNeutral);
   
   
-		// interpolate splines in L to get points along this AB plane
-		PointList planeSpline;
+        // interpolate splines in L to get points along this AB plane
+        PointList planeSpline;
         planeSpline.reserve( inkSet.splines.size() );
-		for ( const auto &oneSpline: inkSet.splines ) {
-			float A1, B1;
-			SearchSpline( oneSpline, Lfloat, A1, B1 );
-			planeSpline.push_back( Point( A1, B1 ) );
+        for ( const auto &oneSpline: inkSet.splines ) {
+            float A1, B1;
+            SearchSpline( oneSpline, Lfloat, A1, B1 );
+            planeSpline.push_back( Point( A1, B1 ) );
         }
         
         // create hue angles from points in this plane
@@ -1981,9 +1983,9 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
         }
         
         std::sort( splineHueAngles.begin(), splineHueAngles.end(), splineHueIndexLess );
-		
-		// create interpolated point list from the splines
-		PointList planePoints;
+        
+        // create interpolated point list from the splines
+        PointList planePoints;
         size_t subDivisions = std::min( 300, 50*inkCount );
         PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
@@ -1994,15 +1996,15 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
         assert( planePoints.size() == mixPoints.size() );
 
 
-		// now iterate over this plane/slice
-		for (int A = 0; A < gridPoints; ++A) {
-			float Afloat = grid_to_AB( A, gridPoints );
-			
-			for (int B = 0; B < gridPoints; ++B) {
-				float Bfloat = grid_to_AB( B, gridPoints );
+        // now iterate over this plane/slice
+        for (int A = 0; A < gridPoints; ++A) {
+            float Afloat = grid_to_AB( A, gridPoints );
+            
+            for (int B = 0; B < gridPoints; ++B) {
+                float Bfloat = grid_to_AB( B, gridPoints );
 
-				// find closest point in our line/point list
-				Point thisSpot( Afloat, Bfloat );
+                // find closest point in our line/point list
+                Point thisSpot( Afloat, Bfloat );
 
                 // use closest point outside or for 1 or 2 inks
                 size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
@@ -2107,7 +2109,7 @@ assert(angle2 <= angle1);
                 // write values to the grid
                 for (int c = 0; c < inkCount; ++c)
                     gridData[ L * planeStep + A * rowStep + B*colStep + c ] = inkWeights[c];
-				
+                
             }   // end for B
         }   // end for A
     }   // end for L
@@ -2116,9 +2118,9 @@ assert(angle2 <= angle1);
 
 
     // smooth the floating point table
-	SmoothOneDirection( gridData, gridPoints, planeStep, rowStep, colStep, inkCount );
-	SmoothOneDirection( gridData, gridPoints, rowStep, colStep, planeStep, inkCount );
-	SmoothOneDirection( gridData, gridPoints, colStep, planeStep, rowStep, inkCount );
+    SmoothOneDirection( gridData, gridPoints, planeStep, rowStep, colStep, inkCount );
+    SmoothOneDirection( gridData, gridPoints, rowStep, colStep, planeStep, inkCount );
+    SmoothOneDirection( gridData, gridPoints, colStep, planeStep, rowStep, inkCount );
 
 
 
@@ -2131,7 +2133,7 @@ assert(angle2 <= angle1);
     // order the data for easy viewing as an image
     for (int A = 0; A < gridPoints; ++A) {
         for (int L = 0; L < gridPoints; ++L) {
-			for (int B = 0; B < gridPoints; ++B) {
+            for (int B = 0; B < gridPoints; ++B) {
                 for (int c = 0; c < inkCount; ++c) {
                     outData[c] = float_to_file255( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
                 }
@@ -2152,7 +2154,7 @@ assert(angle2 <= angle1);
     uint16_t *out16Ptr = (uint16_t*)outData;
     for (int L = 0; L < gridPoints; ++L) {
         for (int A = 0; A < gridPoints; ++A) {
-			for (int B = 0; B < gridPoints; ++B) {
+            for (int B = 0; B < gridPoints; ++B) {
                 for (int c = 0; c < inkCount; ++c) {
                     if (depth == 16)
                         out16Ptr[c] = float_to_file65535( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
@@ -2182,21 +2184,21 @@ assert(angle2 <= angle1);
 std::vector<color_space> profileSpaceLookup =
 {
     kSpace1CLR, // index zero
-	kSpace1CLR,
-	kSpace2CLR,
-	kSpace3CLR,
-	kSpace4CLR,
-	kSpace5CLR,
-	kSpace6CLR,
-	kSpace7CLR,
-	kSpace8CLR,
-	kSpace9CLR,
-	kSpaceACLR,
-	kSpaceBCLR,
-	kSpaceCCLR,
-	kSpaceDCLR,
-	kSpaceECLR,
-	kSpaceFCLR,
+    kSpace1CLR,
+    kSpace2CLR,
+    kSpace3CLR,
+    kSpace4CLR,
+    kSpace5CLR,
+    kSpace6CLR,
+    kSpace7CLR,
+    kSpace8CLR,
+    kSpace9CLR,
+    kSpaceACLR,
+    kSpaceBCLR,
+    kSpaceCCLR,
+    kSpaceDCLR,
+    kSpaceECLR,
+    kSpaceFCLR,
 };
 
 /********************************************************************************/
@@ -2205,49 +2207,49 @@ std::vector<color_space> profileSpaceLookup =
 void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoints,
                     const std::string &filename )
 {
-	int L, A, B;	// my grid iteration indices
+    int L, A, B;    // my grid iteration indices
 
-	// allocate my grid
+    // allocate my grid
     size_t gridCount =  gridPoints*gridPoints*gridPoints;
     std::unique_ptr<float> gridBuffer(new float[ gridCount * 3 ]);
     float *gridData = gridBuffer.get();
-	
-	int planeStep = gridPoints*gridPoints * 3;
-	int rowStep = gridPoints * 3;
-	int colStep = 3;
+    
+    int planeStep = gridPoints*gridPoints * 3;
+    int rowStep = gridPoints * 3;
+    int colStep = 3;
     
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
-	
-	for (L = 0; L < gridPoints; ++L) {
-		// setup slices variables
-		float Lfloat = grid_to_L( L, gridPoints );
-		
-		//special case less < darkest and > brightest
-		labColor clippedColor;
-		if (ClippedL( Lfloat, clippedColor, inkSet)) {
-			// fill with clipped value
-			for (A = 0; A < gridPoints; ++A)
-				for (B = 0; B < gridPoints; ++B) {
-					// save the values
-					gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = clippedColor.L;
-					gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = clippedColor.A;
-					gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = clippedColor.B;
+    
+    for (L = 0; L < gridPoints; ++L) {
+        // setup slices variables
+        float Lfloat = grid_to_L( L, gridPoints );
+        
+        //special case less < darkest and > brightest
+        labColor clippedColor;
+        if (ClippedL( Lfloat, clippedColor, inkSet)) {
+            // fill with clipped value
+            for (A = 0; A < gridPoints; ++A)
+                for (B = 0; B < gridPoints; ++B) {
+                    // save the values
+                    gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = clippedColor.L;
+                    gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = clippedColor.A;
+                    gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = clippedColor.B;
                 }
-			
-			continue;
+            
+            continue;
         }   // end ClippedL
-		
-		// interpolate splines in L to get points along this AB plane
-		PointList planeSpline;
-		for ( const auto &oneSpline: inkSet.splines ) {
-			float A1, B1;
-			SearchSpline( oneSpline, Lfloat, A1, B1 );
-			planeSpline.push_back( Point( A1, B1 ) );
+        
+        // interpolate splines in L to get points along this AB plane
+        PointList planeSpline;
+        for ( const auto &oneSpline: inkSet.splines ) {
+            float A1, B1;
+            SearchSpline( oneSpline, Lfloat, A1, B1 );
+            planeSpline.push_back( Point( A1, B1 ) );
         }
-		
-		// create interpolated point list from the splines
-		PointList planePoints;
+        
+        // create interpolated point list from the splines
+        PointList planePoints;
         PointListFromSplines( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
 
 
@@ -2256,15 +2258,15 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 //DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 
 
-		// now iterate over this plane/slice
-		for (A = 0; A < gridPoints; ++A) {
-			float Afloat = grid_to_AB( A, gridPoints );
-			
-			for (B = 0; B < gridPoints; ++B) {
-				float Bfloat = grid_to_AB( B, gridPoints );
+        // now iterate over this plane/slice
+        for (A = 0; A < gridPoints; ++A) {
+            float Afloat = grid_to_AB( A, gridPoints );
+            
+            for (B = 0; B < gridPoints; ++B) {
+                float Bfloat = grid_to_AB( B, gridPoints );
 
-				// find closest point in our line/point list
-				Point thisSpot( Afloat, Bfloat );
+                // find closest point in our line/point list
+                Point thisSpot( Afloat, Bfloat );
 
                 // use closest point outside or for 1 or 2 inks
                 size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
@@ -2277,20 +2279,20 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
                         result = thisSpot;
                 }
                 
-				// save the values
-				gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = Lfloat;
-				gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = result.a;
-				gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = result.b;
-				
-				}   // end for B
-			}   // end for A
-		}   // end for L
+                // save the values
+                gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] = Lfloat;
+                gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] = result.a;
+                gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] = result.b;
+                
+                }   // end for B
+            }   // end for A
+        }   // end for L
 
-	
-	// smooth the 3D table data
-	SmoothOneDirection( gridData, gridPoints, planeStep, rowStep, colStep, 3 );
-	SmoothOneDirection( gridData, gridPoints, rowStep, colStep, planeStep, 3 );
-	SmoothOneDirection( gridData, gridPoints, colStep, planeStep, rowStep, 3 );
+    
+    // smooth the 3D table data
+    SmoothOneDirection( gridData, gridPoints, planeStep, rowStep, colStep, 3 );
+    SmoothOneDirection( gridData, gridPoints, rowStep, colStep, planeStep, 3 );
+    SmoothOneDirection( gridData, gridPoints, colStep, planeStep, rowStep, 3 );
     
 
     assert( depth == 8 || depth == 16 );
@@ -2302,14 +2304,14 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     // order the data for easy viewing as an image
     for (A = 0; A < gridPoints; ++A) {
         for (L = 0; L < gridPoints; ++L) {
-			for (B = 0; B < gridPoints; ++B) {
+            for (B = 0; B < gridPoints; ++B) {
 
-				// convert to integer output values
-				int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
-				int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
-				int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
-				
-				// write value out to file (interleaved)
+                // convert to integer output values
+                int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
+                int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
+                int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
+                
+                // write value out to file (interleaved)
                 outPtr[0] = (uint8_t)Lout;
                 outPtr[1] = (uint8_t)Aout;
                 outPtr[2] = (uint8_t)Bout;
@@ -2329,7 +2331,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     uint16_t *out16Ptr = (uint16_t*)outPtr;
     for (L = 0; L < gridPoints; ++L) {
         for (A = 0; A < gridPoints; ++A) {
-			for (B = 0; B < gridPoints; ++B) {
+            for (B = 0; B < gridPoints; ++B) {
 
                 if (depth == 16) {
                     // convert to integer output values
@@ -2470,13 +2472,13 @@ int gDataGridPoints = 21;
 
 static void print_usage(char *argv[])
 {
-	printf("Usage: %s <args>\n", argv[0] );
-	
-	printf("\t-depth B        bit depth of data [8 or 16] (default %d)\n", gDataDepth );
-	printf("\t-grid G         number of grid points (default %d)\n", gDataGridPoints );
-		
-	printf("\t-version        Prints this message and exits immediately\n" );
-	printf("Version %s, Compiled %s %s\n", kVersionString, __DATE__, __TIME__ );
+    printf("Usage: %s <args>\n", argv[0] );
+    
+    printf("\t-depth B        bit depth of data [8 or 16] (default %d)\n", gDataDepth );
+    printf("\t-grid G         number of grid points (default %d)\n", gDataGridPoints );
+        
+    printf("\t-version        Prints this message and exits immediately\n" );
+    printf("Version %s, Compiled %s %s\n", kVersionString, __DATE__, __TIME__ );
 }
 
 /******************************************************************************/
@@ -2484,59 +2486,59 @@ static void print_usage(char *argv[])
 static void parse_arguments( int argc, char *argv[] )
 {
 
-	for ( int c = 1; c < argc; ++c )
-		{
-		
-		if ( (strcmp( argv[c], "-grid" ) == 0 || strcmp( argv[c], "-g" ) == 0 )
-			&& c < (argc-1) )
-			{
-			gDataGridPoints = atoi( argv[c+1] );
+    for ( int c = 1; c < argc; ++c )
+        {
+        
+        if ( (strcmp( argv[c], "-grid" ) == 0 || strcmp( argv[c], "-g" ) == 0 )
+            && c < (argc-1) )
+            {
+            gDataGridPoints = atoi( argv[c+1] );
             if (gDataGridPoints < 2)
                 gDataGridPoints = 2;
             if (gDataGridPoints > 255)
                 gDataGridPoints = 255;
-			++c;
-			}
-		else if ( (strcmp( argv[c], "-depth" ) == 0 || strcmp( argv[c], "-d" ) == 0 )
-			&& c < (argc-1) )
-			{
-			gDataDepth = atoi( argv[c+1] );
+            ++c;
+            }
+        else if ( (strcmp( argv[c], "-depth" ) == 0 || strcmp( argv[c], "-d" ) == 0 )
+            && c < (argc-1) )
+            {
+            gDataDepth = atoi( argv[c+1] );
             if (gDataDepth > 16)
                 gDataDepth = 16;
             if (gDataDepth < 8)
                 gDataDepth = 8;
             if (gDataDepth != 8 && gDataDepth != 16)
                 gDataDepth = 8;
-			++c;
-			}
-		else if ( strcmp( argv[c], "-V" ) == 0
-				|| strcmp( argv[c], "-v" ) == 0
-				|| strcmp( argv[c], "-help" ) == 0
-				|| strcmp( argv[c], "--help" ) == 0
-				|| strcmp( argv[c], "-version" ) == 0
-				|| strcmp( argv[c], "-Version" ) == 0
-				)
-			{
-			print_usage( argv );
-			exit (0);
-			}
-		else if (argv[c][0] == '-')
-			{
-			// unrecognized switch
-			print_usage( argv );
-			exit (1);
-			}
-		
-		}
+            ++c;
+            }
+        else if ( strcmp( argv[c], "-V" ) == 0
+                || strcmp( argv[c], "-v" ) == 0
+                || strcmp( argv[c], "-help" ) == 0
+                || strcmp( argv[c], "--help" ) == 0
+                || strcmp( argv[c], "-version" ) == 0
+                || strcmp( argv[c], "-Version" ) == 0
+                )
+            {
+            print_usage( argv );
+            exit (0);
+            }
+        else if (argv[c][0] == '-')
+            {
+            // unrecognized switch
+            print_usage( argv );
+            exit (1);
+            }
+        
+        }
 }
 
 /********************************************************************************/
 
 int main (int argc, char * argv[])
 {
-	// handle our command line arguments
-	parse_arguments( argc, argv );
-	
+    // handle our command line arguments
+    parse_arguments( argc, argv );
+    
     // iterate over each named set of inks
     for (auto &inkSet : colorSets) {
         
