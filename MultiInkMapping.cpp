@@ -35,6 +35,8 @@ DONE -
 
 TODO - write XML profile data, once I have V4 working?
 
+TODO - consider moving utility definitions and functions to a header
+
 
 TODO - would be nice to add measured overprint colors
     need some sort of ink1,ink2 -> overprint mapping.
@@ -535,6 +537,7 @@ labColor XYZ2LAB( const xyzColor &input )
 
 /********************************************************************************/
 
+inline
 float LERP( const float t, const float x1, const float x2 )
 {
     return x1 + t*(x2-x1);
@@ -670,6 +673,7 @@ inline xyzColor& operator-=( xyzColor &a, const xyzColor &b)
 /********************************************************************************/
 
 // linear interpolation
+inline
 xyzColor interp2inks( const float t, const xyzColor &ink1, const xyzColor &ink2 )
 {
     xyzColor result;
@@ -682,6 +686,7 @@ xyzColor interp2inks( const float t, const xyzColor &ink1, const xyzColor &ink2 
 /********************************************************************************/
 
 // linear interpolation in LAB - really only useful for nearby colors or neutrals
+inline
 labColor interp2inks( const float t, const labColor &ink1, const labColor &ink2 )
 {
     labColor result;
@@ -1040,7 +1045,6 @@ bool ClippedL( float Linput, labColor &output, const inkColorSet &inkSet )
     return false;
 }
 
-
 /********************************************************************************/
 
 void SplineInterpList( const size_t subdivisions, const PointList &input, PointList &result,
@@ -1276,12 +1280,14 @@ DEFERRED - find a way to accelerate the search
 /********************************************************************************/
 
 // interpolate between 0 and 100.0
+inline
 float grid_to_L( int grid_value, int gridPoints )
 {
     return (100.0 * (float)grid_value) / (float)(gridPoints - 1);
 }
 
 // ccox - FIX ME - cheap version for now -- refine if needed
+inline
 float grid_to_AB( int grid_value, int gridPoints )
 {
     float middle = 0.5 * gridPoints;
@@ -1291,6 +1297,7 @@ float grid_to_AB( int grid_value, int gridPoints )
 /********************************************************************************/
 
 // convert 0..100 representation to file representation
+inline
 int floatL_to_fileL8( float L )
 {
     if (L <= 0.0) return 0;
@@ -1298,6 +1305,7 @@ int floatL_to_fileL8( float L )
     return (int)( (255.0 / 100.0) * L + 0.5 );
 }
 
+inline
 int floatAB_to_fileAB8( float A )
 {
     if (A > 127.0) return 255;
@@ -1305,6 +1313,7 @@ int floatAB_to_fileAB8( float A )
     return (int)( A + 128.0 );
 }
 
+inline
 uint8_t float_to_file255( float A )
 {
     if (A > 1.0) return 255;
@@ -1312,6 +1321,7 @@ uint8_t float_to_file255( float A )
     return (uint8_t)( A * 255.0 );
 }
 
+inline
 uint16_t float_to_file65535( float A )
 {
     if (A > 1.0) return 65535;
@@ -1323,6 +1333,7 @@ uint16_t float_to_file65535( float A )
 
 // convert 0..100 representation to file representation
 // ICC version 2 profile encoding for LAB 16 bit  --- not usable in TIFF
+inline
 int floatL_to_fileL16( float L )
 {
     if (L <= 0.0) return 0;
@@ -1330,6 +1341,7 @@ int floatL_to_fileL16( float L )
     return (int)( (65280.0 / 100.0) * L + 0.5 );
 }
 
+inline
 int floatAB_to_fileAB16( float A )
 {
     if (A > 127.0) return 65280;
@@ -1341,6 +1353,7 @@ int floatAB_to_fileAB16( float A )
 
 // convert 0..100 representation to file representation
 // ICC version 4 colorant table, not the mlut encodings
+inline
 int floatL_to_fileL65535( float L )
 {
     if (L <= 0.0) return 0;
@@ -1348,6 +1361,7 @@ int floatL_to_fileL65535( float L )
     return (int)( (65535.0 / 100.0) * L + 0.5 );
 }
 
+inline
 int floatAB_to_fileAB65535( float A )
 {
     if (A > 127.0) return 65535;
@@ -1364,6 +1378,8 @@ float Smooth3( float a, float b, float c)
     return (a + 4*b + c) / 6.0;
 }
 
+/********************************************************************************/
+
 // prev, current, next
 inline
 void Smooth3( std::vector<float> &a, const std::vector<float> &b, const std::vector<float> &c, int channels)
@@ -1379,6 +1395,8 @@ void Smooth3( float *a, float *b, float *c, int channels)
     for (int i = 0; i < channels; ++i)
         a[i] = Smooth3(a[i],b[i],c[i]);
 }
+
+/********************************************************************************/
 
 // filter in place, in one dimension, for 3 channels
 void SmoothOneDirection3( float *data, int gridPoints, int planeStep, int rowStep, int colStep )
@@ -1442,6 +1460,8 @@ void SmoothOneDirection3( float *data, int gridPoints, int planeStep, int rowSte
     }
 
 }
+
+/********************************************************************************/
 
 // filter in place, in one dimension, for arbitrary channel counts
 void SmoothOneDirection( float *data, int gridPoints, int planeStep, int rowStep, int colStep, int channels )
@@ -1514,6 +1534,7 @@ void SmoothOneDirection( float *data, int gridPoints, int planeStep, int rowStep
 
 // useful for debugging, but slow
 // probably faster to rasterize the poly without antialiasing and sample the bitmap
+static
 bool pointInPoly( const PointList &poly, const Point a )
 {
     bool inside = false;
@@ -1529,6 +1550,7 @@ bool pointInPoly( const PointList &poly, const Point a )
 /********************************************************************************/
 
 // debugging tool
+static
 void DumpPointList( const std::string &name, const PointList &planePoints )
 {
     std::string filename = name + ".csv";
