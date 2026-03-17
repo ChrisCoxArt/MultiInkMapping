@@ -5,7 +5,7 @@
 //  Writes a subset of ICC Profiles - but does what I need it to.
 //
 //  Copyright (c) 2026 Chris Cox
-//  Created by Chris Cox on 3/4/26.
+//  Created by Chris Cox on March 4, 2026.
 //
 
 #include <cstdio>

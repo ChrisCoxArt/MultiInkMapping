@@ -3,7 +3,7 @@
 //  MultiInkMapping
 //
 //  Copyright (c) 2026 Chris Cox
-//  Created by Chris Cox on 3/3/26.
+//  Created by Chris Cox on March 3, 2026.
 //
 
 #ifndef MiniTIFF_hpp

@@ -3,7 +3,7 @@
 //  MultiInkMapping
 //
 //  Copyright (c) 2026 Chris Cox
-//  Created by Chris Cox on 3/4/26.
+//  Created by Chris Cox on March 4, 2026.
 //
 
 #ifndef MiniICC_hpp
@@ -83,15 +83,7 @@ typedef enum : uint32_t  {
     icSigColorantTableTag                  = 0x636C7274,  /* 'clrt' */
     icSigColorantTableOutTag               = 0x636C6F74,  /* 'clot' */
 
-    icSigMultiLocalizedUnicodeType          = 0x6D6C7563,  /* 'mluc' */
-
-// maybe v4 bits
-    icSigColorSpaceNameTag                 = 0x63736e6d,  /* 'csnm' */
-    icSigColorantInfoTag                   = 0x636c696e,  /* 'clin' */
-    icSigColorantInfoOutTag                = 0x636c696f,  /* 'clio' */
-    icSigColorantOrderTag                  = 0x636C726F,  /* 'clro' */
-    icSigColorantOrderOutTag               = 0x636c6f6f,  /* 'cloo' */
-
+    icSigMultiLocalizedUnicodeType         = 0x6D6C7563,  /* 'mluc' */
 
     icSigUnknown = 0,
 } profile_sig;
