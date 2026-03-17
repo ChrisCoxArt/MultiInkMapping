@@ -546,12 +546,12 @@ void create_tags( profileDataInner &data )
 		return;
     }
     
-    // write colorant tables
-    for ( auto &table : data.colorantTables )
-        add_colorantTable_tag( data, table.tableSig, table.colorants );
+    // add colorant tables
+    for ( auto &clrTable : data.colorantTables )
+        add_colorantTable_tag( data, clrTable.tableSig, clrTable.colorants );
 
-    // write tables
-    for ( auto &table : data.tables ) {
+    // add tables
+    for ( auto &table : data.LUTtables ) {
         if (table.pointsBackTo != icSigUnknown) {
             // special case pointing back to a previous table
             data.tagInfo.emplace_back( ICCTag( table.tableSig, table.pointsBackTo ) );
@@ -575,7 +575,7 @@ void write_header( const profileDataInner &data, FILE *output )
 {
 	uint32_t temp = 0;
     
-	// 4 bytes size - write a dummy value, fill it in at end
+	// 4 bytes size - write a dummy value now, fill it in at end
 	temp = 0;
 	fwrite( &temp, 4, 1, output );
 	
@@ -585,7 +585,6 @@ void write_header( const profileDataInner &data, FILE *output )
 	fwrite( &temp, 4, 1, output );
 	
 	// 4 byte profile version number
-	//uint32_t profile_version = 0x02100000;	// 2.1.0
 	uint32_t profile_version = 0x04200000;	    // 4.2.0
 	temp = SwabLong( profile_version );
 	fwrite( &temp, 4, 1, output );
@@ -719,7 +718,7 @@ int writeICCProfile( const std::string &filename, profileData &profileInfo  )
 	std::string outputFileName = filename;
 	FILE *output = fopen( outputFileName.c_str(), "wb" );
 	if (output == NULL) {
-		fprintf(stderr,"Could not create output file %s\n", outputFileName.c_str());
+		fprintf(stderr,"Could not create profile %s\n", outputFileName.c_str());
 		return -1;
     }
 	

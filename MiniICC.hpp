@@ -153,7 +153,7 @@ struct profileData {
 
     std::string     otherText;          // optional, can be empty
     
-    std::vector<tableFormat> tables;
+    std::vector<tableFormat> LUTtables;
 
     std::vector<colorantTableFormat> colorantTables;
 };

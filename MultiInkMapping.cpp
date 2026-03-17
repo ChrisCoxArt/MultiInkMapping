@@ -9,13 +9,6 @@ Is it accurate? Nope.
 Does it look reasonable? Yes.
     And that's all I need from it.
 
-NOTE - This started as a simulation of drawing with inks/watercolors.
-    I wanted a simulation of how artists map colors with very limited palettes.
-    But available software only handles gray, RGB, or CMYK.
-    And random colored inks don't mix like idealized CMY.
-    I can always lighten inks/paints by dilution, and put down multiple layers for darks.
-    And I've rewritten this a few times as I try new ideas.
-
 This assumes primaries are somewhat saturated, not too neutral, and define a convex hull.
 Primaries will be sorted by hue to make sure they are in order to make a convex hull.
 This further assumes that the primaries are really transparent, so ink order does not matter. (this is NOT realistic)
@@ -23,15 +16,8 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
-Special case 1 ink -- single spline from paper->ink->dark, take only point
-Special case 2 ink -- spline 2D surface, closest point on line
-Special case 3..N ink -- create closed shape from multiple surfaces,
-            find interpolated inside, project point to closest outside
-Always smooth the resulting 3D table
 
-
-
-TODO - estimate_ink_mix and estimate_fractional_ink_mix reconvert LAB to XYZ constantly
+PERFORMANCE - estimate_ink_mix and estimate_fractional_ink_mix reconvert LAB to XYZ constantly
     change inlists to XYZ and pass those in
 Currently 1.3 seconds for ALL profiles and TIFF files - so not exactly slow to start with.
 DONE -
@@ -276,6 +262,25 @@ std::vector<inkColorSet> colorSets =
           {"Yellow", 90.2, 2.7, 97.7}  }
     },
 
+#if 1
+// Chris's experiments
+    {   "Violet-Magenta-YellowOrange",
+        "Violet-Magenta-YellowOrange",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Violet", 51.3, 58.0, -67.0}, {"Magenta", 52.0, 81.1, -1.7},
+          {"YellowOrange", 81.5, 27.9, 102.3} }
+    },
+    
+    {   "Violet-Teal-Yellow",
+        "Violet-Teal-Yellow",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Violet", 51.3, 58.0, -67.0}, {"Yellow", 90.2, 2.7, 97.7},
+          {"Teal", 66.8, -51.5, -15.4 } }
+    },
+#endif
+
 // 4
     {   "Turquoise-Magenta-Yellow-Violet",
         "4 Paints",
@@ -284,6 +289,25 @@ std::vector<inkColorSet> colorSets =
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
           {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0} }
     },
+
+#if 1
+// Chris's experiments
+    {   "Teal-Cerulean-Orange-Magenta",
+        "Teal-Cerulean-Orange-Magenta",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Teal", 66.8, -51.5, -15.4 }, {"Cerulean", 63.3, -16.1, -35.3 },
+        {"Orange", 71.0, 50.7, 68.6}, {"Magenta", 52.0, 81.1, -1.7} }
+    },
+    
+    {   "Green-Yellow-Cerulean-Violet",
+        "Green-Yellow-Cerulean-Violet",
+        { 97.12126, -0.024685, 0.025155 },
+        { -1,0,0 },
+        { {"Green", 71.2, -54.2, 62.9}, {"Yellow", 90.2, 2.7, 97.7},
+        {"Cerulean", 63.3, -16.1, -35.3 }, {"Violet", 51.3, 58.0, -67.0} }
+    },
+#endif
 
 // 5
     {   "Turquoise-Magenta-Yellow-Violet-Green",
@@ -429,14 +453,13 @@ std::vector<inkColorSet> colorSets =
 void VerifyDecreasingL( const color_list &list )
 {
 // NOTE - this is just a debugging aid
-#if 1
+#if !NDEBUG
 	size_t count = list.size();
-	for (size_t i = 1; i < count; ++i)
-		{
+	for (size_t i = 1; i < count; ++i) {
 		float currentL = list[i].L;
 		float previousL = list[i-1].L;
 		assert( currentL <= previousL);
-		}
+    }
 #endif
 }
 
@@ -688,25 +711,23 @@ color_list mix_pure_ink_spline( int steps, const labColor &paperColor, const lab
 	temp.push_back( paperColor );
     
     // interp paper->ink
-	for (i=1; i < (steps/2); ++i)
-		{
+	for (i=1; i < (steps/2); ++i) {
 		float t = (float) i / (float) (steps/2);
 		mix = interp2inks( t, paperColorXYZ, inkColorXYZ );
 		mixLAB = XYZ2LAB( mix );
 		temp.push_back( mixLAB );
-		}
+    }
     
 	// exact ink
 	temp.push_back( inkColor );
  
     // interp ink->dark
-	for (i=(steps/2)+1; i < (steps-1); ++i)
-		{
+	for (i=(steps/2)+1; i < (steps-1); ++i) {
 		float t = (float) (i - (steps/2)) / (float) (steps/2);
 		mix = interp2inks( t, inkColorXYZ, darkColorXYZ );
 		mixLAB = XYZ2LAB( mix );
 		temp.push_back( mixLAB );
-		}
+    }
     
 	// exact dark
 	temp.push_back( darkColor );
@@ -945,11 +966,10 @@ void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
 	// list is greatest to least (white to black)
 	// ccox - start with a simple linear search
 	int index = 1;
-	for ( ; index < spline.size(); ++index)
-		{
+	for ( ; index < spline.size(); ++index) {
 		if (spline[index].L <= Ltarget)
 			break;
-		}
+    }
 	
 	assert( index < spline.size() );
 	
@@ -970,10 +990,8 @@ void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
 	float t = 0.5;
     const float Ltolerance = 0.1;   // this seems to be good enough
     
-    float Ltop = spline[sample1].L;
     float Ttop = 0.0;
     
-    float Lbottom = spline[sample2].L;
     float Tbottom = 1.0;
 
     float Ltest = SplineInterp( t, spline[sample0].L, spline[sample1].L, spline[sample2].L, spline[sample3].L );
@@ -982,11 +1000,9 @@ void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
     while ( fabs( Ltest - Ltarget ) > Ltolerance) {
         if (Ltest < Ltarget) {
             // between top and current
-            Lbottom = Ltest;
             Tbottom = t;
         } else {
             // between current and bottom
-            Ltop = Ltest;
             Ttop = t;
         }
         
@@ -1009,17 +1025,15 @@ bool ClippedL( float Linput, labColor &output, const inkColorSet &inkSet )
 	output.A = 0.0;
 	output.B = 0.0;
 	
-	if (Linput < inkSet.darkColor.L)
-		{
+	if (Linput < inkSet.darkColor.L) {
 		output = inkSet.darkColor;
 		return true;
-		}
+    }
 
-	if (Linput > inkSet.paperColor.L)
-		{
+	if (Linput > inkSet.paperColor.L) {
 		output = inkSet.paperColor;
 		return true;
-		}
+    }
 
 	return false;
 }
@@ -1035,8 +1049,7 @@ void SplineInterpList( const size_t subdivisions, const PointList &input, PointL
     result.reserve( subdivisions+1 );
     
 	// iterate through list
-	for (size_t i = 0; i <= subdivisions; ++i)
-		{
+	for (size_t i = 0; i <= subdivisions; ++i) {
 		/// which input points are we between?
 		float floatIndex = ((float)pointCount * i) / (float)subdivisions;
 		int pointIndex = int( floatIndex );
@@ -1071,10 +1084,9 @@ void SplineInterpList( const size_t subdivisions, const PointList &input, PointL
 		Point newPoint;
 		newPoint.a = SplineInterp( t, input[p0].a, input[p1].a, input[p2].a, input[p3].a );
 		newPoint.b = SplineInterp( t, input[p0].b, input[p1].b, input[p2].b, input[p3].b );
-// mix is between p1 and p2, just need t and 1-t
 		
 		result.emplace_back( newPoint );
-		}
+    }   // end for subdivisions
 }
 
 /********************************************************************************/
@@ -1113,7 +1125,6 @@ void LinearInterpList( const size_t subdivisions, const PointList &input, PointL
         Point newPoint;
         newPoint.a = LERP( t, input[p1].a, input[p2].a );
         newPoint.b = LERP( t, input[p1].b, input[p2].b );
-// mix is between p1 and p2, just need t and 1-t
         
         result.emplace_back( newPoint );
     }   // end for subdivisions
@@ -1526,9 +1537,8 @@ void DumpPointList( const std::string &name, const PointList &planePoints )
     
     fprintf(out,"name\n");
     fprintf(out,"x, y\n");
-    for ( const auto &pt : planePoints ) {
+    for ( const auto &pt : planePoints )
         fprintf(out,"%f, %f\n", pt.a, pt.b );
-    }
     
     fclose(out);
 }
@@ -1613,7 +1623,7 @@ void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoin
     myGamut.tableDimensions = 3;    // input
     myGamut.tableChannels = 1;      // output
     myGamut.tableData = std::move(gamutBuffer);
-    myProfile.tables.emplace_back(myGamut);
+    myProfile.LUTtables.emplace_back(myGamut);
 }
 
 /********************************************************************************/
@@ -1678,7 +1688,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
     // iterate virtual loop to fill table  (faster than doing a dozen divides and modulos)
     // i[k] = (index / (int)pow(gridPoints,(inkCount-1)-k)) % gridPoints;   // loopSteps can be precalcuated, but the divides cannot
 // NOTE - I could optimize this for N >= 2 by putting a more predictable loop inside using counters[inkCount-1)]
-//      then incrementing above that, that gives the compiler a better chance at vectorization
+//      then incrementing above that, which gives the compiler a better chance at vectorization
     for (uint32_t index = 0; loopCounters[0] < gridPoints; ++index ) {
         
         for (size_t k = 0; k < inkCount; ++k)
@@ -1730,7 +1740,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
     myTable.tableDimensions = (int)inkCount;    // input
     myTable.tableChannels = 3;                  // output
     myTable.tableData = std::move(gridBuffer);
-    myProfile.tables.emplace_back(myTable);
+    myProfile.LUTtables.emplace_back(myTable);
 }
 
 /********************************************************************************/
@@ -2104,23 +2114,21 @@ assert(angle2 <= angle1);
 
 
 
-#if 1
+
     // smooth the floating point table
 	SmoothOneDirection( gridData, gridPoints, planeStep, rowStep, colStep, inkCount );
 	SmoothOneDirection( gridData, gridPoints, rowStep, colStep, planeStep, inkCount );
 	SmoothOneDirection( gridData, gridPoints, colStep, planeStep, rowStep, inkCount );
-#endif
+
 
 
 // convert the float table to integer
     assert( depth == 8 || depth == 16 );
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount * inkCount * (depth/8) ]);
     uint8_t *outData = outBuffer.get();
-    uint16_t *out16Ptr = (uint16_t*)outData;
 
 #if 1
     // order the data for easy viewing as an image
-    outData = outBuffer.get();
     for (int A = 0; A < gridPoints; ++A) {
         for (int L = 0; L < gridPoints; ++L) {
 			for (int B = 0; B < gridPoints; ++B) {
@@ -2141,6 +2149,7 @@ assert(angle2 <= angle1);
 
     // oganize data for ICC profile
     outData = outBuffer.get();
+    uint16_t *out16Ptr = (uint16_t*)outData;
     for (int L = 0; L < gridPoints; ++L) {
         for (int A = 0; A < gridPoints; ++A) {
 			for (int B = 0; B < gridPoints; ++B) {
@@ -2164,7 +2173,7 @@ assert(angle2 <= angle1);
     myTable.tableDimensions = 3;                // input
     myTable.tableChannels = (int)inkCount;      // output
     myTable.tableData = std::move(outBuffer);
-    myProfile.tables.emplace_back(myTable);
+    myProfile.LUTtables.emplace_back(myTable);
 }
 
 
@@ -2172,7 +2181,7 @@ assert(angle2 <= angle1);
 
 std::vector<color_space> profileSpaceLookup =
 {
-    kSpace1CLR, // zero
+    kSpace1CLR, // index zero
 	kSpace1CLR,
 	kSpace2CLR,
 	kSpace3CLR,
@@ -2288,11 +2297,9 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     size_t bufferSize = gridPoints*gridPoints*gridPoints * 3 * (depth/8);
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ bufferSize ]);
     uint8_t *outPtr = outBuffer.get();
-    uint16_t *out16Ptr = (uint16_t*)outPtr;
 
 #if 1
     // order the data for easy viewing as an image
-    outPtr = outBuffer.get();
     for (A = 0; A < gridPoints; ++A) {
         for (L = 0; L < gridPoints; ++L) {
 			for (B = 0; B < gridPoints; ++B) {
@@ -2319,7 +2326,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 
     // oganize data for ICC profile
     outPtr = outBuffer.get();
-    out16Ptr = (uint16_t*)outPtr;
+    uint16_t *out16Ptr = (uint16_t*)outPtr;
     for (L = 0; L < gridPoints; ++L) {
         for (A = 0; A < gridPoints; ++A) {
 			for (B = 0; B < gridPoints; ++B) {
@@ -2373,7 +2380,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     myTable.tableDimensions = 3;    // input
     myTable.tableChannels = 3;      // output
     myTable.tableData = std::move(outBuffer);
-    myProfile.tables.emplace_back(myTable);
+    myProfile.LUTtables.emplace_back(myTable);
 
     writeICCProfile( filename+"_abstract.icc", myProfile );
     
@@ -2416,20 +2423,20 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     tableFormat myFake;
     myFake.tableSig = icSigAToB1Tag;
     myFake.pointsBackTo = icSigAToB0Tag;
-    myProfile.tables.emplace_back(myFake);
+    myProfile.LUTtables.emplace_back(myFake);
 
     myFake.tableSig = icSigAToB2Tag;
     myFake.pointsBackTo = icSigAToB0Tag;
-    myProfile.tables.emplace_back(myFake);
+    myProfile.LUTtables.emplace_back(myFake);
 
     // and point the other B2A tables back to B2A0
     myFake.tableSig = icSigBToA1Tag;
     myFake.pointsBackTo = icSigBToA0Tag;
-    myProfile.tables.emplace_back(myFake);
+    myProfile.LUTtables.emplace_back(myFake);
     
     myFake.tableSig = icSigBToA2Tag;
     myFake.pointsBackTo = icSigBToA0Tag;
-    myProfile.tables.emplace_back(myFake);
+    myProfile.LUTtables.emplace_back(myFake);
 
     // colorant table, showing order, names, and LAB values
     colorantTableFormat clrTable;
