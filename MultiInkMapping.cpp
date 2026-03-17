@@ -31,10 +31,9 @@ DONE -
 
 
 
+
+
 TODO - write XML profile data, once I have V4 working?
-
-TODO - write a makefile, or CMakefile
-
 
 
 TODO - would be nice to add measured overprint colors
@@ -63,6 +62,7 @@ TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
 #include <vector>
 #include <cmath>
 #include <memory>
+#include <algorithm>
 #include "MiniTIFF.hpp"
 #include "MiniICC.hpp"
 
