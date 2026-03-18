@@ -114,10 +114,15 @@ public:
 };
 
 struct inkMixPair {
+
+    // some compilers don't get the default initialization correct
+    inkMixPair( size_t dx1, size_t dx2, float f1, float f2 ) : inkIndex1(dx1), inkIndex2(dx2),
+        ink1Fraction(f1), ink2Fraction(f2) {}
+
     size_t inkIndex1;
     size_t inkIndex2;
-    float ink1Fraction;
-    float ink2Fraction;
+    float  ink1Fraction;
+    float  ink2Fraction;
     
     bool operator==(const inkMixPair& other) const = default;
 };
@@ -2151,7 +2156,7 @@ assert(angle2 <= angle1);
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount * inkCount * (depth/8) ]);
     uint8_t *outData = outBuffer.get();
 
-#if 1
+#if 0
     // order the data for easy viewing as an image
     for (int A = 0; A < gridPoints; ++A) {
         for (int L = 0; L < gridPoints; ++L) {
@@ -2322,7 +2327,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ bufferSize ]);
     uint8_t *outPtr = outBuffer.get();
 
-#if 1
+#if 0
     // order the data for easy viewing as an image
     for (A = 0; A < gridPoints; ++A) {
         for (L = 0; L < gridPoints; ++L) {
