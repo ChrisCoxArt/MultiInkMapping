@@ -17,6 +17,8 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
+
+
 PERFORMANCE - estimate_ink_mix and estimate_fractional_ink_mix reconvert LAB to XYZ constantly
     change inlists to XYZ and pass those in
 Currently 1.3 seconds for ALL profiles and TIFF files - so not exactly slow to start with.
@@ -28,8 +30,6 @@ DONE -
 61.20 ms   7.7%    0 s       createA2B_table(inkColorSet const&, int, profileData&)
 45.80 ms   5.7%    0 s       nanov2_malloc
 36.90 ms   4.6%    0 s       _nanov2_free
-
-
 
 
 
@@ -1548,7 +1548,7 @@ bool pointInPoly( const PointList &poly, const Point a )
 }
 
 /********************************************************************************/
-
+#if 0
 // debugging tool
 static
 void DumpPointList( const std::string &name, const PointList &planePoints )
@@ -1566,7 +1566,7 @@ void DumpPointList( const std::string &name, const PointList &planePoints )
     
     fclose(out);
 }
-
+#endif
 /********************************************************************************/
 
 /*
@@ -1779,7 +1779,7 @@ std::vector<float> MixInkWeights( float t, std::vector<float> &a, std::vector<fl
 }
 
 /********************************************************************************/
-
+#if 0
 static
 std::vector<float> AddInkWeights( std::vector<float> &a, std::vector<float> &b, const int channels )
 {
@@ -1788,7 +1788,7 @@ std::vector<float> AddInkWeights( std::vector<float> &a, std::vector<float> &b, 
        result[c] = a[c] + b[c];
     return result;
 }
-
+#endif
 /********************************************************************************/
 
 static
@@ -2392,10 +2392,10 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     myProfile.profileClass = kClassAbstract;
     myProfile.colorSpace = kSpaceLAB;
     myProfile.pcsSpace = kSpaceLAB;
-    myProfile.preferredCMM = 'ICCD';
-    myProfile.platform = 'APPL';
-    myProfile.manufacturer = 'none';
-    myProfile.creator = 'ccox';
+    myProfile.preferredCMM = icSigIccDEV;
+    myProfile.platform = icSigMacintosh;
+    myProfile.manufacturer = icSigNone;
+    myProfile.creator = icSigccox;
 
     tableFormat myTable;
     myTable.tableSig = icSigAToB0Tag;
@@ -2428,10 +2428,10 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     myProfile.profileClass = kClassOutput;
     myProfile.colorSpace = profileSpaceLookup[ inkCount ];
     myProfile.pcsSpace = kSpaceLAB;
-    myProfile.preferredCMM = 'ICCD';
-    myProfile.platform = 'APPL';
-    myProfile.manufacturer = 'none';
-    myProfile.creator = 'ccox';
+    myProfile.preferredCMM = icSigIccDEV;
+    myProfile.platform = icSigMacintosh;
+    myProfile.manufacturer = icSigNone;
+    myProfile.creator = icSigccox;
 
     // make A2B0 (ink to LAB) - determines grid size internally
     createA2B_table( inkSet, depth, myProfile );

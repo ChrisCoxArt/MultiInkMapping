@@ -45,7 +45,7 @@ struct profileDataInner : public profileData {
 
 public:
     // This is filled in as we add entries
-    tagList         tagInfo;
+    tagList tagInfo;
 
 };
 
@@ -182,7 +182,7 @@ void add_text_tag( profileDataInner &data, uint32_t signature, const std::string
     memset( myData, 0, myDataSize );
 
     // fill in the data
-    *((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( 'text' );    // type signature
+    *((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( icSigTextType );    // type signature
     *((uint32_t *)(myData +  4)) = 0;                                // reserved
     memcpy( myData + 8, text.c_str(), stringLength );
 
@@ -201,7 +201,7 @@ void add_xyz_tag( profileDataInner &data, uint32_t signature, int32_t X, int32_t
     memset( myData, 0, myDataSize );
 
     // fill in the data
-    *((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( 'XYZ ' );    // type signature
+    *((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( kSpaceXYZ );    // type signature
     *((uint32_t *)(myData +  4)) = 0;                                // reserved
     *((uint32_t *)(myData +  8)) = (uint32_t) SwabLong( X );
     *((uint32_t *)(myData +  12)) = (uint32_t) SwabLong( Y );
@@ -295,12 +295,12 @@ void add_lut16_tag( profileDataInner &data, uint32_t signature, int inChannels, 
     memset( myData, 0, myDataSize );
 
     // fill in the data
-    *((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( 'mft2' );    // type signature
-    *((uint32_t *)(myData +  4)) = 0;                                // reserved
+    *((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( icSigLut16Type );    // type signature
+    *((uint32_t *)(myData +  4)) = 0;       // reserved
     *(myData +  8) = inChannels;            // input
-    *(myData +  9) = outChannels;            // output
+    *(myData +  9) = outChannels;           // output
     *(myData +  10) = gridPoints;
-    *(myData +  11) = 0;                            // reserved
+    *(myData +  11) = 0;                    // reserved
     
     // identity matrix (must be identity unless data is in XYZ)
     *((uint32_t *)(myData +  12)) = (uint32_t) SwabLong(0x00010000);                // matrix e00
@@ -374,7 +374,7 @@ void add_lut8_tag( profileDataInner &data, uint32_t signature, int inChannels, i
     memset( myData, 0, myDataSize );
 
     // fill in the data
-    *((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( 'mft1' );    // type signature
+    *((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( icSigLut8Type );    // type signature
     *((uint32_t *)(myData +  4)) = 0;                                // reserved
     *(myData +  8) = inChannels;            // input
     *(myData +  9) = outChannels;            // output
@@ -498,7 +498,7 @@ void create_tags( profileDataInner &data )
     add_mluc_tag( data, icSigCopyrightTag, data.copyright );
  
     if (data.otherText.length() != 0)
-        add_text_tag( data, 'note', data.otherText );
+        add_text_tag( data, icSigNote, data.otherText );
     
     // white point 'wtpt'
     add_xyz_tag( data, icSigMediaWhitePointTag, 0x0000F6D6, 0x00010000, 0x0000D32D );    // D50
@@ -634,7 +634,7 @@ void write_header( const profileDataInner &data, FILE *output )
     fwrite( &second, 2, 1, output );
     
     // 4 byte signature 'acsp' -- MagicNumber for ICC profiles
-    uint32_t signature = 'acsp';
+    uint32_t signature = icSigMagicNumber;
     temp = SwabLong( signature );
     fwrite( &temp, 4, 1, output );
     
