@@ -10,6 +10,7 @@
 		F1769FE82F55106900D3103E /* MultiInkMapping.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1769FE72F55106900D3103E /* MultiInkMapping.cpp */; };
 		F1769FEB2F5804E300D3103E /* MiniTIFF.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1769FEA2F5804E300D3103E /* MiniTIFF.cpp */; };
 		F1769FEE2F59165E00D3103E /* MiniICC.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1769FED2F59165E00D3103E /* MiniICC.cpp */; };
+		F1769FF22F6BFB1100D3103E /* Options.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F1769FF12F6BFB1100D3103E /* Options.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -32,6 +33,9 @@
 		F1769FEC2F59165E00D3103E /* MiniICC.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MiniICC.hpp; sourceTree = "<group>"; };
 		F1769FED2F59165E00D3103E /* MiniICC.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MiniICC.cpp; sourceTree = "<group>"; };
 		F1769FEF2F6BB29E00D3103E /* MultiInkMapping.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MultiInkMapping.hpp; sourceTree = "<group>"; };
+		F1769FF02F6BFB1100D3103E /* Options.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Options.hpp; sourceTree = "<group>"; };
+		F1769FF12F6BFB1100D3103E /* Options.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Options.cpp; sourceTree = "<group>"; };
+		F1769FF32F6BFB7900D3103E /* MultiInkMapping.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = MultiInkMapping.xcodeproj; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +52,9 @@
 		F1769FD42F55103200D3103E = {
 			isa = PBXGroup;
 			children = (
+				F1769FF32F6BFB7900D3103E /* MultiInkMapping.xcodeproj */,
+				F1769FF02F6BFB1100D3103E /* Options.hpp */,
+				F1769FF12F6BFB1100D3103E /* Options.cpp */,
 				F1769FE92F5804E300D3103E /* MiniTIFF.hpp */,
 				F1769FEA2F5804E300D3103E /* MiniTIFF.cpp */,
 				F1769FEC2F59165E00D3103E /* MiniICC.hpp */,
@@ -126,6 +133,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F1769FF22F6BFB1100D3103E /* Options.cpp in Sources */,
 				F1769FEE2F59165E00D3103E /* MiniICC.cpp in Sources */,
 				F1769FE82F55106900D3103E /* MultiInkMapping.cpp in Sources */,
 				F1769FEB2F5804E300D3103E /* MiniTIFF.cpp in Sources */,

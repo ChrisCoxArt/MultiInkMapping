@@ -21,25 +21,27 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 PERFORMANCE - estimate_ink_mix and estimate_fractional_ink_mix reconvert LAB to XYZ constantly
     change inlists to XYZ and pass those in
-Currently 1.3 seconds for ALL profiles and TIFF files - so not exactly slow to start with.
+Was 1.3 seconds for ALL profiles and TIFF files - so not exactly slow to start with.
 Current:
-722.60 ms  100.0%	0 s	  Main Thread  0x16d9532
-154.90 ms  21.4%	0 s	   cbrtf
-123.40 ms  17.1%	0 s	   pointInPoly(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point)
-92.20 ms  12.8%	0 s	   FindClosestPointInList(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point&)
-60.30 ms   8.3%	0 s	   createA2B_table(inkColorSet const&, int, profileData&)
-31.00 ms   4.3%	0 s	   estimate_fractional_ink_mix(std::__1::vector<xyzColor, std::__1::allocator<xyzColor>> const&, std::__1::vector<float, std::__1::allocator<float>> const&, xyzColor const&, int)
-30.30 ms   4.2%	0 s	   nanov2_malloc
-29.00 ms   4.0%	0 s	   _nanov2_free
-
+696.80 ms  100.0%	0 s	  Thread  0x1709081
+147.70 ms  21.2%	0 s	   cbrtf
+121.90 ms  17.5%	0 s	   pointInPoly(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point)
+96.30 ms  13.8%	0 s	   FindClosestPointInList(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point&)
+56.10 ms   8.1%	0 s	   createA2B_table(inkColorSet const&, int, profileData&, unsigned long)
+31.80 ms   4.6%	0 s	   nanov2_malloc
+29.40 ms   4.2%	0 s	   _nanov2_free
+27.20 ms   3.9%	0 s	   estimate_fractional_ink_mix(std::__1::vector<xyzColor, std::__1::allocator<xyzColor>> const&, std::__1::vector<float, std::__1::allocator<float>> const&, xyzColor const&, int)
+23.30 ms   3.3%	0 s	   operator*=(xyzColor&, xyzColor const&)
+19.40 ms   2.8%	0 s	   CIECurve(float)
 
 
 
 
 TODO - JSON input?
-    add copyright field
     add more error checking/reporting on color sets
-Probably easiest with many per file.
+    Probably easiest with many per file.
+
+    split options to another file so JSON doesn't block or slow compilation of the main file
 
     global gridpoints
     global depth
@@ -61,7 +63,6 @@ Probably easiest with many per file.
         }
 
 
-TODO - global debug mode to dump more info
 
 TODO - write XML profile data, once I have V4 working?
 
@@ -96,41 +97,13 @@ TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
 #include <memory>
 #include <algorithm>
 #include "MultiInkMapping.hpp"
+#include "Options.hpp"
 #include "MiniTIFF.hpp"
 #include "MiniICC.hpp"
 
 /******************************************************************************/
 
-const char kVersionString[] = "0.8a";
-
-/******************************************************************************/
-
-// global variables, just because it was quicker to write it this way
-int gDataDepth = 8;
-int gDataGridPoints = 21;
-size_t gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
-bool gDebugMode = false;
-std::string gDefaultCopyright = "Copyright (c) Chris Cox 2026";
-bool gCreateOutput = true;
-bool gCreateAbstract = true;
-bool gTIFFTables = false;
-
-/******************************************************************************/
-
-struct inkColorSet {
-    std::string name;               // what filename to use
-    std::string description;        // how to describe this combination
-    std::string copyright;          // copyright string for this set
-    
-    labColor paperColor;            // lightest possible color
-    labColor darkColor;             // darkest possible color from combination of inks, calculated if L <= 0
-    named_color_list primaries;     // saturated hues
-
-public:
-    spline_list splines;        // built from basic ink data
-    spline_mix_data mixData;    // built from basic ink data
-};
-
+// TODO - move these to JSON files
 std::vector<inkColorSet> colorSets =
 {
 // 1
@@ -774,7 +747,7 @@ void mix_ink_splines( inkColorSet &inkSet )
     if (inkSet.darkColor.L <= 0) {
         mix = estimate_darkest_ink_overprint( inkSet.primaries, paperColor );
         mixLAB = XYZ2LAB( mix );
-        if (gDebugMode)
+        if (globalSettings.gDebugMode)
             printf("Estimated overprint for %s is (%f, %f, %f)\n",
                 inkSet.name.c_str(),
                 mixLAB.L, mixLAB.A, mixLAB.B );
@@ -1842,7 +1815,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     uint8_t *outData = outBuffer.get();
     uint16_t *out16Ptr = (uint16_t*)outData;
 
-    if ( gTIFFTables ) {
+    if ( globalSettings.gTIFFTables ) {
         // order the data for easy viewing as an image
         uint8_t *tifPtr = outData;
         for (int A = 0; A < gridPoints; ++A) {
@@ -1990,7 +1963,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     uint8_t *outPtr = outBuffer.get();
     uint16_t *out16Ptr = (uint16_t*)outPtr;
 
-    if (gTIFFTables) {
+    if (globalSettings.gTIFFTables) {
         // order the data for easy viewing as an image
         uint8_t *tifPtr = outPtr;
         for (A = 0; A < gridPoints; ++A) {
@@ -2152,122 +2125,59 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
 /******************************************************************************/
 /******************************************************************************/
 
-static void print_usage(char *argv[])
+// isolate this so we can change globals per json file
+void processInkSetList(void)
 {
-    printf("Usage: %s <args>\n", argv[0] );
-    
-    printf("\t-depth B        bit depth of data [8 or 16] (default %d)\n", gDataDepth );
-    printf("\t-grid G         number of grid points (default %d)\n", gDataGridPoints );
-    printf("\t-limit L        upper limit on A2B table size (default %zu)\n", gTableSizeLimit );
-    printf("\t-copyright C    default copyright string for profiles (default \"%s\")\n", gDefaultCopyright.c_str() );
-    printf("\t-debug          enable debugging output\n" );
-    printf("\t-tiff           output tables as TIFF files\n" );
-
-    printf("\t-version        Prints this message and exits immediately\n" );
-    printf("Version %s, Compiled %s %s\n", kVersionString, __DATE__, __TIME__ );
-}
-
-/******************************************************************************/
-
-static void parse_arguments( int argc, char *argv[] )
-{
-
-    for ( int c = 1; c < argc; ++c )
-        {
-        
-        if ( (strcasecmp( argv[c], "-grid" ) == 0 || strcasecmp( argv[c], "-g" ) == 0 )
-            && c < (argc-1) )
-            {
-            gDataGridPoints = atoi( argv[c+1] );
-            if (gDataGridPoints < 2)
-                gDataGridPoints = 2;
-            if (gDataGridPoints > 255)
-                gDataGridPoints = 255;
-            ++c;
-            }
-        else if ( (strcasecmp( argv[c], "-depth" ) == 0 || strcasecmp( argv[c], "-d" ) == 0 )
-            && c < (argc-1) )
-            {
-            gDataDepth = atoi( argv[c+1] );
-            if (gDataDepth > 16)
-                gDataDepth = 16;
-            if (gDataDepth < 8)
-                gDataDepth = 8;
-            if (gDataDepth != 8 && gDataDepth != 16)
-                gDataDepth = 8;
-            ++c;
-            }
-        else if ( (strcasecmp( argv[c], "-limit" ) == 0 || strcasecmp( argv[c], "-l" ) == 0 )
-            && c < (argc-1) )
-            {
-            gTableSizeLimit = atoll( argv[c+1] );
-            if (gTableSizeLimit < 1024)
-                gTableSizeLimit = 1024;
-            // upper limit is really the 2 Gig ICC Profile limit
-            ++c;
-            }
-        else if ( (strcasecmp( argv[c], "-copyright" ) == 0 || strcasecmp( argv[c], "-c" ) == 0 )
-            && c < (argc-1) )
-            {
-            std::string temp = argv[c+1];
-            if (temp != std::string())  // nope, can't be empty
-                gDefaultCopyright = temp;
-            ++c;
-            }
-        else if ( strcasecmp( argv[c], "-debug" ) == 0 )
-            {
-            gDebugMode = true;
-            }
-        else if ( strcasecmp( argv[c], "-tiff" ) == 0 )
-            {
-            gTIFFTables = true;
-            }
-        else if ( strcmp( argv[c], "-V" ) == 0
-                || strcmp( argv[c], "-v" ) == 0
-                || strcmp( argv[c], "-help" ) == 0
-                || strcmp( argv[c], "--help" ) == 0
-                || strcmp( argv[c], "-version" ) == 0
-                || strcmp( argv[c], "-Version" ) == 0
-                )
-            {
-            print_usage( argv );
-            exit (0);
-            }
-        else if (argv[c][0] == '-')
-            {
-            // unrecognized switch
-            print_usage( argv );
-            exit (1);
-            }
-        
-        }
-}
-
-/********************************************************************************/
-
-int main (int argc, char * argv[])
-{
-    // handle our command line arguments
-    parse_arguments( argc, argv );
-    
     // iterate over each named set of inks
-    for (auto &inkSet : colorSets) {
+    for (auto &inkSet : globalSettings.colorSets) {
         
         if (inkSet.copyright.empty())
-            inkSet.copyright = gDefaultCopyright;
+            inkSet.copyright = globalSettings.gDefaultCopyright;
         
         // create splines from measured points using approximate mixing model
         mix_ink_splines( inkSet );
         
         // create output files from the splines and measured data
-        if (gCreateOutput)
-            create_output_profile( inkSet, gDataDepth, gDataGridPoints, inkSet.name, gTableSizeLimit );
+        if (globalSettings.gCreateOutput)
+            create_output_profile( inkSet, globalSettings.gDataDepth,
+                                globalSettings.gDataGridPoints, inkSet.name,
+                                globalSettings.gTableSizeLimit );
         
-        if (gCreateAbstract)
-            create_abstract_profile( inkSet, gDataDepth, gDataGridPoints, inkSet.name );
+        if (globalSettings.gCreateAbstract)
+            create_abstract_profile( inkSet, globalSettings.gDataDepth,
+                            globalSettings.gDataGridPoints, inkSet.name );
     
      }  // end for colorSets
 
+}
+
+/******************************************************************************/
+
+settings_spec globalSettings;
+
+/******************************************************************************/
+
+int main (int argc, char * argv[])
+{
+    // defaults
+    globalSettings.gDataDepth = 8;
+    globalSettings.gDataGridPoints = 21;
+    globalSettings.gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
+    globalSettings.gDebugMode = true;
+    globalSettings.gDefaultCopyright = "Copyright (c) Chris Cox 2026";
+    globalSettings.gCreateOutput = true;
+    globalSettings.gCreateAbstract = true;
+    globalSettings.gTIFFTables = false;
+    globalSettings.colorSets = colorSets;
+
+    // handle our command line arguments
+    // and load inksets from json files
+    parse_arguments( argc, argv );
+
+    // do the work
+    processInkSetList();
+
+    // and we're all done
     return 0;
 }
 

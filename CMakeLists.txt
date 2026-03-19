@@ -18,12 +18,16 @@ set( CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 set( SOURCES
 MiniICC.cpp
 MiniTIFF.cpp
+Options.cpp
 MultiInkMapping.cpp
 )
 
 set( PROJECT_HEADERS
 MiniICC.hpp
 MiniTIFF.hpp
+Options.hpp
+json.hpp
+json_fwd.hpp
 MultiInkMapping.hpp
 )
 

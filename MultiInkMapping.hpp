@@ -22,6 +22,10 @@
 
 /******************************************************************************/
 
+const char kVersionString[] = "0.8a";
+
+/******************************************************************************/
+
 struct labColor {
     float L;
     float A;
@@ -347,6 +351,46 @@ const std::vector<color_space> profileSpaceLookup =
     kSpaceECLR,
     kSpaceFCLR,
 };
+
+/******************************************************************************/
+
+struct inkColorSet {
+    std::string name;               // what filename to use
+    std::string description;        // how to describe this combination
+    std::string copyright;          // copyright string for this set
+    
+    labColor paperColor;            // lightest possible color
+    labColor darkColor;             // darkest possible color from combination of inks, calculated if L <= 0
+    named_color_list primaries;     // saturated hues
+
+public:
+    spline_list splines;        // built from basic ink data
+    spline_mix_data mixData;    // built from basic ink data
+};
+
+
+/******************************************************************************/
+
+// global variables, just because it was quicker to write it this way
+struct settings_spec {
+
+    int gDataDepth;
+    int gDataGridPoints;
+    size_t gTableSizeLimit;
+    bool gDebugMode;
+    bool gCreateOutput;
+    bool gCreateAbstract;
+    bool gTIFFTables;
+    std::string gDefaultCopyright;
+    
+    std::vector<inkColorSet> colorSets;
+};
+
+extern settings_spec globalSettings;
+
+/******************************************************************************/
+
+extern void processInkSetList(void);
 
 /******************************************************************************/
 
