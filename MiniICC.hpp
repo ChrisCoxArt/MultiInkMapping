@@ -156,7 +156,7 @@ struct profileData {
     color_space     colorSpace;         // required
     color_space     pcsSpace;           // required
 
-    std::string     otherText;          // optional, can be empty
+    std::string     optionalNoteText;   // optional, can be empty
 
     std::vector<tableFormat> LUTtables;
 

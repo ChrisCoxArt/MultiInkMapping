@@ -497,8 +497,8 @@ void create_tags( profileDataInner &data )
     add_mluc_tag( data, icSigProfileDescriptionTag, data.description );
     add_mluc_tag( data, icSigCopyrightTag, data.copyright );
  
-    if (data.otherText.length() != 0)
-        add_text_tag( data, icSigNote, data.otherText );
+    if (data.optionalNoteText.length() != 0)
+        add_text_tag( data, icSigNote, data.optionalNoteText );
     
     // white point 'wtpt'
     add_xyz_tag( data, icSigMediaWhitePointTag, 0x0000F6D6, 0x00010000, 0x0000D32D );    // D50
@@ -698,8 +698,7 @@ void write_header( const profileDataInner &data, FILE *output )
     fwrite( padding, 28, 1, output );
     
     // verify that we wrote exactly 128 bytes of header
-    long headerSize = ftell( output );
-    assert( headerSize == 128 );
+    assert( ftell( output ) == 128 );
 }
 
 /******************************************************************************/
