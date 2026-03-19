@@ -43,6 +43,10 @@ Probably easiest with many per file.
 
     global gridpoints
     global depth
+    global limit on table size
+    global debug mode
+    global TIFF dump
+    create output or just create abstract?
     list of sets
         {
         name
@@ -438,7 +442,7 @@ float CIECurve( const float input )
     if (input > breakpoint)
         return cbrtf( input );
     else
-        return (input * scale + (4.0/29.0));
+        return (input * scale + (4.0f/29.0f));
 }
 
 /********************************************************************************/
@@ -451,7 +455,7 @@ float CIEReverseCurve( const float input )
     if (input > breakpoint)
         return input*input*input;   // powf(input,3);
     else
-        return scale*(input - (4.0/29.0));
+        return scale*(input - (4.0f/29.0f));
 }
 
 /********************************************************************************/
@@ -460,11 +464,11 @@ xyzColor LAB2XYZ( const labColor &input )
 {
     xyzColor result;
     
-    float tempY = (input.L + 16)/116.0;
+    float tempY = (input.L + 16.0f)/116.0f;
 
     float Y = YD50 * CIEReverseCurve( tempY );
-    float X = XD50 * CIEReverseCurve( tempY + input.A / 500.0 );
-    float Z = ZD50 * CIEReverseCurve( tempY - input.B / 200.0 );
+    float X = XD50 * CIEReverseCurve( tempY + input.A / 500.0f );
+    float Z = ZD50 * CIEReverseCurve( tempY - input.B / 200.0f );
 
     result.X = X;
     result.Y = Y;
@@ -483,9 +487,9 @@ labColor XYZ2LAB( const xyzColor &input )
     float tempX = CIECurve( input.X / XD50 );
     float tempZ = CIECurve( input.Z / ZD50 );
 
-    float L = 116.0 * tempY - 16.0;
-    float a = 500 * ( tempX - tempY );
-    float b = 200 * ( tempY - tempZ );
+    float L = 116.0f * tempY - 16.0f;
+    float a = 500.0f * ( tempX - tempY );
+    float b = 200.0f * ( tempY - tempZ );
 
     result.L = L;
     result.A = a;
@@ -571,8 +575,8 @@ color_list mix_pure_ink_spline( int steps, const labColor &paperColor, const lab
 
 bool labHueLess(const labColorNamed &a, const labColorNamed &b)
 {
-    float angle1 = M_PI + atan2(a.color.A,a.color.B);
-    float angle2 = M_PI + atan2(b.color.A,b.color.B);
+    float angle1 = M_PI + atan2f(a.color.A,a.color.B);
+    float angle2 = M_PI + atan2f(b.color.A,b.color.B);
     return angle1 < angle2;
 }
 
@@ -581,7 +585,7 @@ bool labHueLess(const labColorNamed &a, const labColorNamed &b)
 // here we want chromatic mixes, not darks
 xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
 {
-    xyzColor identity( 100.0, 100.0, 100.0 );
+    const xyzColor identity( 100.0, 100.0, 100.0 );
     
     xyzColor overprint = identity;
     xyzColor average(0,0,0);
@@ -608,7 +612,7 @@ xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor 
 xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
             const std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
-    xyzColor identity( 100.0, 100.0, 100.0 );
+    const xyzColor identity( 100.0, 100.0, 100.0 );
  
     assert( inkCount >= 1 && inkCount <= 15 );
     
@@ -633,7 +637,7 @@ xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
 xyzColor estimate_darkest_ink_overprint( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
 {
     const float Ylimit = 1.3;
-    xyzColor identity( 100.0, 100.0, 100.0 );
+    const xyzColor identity( 100.0, 100.0, 100.0 );
     
     xyzColor overprint = identity;
     for ( const auto &ink : inkList ) {
@@ -671,7 +675,7 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
 {
     color_list temp;
     labColor mixLAB;
-    xyzColor identity( 100.0, 100.0, 100.0 );
+    const xyzColor identity( 100.0, 100.0, 100.0 );
  
     labColor ink1 = inkSet.primaries[ink1Index].color;
     labColor ink2 = inkSet.primaries[ink2Index].color;
@@ -685,17 +689,17 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
     // d == division is this pure ink spline (handled elsewhere)
     for (int d = 1; d < divisions; ++d) {
         float t = (float)d / (float)divisions;
-        float t1 = 1.0;
-        float t2 = 1.0;
+        float t1 = 1.0f;
+        float t2 = 1.0f;
 
         xyzColor mix;
-        if (t <= 0.5) {
-            mix = interp2inks( t*2.0, ink1Color, halfwayMix );
-            t2 = t*2.0; // going 0 -> 1
+        if (t <= 0.5f) {
+            mix = interp2inks( t*2.0f, ink1Color, halfwayMix );
+            t2 = t*2.0f; // going 0 -> 1
         }
         else {
-            mix = interp2inks( (t-0.5)*2.0, halfwayMix, ink2Color );
-            t1 = (1.0 - t) * 2.0;   // going 1 -> 0
+            mix = interp2inks( (t-0.5f)*2.0f, halfwayMix, ink2Color );
+            t1 = (1.0f - t) * 2.0f;   // going 1 -> 0
         }
 
         mixLAB = XYZ2LAB( mix );
@@ -715,12 +719,10 @@ void mix_ink_splines( inkColorSet &inkSet )
     color_list temp;
     xyzColor mix;
     labColor mixLAB;
-    xyzColor identity( 100.0, 100.0, 100.0 );
-
+    const xyzColor identity( 100.0, 100.0, 100.0 );
 
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
-
 
     // Need inks in hue angle order so the splines will be in order for hull
     std::sort( inkSet.primaries.begin(), inkSet.primaries.end(), labHueLess );
@@ -825,12 +827,12 @@ void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
     
     // quick and dirty binary search
 
-    float t = 0.5;
-    const float Ltolerance = 0.1;   // this seems to be good enough
+    float t = 0.5f;
+    const float Ltolerance = 0.1f;   // this seems to be good enough
     
-    float Ttop = 0.0;
+    float Ttop = 0.0f;
     
-    float Tbottom = 1.0;
+    float Tbottom = 1.0f;
 
     float Ltest = SplineInterp( t, spline[sample0].L, spline[sample1].L, spline[sample2].L, spline[sample3].L );
     
@@ -844,7 +846,7 @@ void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
             Ttop = t;
         }
         
-        t = (Ttop + Tbottom) * 0.5;
+        t = (Ttop + Tbottom) * 0.5f;
         Ltest = SplineInterp( t, spline[sample0].L, spline[sample1].L, spline[sample2].L, spline[sample3].L );
     }
     
@@ -859,9 +861,9 @@ void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
 // are we less than our darkest, or greater than our brightest point?
 bool ClippedL( float Linput, labColor &output, const inkColorSet &inkSet )
 {
-    output.L = 0.0;
-    output.A = 0.0;
-    output.B = 0.0;
+    output.L = 0.0f;
+    output.A = 0.0f;
+    output.B = 0.0f;
     
     if (Linput < inkSet.darkColor.L) {
         output = inkSet.darkColor;
@@ -910,7 +912,7 @@ void SplineInterpList( const size_t subdivisions, const PointList &input, PointL
                 p3 = p3 - pointCount;
         } else {
             // clamp
-            if (p0 < 0)    p0 = 0;
+            if (p0 < 0) p0 = 0;
             if (p1 < 0) p1 = 0;
             if (p1 >= pointCount) p1 = pointCount-1;
             if (p2 >= pointCount) p2 = pointCount-1;
@@ -1035,7 +1037,6 @@ void InterpMixList( const size_t subdivisions, const spline_mix_data &input, spl
         if (input[p2].ink2Fraction > input[p1].ink2Fraction)
             index2 = input[p2].inkIndex2;
 
-// TODO - still generating too many cases where index1 == index2, even for 3 or more inks
         float fraction1 = LERP( t, input[p1].ink1Fraction, input[p2].ink1Fraction );
         float fraction2 = LERP( t, input[p1].ink2Fraction, input[p2].ink2Fraction );
         
@@ -1089,7 +1090,7 @@ DEFERRED - find a way to accelerate the search
     if (count == 1)
         return 0;
 
-    float closest_dist = 256.0*256.0*256.0;        // much greater than our maximum possible distance
+    float closest_dist = 1e20f;        // much greater than our maximum possible distance
     size_t closest_index = -1;  // really largest positive value because it is unsigned
     
     for (size_t i = 0; i < count; ++i) {
@@ -1115,10 +1116,10 @@ inline
 float Smooth3( float a, float b, float c)
 {
     // scum dot reduction
-    if (b == 1.0 || b == 0.0)
+    if (b == 1.0f || b == 0.0f)
         return b;
     
-    return (a + 4*b + c) / 6.0;
+    return (a + 4*b + c) / 6.0f;
 }
 
 /********************************************************************************/
@@ -1385,7 +1386,7 @@ void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoin
 
     tableFormat myGamut;
     myGamut.tableSig = icSigGamutTag;
-    myGamut.tableDepth = 8;
+    myGamut.tableDepth = 8;                 // gamut depth really doesn't matter, it's a bool
     myGamut.tableGridPoints = gridPoints;
     myGamut.tableDimensions = 3;    // input
     myGamut.tableChannels = 1;      // output
@@ -1400,11 +1401,11 @@ A2B - inks and overprints to LAB, N-dimensional to 3 channels
     use ink mixing model and simple interpolation
     doesn't really need smoothing
 */
-void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfile )
+void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfile,
+                    const size_t maxGridSize )
 {
     const int maxChannels = 15;          // ICC spec. limit
     const int maxGridPoints = 31;        // sanity limit (could be increased)
-    const int maxGridSize = 1024*1024;   // limit 1 Meg points for now (3 Meg in file)
     
     int inkCount = (int)inkSet.primaries.size();
     assert(inkCount > 0);
@@ -1412,10 +1413,10 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
     
     // decide on table size
     int gridPoints = 2;         // absolute minimum
-    int gridSize = pow( gridPoints, inkCount );
+    size_t gridSize = pow( gridPoints, inkCount );
     
     int newPoints = gridPoints;
-    int newSize = gridSize;
+    size_t newSize = gridSize;
     while (newSize <= maxGridSize && newPoints <= maxGridPoints) {
         gridPoints = newPoints;
         gridSize = newSize;
@@ -2041,7 +2042,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 
 // full output profile: A2B, B2A, gamut
 void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints,
-                    const std::string &filename )
+                    const std::string &filename, size_t tableSizeLimit )
 {
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
@@ -2060,7 +2061,7 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     myProfile.creator = icSigccox;
 
     // make A2B0 (ink to LAB) - determines grid size internally
-    createA2B_table( inkSet, depth, myProfile );
+    createA2B_table( inkSet, depth, myProfile, tableSizeLimit );
 
     // make B2A0 (LAB to ink)
     createB2A_table( inkSet, depth, gridPoints, myProfile );
@@ -2115,6 +2116,9 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
 // our global variables, just because it was quicker to write it this way
 int gDataDepth = 8;
 int gDataGridPoints = 21;
+size_t gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
+bool gDebugMode = false;
+bool gTIFFTables = false;
 
 /********************************************************************************/
 
@@ -2124,7 +2128,10 @@ static void print_usage(char *argv[])
     
     printf("\t-depth B        bit depth of data [8 or 16] (default %d)\n", gDataDepth );
     printf("\t-grid G         number of grid points (default %d)\n", gDataGridPoints );
-        
+    printf("\t-limit L        upper limit on table size (default %zu)\n", gTableSizeLimit );
+    printf("\t-debug          enable debugging output\n" );
+    printf("\t-tiff           output tables as TIFF files\n" );
+
     printf("\t-version        Prints this message and exits immediately\n" );
     printf("Version %s, Compiled %s %s\n", kVersionString, __DATE__, __TIME__ );
 }
@@ -2137,7 +2144,7 @@ static void parse_arguments( int argc, char *argv[] )
     for ( int c = 1; c < argc; ++c )
         {
         
-        if ( (strcmp( argv[c], "-grid" ) == 0 || strcmp( argv[c], "-g" ) == 0 )
+        if ( (strcasecmp( argv[c], "-grid" ) == 0 || strcasecmp( argv[c], "-g" ) == 0 )
             && c < (argc-1) )
             {
             gDataGridPoints = atoi( argv[c+1] );
@@ -2147,7 +2154,7 @@ static void parse_arguments( int argc, char *argv[] )
                 gDataGridPoints = 255;
             ++c;
             }
-        else if ( (strcmp( argv[c], "-depth" ) == 0 || strcmp( argv[c], "-d" ) == 0 )
+        else if ( (strcasecmp( argv[c], "-depth" ) == 0 || strcasecmp( argv[c], "-d" ) == 0 )
             && c < (argc-1) )
             {
             gDataDepth = atoi( argv[c+1] );
@@ -2158,6 +2165,23 @@ static void parse_arguments( int argc, char *argv[] )
             if (gDataDepth != 8 && gDataDepth != 16)
                 gDataDepth = 8;
             ++c;
+            }
+        else if ( (strcasecmp( argv[c], "-limit" ) == 0 || strcasecmp( argv[c], "-l" ) == 0 )
+            && c < (argc-1) )
+            {
+            gTableSizeLimit = atoll( argv[c+1] );
+            if (gTableSizeLimit < 1024)
+                gTableSizeLimit = 1024;
+            // upper limit is really the 2 Gig ICC Profile limit
+            ++c;
+            }
+        else if ( strcasecmp( argv[c], "-debug" ) == 0 )
+            {
+            gDebugMode = true;
+            }
+        else if ( strcasecmp( argv[c], "-tiff" ) == 0 )
+            {
+            gTIFFTables = true;
             }
         else if ( strcmp( argv[c], "-V" ) == 0
                 || strcmp( argv[c], "-v" ) == 0
@@ -2195,7 +2219,7 @@ int main (int argc, char * argv[])
         
         assert( inkSet.splines.size() == inkSet.mixData.size() );
         
-        create_output_profile( inkSet, gDataDepth, gDataGridPoints, inkSet.name );
+        create_output_profile( inkSet, gDataDepth, gDataGridPoints, inkSet.name, gTableSizeLimit );
         create_abstract_profile( inkSet, gDataDepth, gDataGridPoints, inkSet.name );
     
      }  // end for colorSets
