@@ -27,7 +27,6 @@ MiniICC.hpp
 MiniTIFF.hpp
 Options.hpp
 json.hpp
-json_fwd.hpp
 MultiInkMapping.hpp
 )
 
