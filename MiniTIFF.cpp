@@ -46,6 +46,8 @@ void putLong( int32_t val, FILE *out )
     fwrite( &val, 4, 1, out );
 }
 
+#if 0
+// not supporting BIGTIFF yet, and don't need any other 8 byte quantities
 static
 void putLongLong( uint64_t val, FILE *out )
 {
@@ -57,6 +59,7 @@ void putLongLong( int64_t val, FILE *out )
 {
     fwrite( &val, 8, 1, out );
 }
+#endif
 
 /******************************************************************************/
 
@@ -133,8 +136,8 @@ void WriteTIFF( const std::string &name, float dpi, int color_model, uint8_t *bu
         putc('I',outfile);
     }
 
-    putShort( (uint16_t)42, outfile );
-    putLong( (uint32_t)8, outfile );    // offset to first IFD, from start of file
+    putShort( (int16_t)42, outfile );
+    putLong( (int32_t)8, outfile );    // offset to first IFD, from start of file
 
     // IFD
     // number of entries
