@@ -46,7 +46,9 @@ Probably easiest with many per file.
     global limit on table size
     global debug mode
     global TIFF dump
+    default copyright
     create output or just create abstract?
+
     list of sets
         {
         name
@@ -103,9 +105,22 @@ const char kVersionString[] = "0.8a";
 
 /******************************************************************************/
 
+// global variables, just because it was quicker to write it this way
+int gDataDepth = 8;
+int gDataGridPoints = 21;
+size_t gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
+bool gDebugMode = false;
+std::string gDefaultCopyright = "Copyright (c) Chris Cox 2026";
+bool gCreateOutput = true;
+bool gCreateAbstract = true;
+bool gTIFFTables = false;
+
+/******************************************************************************/
+
 struct inkColorSet {
     std::string name;               // what filename to use
     std::string description;        // how to describe this combination
+    std::string copyright;          // copyright string for this set
     
     labColor paperColor;            // lightest possible color
     labColor darkColor;             // darkest possible color from combination of inks, calculated if L <= 0
@@ -121,6 +136,7 @@ std::vector<inkColorSet> colorSets =
 // 1
     {   "Turquoise",
         "Turquoise Paint",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5 } }
@@ -129,6 +145,7 @@ std::vector<inkColorSet> colorSets =
 // 2
     {   "Turquoise-Orange",
         "Turquoise and Orange Paint",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { 7.6, 2.5, 0.8 },
         { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
@@ -138,6 +155,7 @@ std::vector<inkColorSet> colorSets =
 // Chris's experiments
     {   "GreenGold-Magenta",
         "GreenGold and Magenta Paint",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Magenta", 52.0, 81.1, -1.7}, {"GreenGold", 57.1, -14.3, 54.0} }
@@ -145,6 +163,7 @@ std::vector<inkColorSet> colorSets =
     
     {   "Yellow-Teal",
         "Yellow and Teal Paint",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Yellow", 90.2, 2.7, 97.7}, {"Teal", 66.8, -51.5, -15.4 } }
@@ -152,6 +171,7 @@ std::vector<inkColorSet> colorSets =
     
     {   "YellowOrange-Violet",
         "YellowOrange and Violet Paint",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"YellowOrange", 81.5, 27.9, 102.3}, {"Violet", 51.3, 58.0, -67.0} }
@@ -159,6 +179,7 @@ std::vector<inkColorSet> colorSets =
 
     {   "YellowOrange-Indigo",
         "YellowOrange and Indigo Paint",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"YellowOrange", 81.5, 27.9, 102.3}, {"Indigo", 31, 35, -68} }
@@ -166,6 +187,7 @@ std::vector<inkColorSet> colorSets =
     
     {   "Green-Turquoise",
         "Green and Turquoise Paint",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Green", 71.2, -54.2, 62.9}, {"Turquoise", 44.4, -35.9, -32.5} }
@@ -173,6 +195,7 @@ std::vector<inkColorSet> colorSets =
     
     {   "Teal-PinkViolet",
         "Teal and PinkViolet Paint",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Teal", 66.8, -51.5, -15.4 }, {"PinkViolet", 67.0, 59.0, -25.0 } }
@@ -180,6 +203,7 @@ std::vector<inkColorSet> colorSets =
     
     {   "Violet-Orange",
         "Violet and Orange Paint",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Orange", 62.0, 32, 58.0 }, {"Violet", 51.3, 58.0, -67.0} }
@@ -190,6 +214,7 @@ std::vector<inkColorSet> colorSets =
 // changing paper color -- pale, light colors look pretty good
     {   "Turquoise-Orange-LilacPaper",
         "Turquoise and Orange Paint on Lilac Paper",
+        "",
         { 91.2, 17.0, -11 },
         { -1,0,0 },
         { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
@@ -197,6 +222,7 @@ std::vector<inkColorSet> colorSets =
     
     {   "Turquoise-Orange-LimePaper",
         "Turquoise and Orange Paint on Lime Paper",
+        "",
         { 85.0, -25.5, 37.5 },
         { -1,0,0 },
         { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
@@ -206,6 +232,7 @@ std::vector<inkColorSet> colorSets =
 // and L* prediction fails
     {   "Turquoise-Yellow-LilacPaper",
         "Turquoise and Yellow Paint on Lilac Paper",
+        "",
         { 91.2, 17.0, -11 },
         { -1,0,0 },
         { {"Yellow", 90.2, 2.7, 97.7}, {"Turquoise", 44.4, -35.9, -32.5 } }
@@ -215,6 +242,7 @@ std::vector<inkColorSet> colorSets =
 // 3
     {   "Turquoise-Orange-Green",
         "Turquoise, Orange, and Green Paint",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Orange", 62.0, 32, 58.0}, {"Turquoise", 44.4, -35.9, -32.5 },
@@ -223,6 +251,7 @@ std::vector<inkColorSet> colorSets =
 
     {   "Turquoise-Magenta-Yellow",
         "Turquoise, Magenta, and Yellow Paint",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -233,6 +262,7 @@ std::vector<inkColorSet> colorSets =
 // Chris's experiments
     {   "Violet-Magenta-YellowOrange",
         "Violet-Magenta-YellowOrange",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Violet", 51.3, 58.0, -67.0}, {"Magenta", 52.0, 81.1, -1.7},
@@ -241,6 +271,7 @@ std::vector<inkColorSet> colorSets =
     
     {   "Violet-Teal-Yellow",
         "Violet-Teal-Yellow",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Violet", 51.3, 58.0, -67.0}, {"Yellow", 90.2, 2.7, 97.7},
@@ -251,6 +282,7 @@ std::vector<inkColorSet> colorSets =
 // 4
     {   "Turquoise-Magenta-Yellow-Violet",
         "4 Paints",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -261,6 +293,7 @@ std::vector<inkColorSet> colorSets =
 // Chris's experiments
     {   "Teal-Cerulean-Orange-Magenta",
         "Teal-Cerulean-Orange-Magenta",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Teal", 66.8, -51.5, -15.4 }, {"Cerulean", 63.3, -16.1, -35.3 },
@@ -269,6 +302,7 @@ std::vector<inkColorSet> colorSets =
     
     {   "Green-Yellow-Cerulean-Violet",
         "Green-Yellow-Cerulean-Violet",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Green", 71.2, -54.2, 62.9}, {"Yellow", 90.2, 2.7, 97.7},
@@ -279,6 +313,7 @@ std::vector<inkColorSet> colorSets =
 // 5
     {   "Turquoise-Magenta-Yellow-Violet-Green",
         "5 Paints",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -289,6 +324,7 @@ std::vector<inkColorSet> colorSets =
 // 6
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue",
         "6 Paints",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -299,6 +335,7 @@ std::vector<inkColorSet> colorSets =
 // 7
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange",
         "7 Paints",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -310,6 +347,7 @@ std::vector<inkColorSet> colorSets =
 // 8
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen",
         "8 Paints",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -321,6 +359,7 @@ std::vector<inkColorSet> colorSets =
 // 9
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet",
         "9 Paints",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -333,6 +372,7 @@ std::vector<inkColorSet> colorSets =
 // A
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red",
         "10! Ten Paints! Hah, ha, ha!",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -345,6 +385,7 @@ std::vector<inkColorSet> colorSets =
 // B
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal",
         "11 Paints",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -358,6 +399,7 @@ std::vector<inkColorSet> colorSets =
 // C
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange",
         "12 Paints",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -371,6 +413,7 @@ std::vector<inkColorSet> colorSets =
 // D
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange-Cerulean",
         "13 Paints",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -385,6 +428,7 @@ std::vector<inkColorSet> colorSets =
 // E
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange-Cerulean-GreenGold",
         "14 Paints",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -399,6 +443,7 @@ std::vector<inkColorSet> colorSets =
 // F
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange-Cerulean-GreenGold-Indigo",
         "15 Paints",
+        "",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"Turquoise", 44.4, -35.9, -32.5}, {"Magenta", 52.0, 81.1, -1.7},
@@ -585,9 +630,8 @@ bool labHueLess(const labColorNamed &a, const labColorNamed &b)
 // here we want chromatic mixes, not darks
 xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
 {
-    const xyzColor identity( 100.0, 100.0, 100.0 );
     
-    xyzColor overprint = identity;
+    xyzColor overprint = identityXYZ;
     xyzColor average(0,0,0);
     for ( const auto &ink : inkList ) {
         average += ink;
@@ -612,16 +656,14 @@ xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor 
 xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
             const std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
-    const xyzColor identity( 100.0, 100.0, 100.0 );
- 
     assert( inkCount >= 1 && inkCount <= 15 );
     
-    xyzColor overprint = identity;
+    xyzColor overprint = identityXYZ;
     for (int i = 0; i < inkCount; ++i) {
         auto &ink = inkList[i];
         float thisFraction = inkFractionList[i];
         if (thisFraction > 0.0) {
-            xyzColor fractionalInk = interp2inks( thisFraction, identity, ink );
+            xyzColor fractionalInk = interp2inks( thisFraction, identityXYZ, ink );
             overprint *= fractionalInk;
         }
     }
@@ -637,9 +679,8 @@ xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
 xyzColor estimate_darkest_ink_overprint( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
 {
     const float Ylimit = 1.3;
-    const xyzColor identity( 100.0, 100.0, 100.0 );
     
-    xyzColor overprint = identity;
+    xyzColor overprint = identityXYZ;
     for ( const auto &ink : inkList ) {
         overprint *= ink;
     }
@@ -675,7 +716,6 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
 {
     color_list temp;
     labColor mixLAB;
-    const xyzColor identity( 100.0, 100.0, 100.0 );
  
     labColor ink1 = inkSet.primaries[ink1Index].color;
     labColor ink2 = inkSet.primaries[ink2Index].color;
@@ -719,7 +759,6 @@ void mix_ink_splines( inkColorSet &inkSet )
     color_list temp;
     xyzColor mix;
     labColor mixLAB;
-    const xyzColor identity( 100.0, 100.0, 100.0 );
 
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
@@ -735,11 +774,10 @@ void mix_ink_splines( inkColorSet &inkSet )
     if (inkSet.darkColor.L <= 0) {
         mix = estimate_darkest_ink_overprint( inkSet.primaries, paperColor );
         mixLAB = XYZ2LAB( mix );
-#if 1
-        printf("Estimated overprint for %s is (%f, %f, %f)\n",
-            inkSet.name.c_str(),
-            mixLAB.L, mixLAB.A, mixLAB.B );
-#endif
+        if (gDebugMode)
+            printf("Estimated overprint for %s is (%f, %f, %f)\n",
+                inkSet.name.c_str(),
+                mixLAB.L, mixLAB.A, mixLAB.B );
         inkSet.darkColor = mixLAB;
     }
     
@@ -767,6 +805,8 @@ void mix_ink_splines( inkColorSet &inkSet )
             inkCount-1, 0,
             paperColor);
     }
+    
+    assert( inkSet.splines.size() == inkSet.mixData.size() );
 }
 
 /********************************************************************************/
@@ -1800,30 +1840,30 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     assert( depth == 8 || depth == 16 );
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount * inkCount * (depth/8) ]);
     uint8_t *outData = outBuffer.get();
+    uint16_t *out16Ptr = (uint16_t*)outData;
 
-#if 0
-    // order the data for easy viewing as an image
-    for (int A = 0; A < gridPoints; ++A) {
-        for (int L = 0; L < gridPoints; ++L) {
-            for (int B = 0; B < gridPoints; ++B) {
-                for (int c = 0; c < inkCount; ++c) {
-                    outData[c] = float_to_file255( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
+    if ( gTIFFTables ) {
+        // order the data for easy viewing as an image
+        uint8_t *tifPtr = outData;
+        for (int A = 0; A < gridPoints; ++A) {
+            for (int L = 0; L < gridPoints; ++L) {
+                for (int B = 0; B < gridPoints; ++B) {
+                    for (int c = 0; c < inkCount; ++c) {
+                        tifPtr[c] = float_to_file255( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
+                    }
+                    tifPtr += inkCount;
                 }
-                outData += inkCount;
             }
         }
+        
+        // write TIFF File
+        uint32_t mode = (inkCount < 4) ? TIFF_MODE_GRAY_WHITEZERO : TIFF_MODE_CMYK;
+        WriteTIFF( inkSet.name + "_B2A.tiff", 96.0, mode, outBuffer.get(),
+                    gridPoints*gridPoints, gridPoints, inkCount, 8 );
     }
-    
-    // write TIFF File
-    uint32_t mode = (inkCount < 4) ? TIFF_MODE_GRAY_WHITEZERO : TIFF_MODE_CMYK;
-    WriteTIFF( inkSet.name + "_B2A.tiff", 96.0, mode, outBuffer.get(),
-                gridPoints*gridPoints, gridPoints, inkCount, 8 );
-#endif
 
 
     // oganize data for ICC profile
-    outData = outBuffer.get();
-    uint16_t *out16Ptr = (uint16_t*)outData;
     for (int L = 0; L < gridPoints; ++L) {
         for (int A = 0; A < gridPoints; ++A) {
             for (int B = 0; B < gridPoints; ++B) {
@@ -1948,36 +1988,35 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     size_t bufferSize = gridPoints*gridPoints*gridPoints * 3 * (depth/8);
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ bufferSize ]);
     uint8_t *outPtr = outBuffer.get();
+    uint16_t *out16Ptr = (uint16_t*)outPtr;
 
-#if 0
-    // order the data for easy viewing as an image
-    for (A = 0; A < gridPoints; ++A) {
-        for (L = 0; L < gridPoints; ++L) {
-            for (B = 0; B < gridPoints; ++B) {
+    if (gTIFFTables) {
+        // order the data for easy viewing as an image
+        uint8_t *tifPtr = outPtr;
+        for (A = 0; A < gridPoints; ++A) {
+            for (L = 0; L < gridPoints; ++L) {
+                for (B = 0; B < gridPoints; ++B) {
 
-                // convert to integer output values
-                int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
-                int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
-                int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
-                
-                // write value out to file (interleaved)
-                outPtr[0] = (uint8_t)Lout;
-                outPtr[1] = (uint8_t)Aout;
-                outPtr[2] = (uint8_t)Bout;
-                outPtr += 3;
+                    // convert to integer output values
+                    int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
+                    int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
+                    int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
+                    
+                    // write value out to file (interleaved)
+                    tifPtr[0] = (uint8_t)Lout;
+                    tifPtr[1] = (uint8_t)Aout;
+                    tifPtr[2] = (uint8_t)Bout;
+                    tifPtr += 3;
+                }
             }
         }
+        
+        // write TIFF File
+        WriteTIFF( filename + "_abstract.tiff", 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
+                    gridPoints*gridPoints, gridPoints, 3, 8 );
     }
-    
-    // write TIFF File
-    WriteTIFF( filename + "_abstract.tiff", 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
-                gridPoints*gridPoints, gridPoints, 3, 8 );
-#endif
-
 
     // oganize data for ICC profile
-    outPtr = outBuffer.get();
-    uint16_t *out16Ptr = (uint16_t*)outPtr;
     for (L = 0; L < gridPoints; ++L) {
         for (A = 0; A < gridPoints; ++A) {
             for (B = 0; B < gridPoints; ++B) {
@@ -2015,7 +2054,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     // write ICC abstract profiles
     profileData myProfile;
     myProfile.description = inkSet.description;
-    myProfile.copyright = "Copyright (c) Chris Cox 2026";
+    myProfile.copyright = inkSet.copyright;
     myProfile.profileClass = kClassAbstract;
     myProfile.colorSpace = kSpaceLAB;
     myProfile.pcsSpace = kSpaceLAB;
@@ -2051,7 +2090,7 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     // write ICC output profiles
     profileData myProfile;
     myProfile.description = inkSet.description;
-    myProfile.copyright = "Copyright (c) Chris Cox 2026";
+    myProfile.copyright = inkSet.copyright;
     myProfile.profileClass = kClassOutput;
     myProfile.colorSpace = profileSpaceLookup[ inkCount ];
     myProfile.pcsSpace = kSpaceLAB;
@@ -2113,22 +2152,14 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
 /******************************************************************************/
 /******************************************************************************/
 
-// our global variables, just because it was quicker to write it this way
-int gDataDepth = 8;
-int gDataGridPoints = 21;
-size_t gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
-bool gDebugMode = false;
-bool gTIFFTables = false;
-
-/********************************************************************************/
-
 static void print_usage(char *argv[])
 {
     printf("Usage: %s <args>\n", argv[0] );
     
     printf("\t-depth B        bit depth of data [8 or 16] (default %d)\n", gDataDepth );
     printf("\t-grid G         number of grid points (default %d)\n", gDataGridPoints );
-    printf("\t-limit L        upper limit on table size (default %zu)\n", gTableSizeLimit );
+    printf("\t-limit L        upper limit on A2B table size (default %zu)\n", gTableSizeLimit );
+    printf("\t-copyright C    default copyright string for profiles (default \"%s\")\n", gDefaultCopyright.c_str() );
     printf("\t-debug          enable debugging output\n" );
     printf("\t-tiff           output tables as TIFF files\n" );
 
@@ -2175,6 +2206,14 @@ static void parse_arguments( int argc, char *argv[] )
             // upper limit is really the 2 Gig ICC Profile limit
             ++c;
             }
+        else if ( (strcasecmp( argv[c], "-copyright" ) == 0 || strcasecmp( argv[c], "-c" ) == 0 )
+            && c < (argc-1) )
+            {
+            std::string temp = argv[c+1];
+            if (temp != std::string())  // nope, can't be empty
+                gDefaultCopyright = temp;
+            ++c;
+            }
         else if ( strcasecmp( argv[c], "-debug" ) == 0 )
             {
             gDebugMode = true;
@@ -2214,13 +2253,18 @@ int main (int argc, char * argv[])
     // iterate over each named set of inks
     for (auto &inkSet : colorSets) {
         
-        // create splines from measured points using mixing model
+        if (inkSet.copyright.empty())
+            inkSet.copyright = gDefaultCopyright;
+        
+        // create splines from measured points using approximate mixing model
         mix_ink_splines( inkSet );
         
-        assert( inkSet.splines.size() == inkSet.mixData.size() );
+        // create output files from the splines and measured data
+        if (gCreateOutput)
+            create_output_profile( inkSet, gDataDepth, gDataGridPoints, inkSet.name, gTableSizeLimit );
         
-        create_output_profile( inkSet, gDataDepth, gDataGridPoints, inkSet.name, gTableSizeLimit );
-        create_abstract_profile( inkSet, gDataDepth, gDataGridPoints, inkSet.name );
+        if (gCreateAbstract)
+            create_abstract_profile( inkSet, gDataDepth, gDataGridPoints, inkSet.name );
     
      }  // end for colorSets
 

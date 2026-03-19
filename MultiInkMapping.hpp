@@ -32,6 +32,8 @@ public:
     labColor( float l, float a, float b) : L(l), A(a), B(b) {}
 };
 
+/******************************************************************************/
+
 struct labColorNamed {
     std::string name;
     labColor color;
@@ -39,6 +41,8 @@ struct labColorNamed {
 public:
     labColorNamed( const std::string &n, float l, float a, float b) : name(n), color(l,a,b) {}
 };
+
+/******************************************************************************/
 
 struct xyzColor {
     float X;
@@ -50,6 +54,8 @@ public:
     xyzColor( float x, float y, float z) : X(x), Y(y), Z(z) {}
 };
 
+/******************************************************************************/
+
 struct Point {
     float a;
     float b;
@@ -60,6 +66,8 @@ public:
     
     bool operator==(const Point& other) const = default;
 };
+
+/******************************************************************************/
 
 struct inkMixPair {
 
@@ -75,6 +83,8 @@ struct inkMixPair {
     bool operator==(const inkMixPair& other) const = default;
 };
 
+/******************************************************************************/
+
 typedef std::vector< Point > PointList;
 
 typedef std::vector< labColor > color_list;
@@ -82,7 +92,12 @@ typedef std::vector< labColor > color_list;
 typedef std::vector< labColorNamed > named_color_list;
 
 typedef std::vector< color_list > spline_list;
+
 typedef std::vector< inkMixPair > spline_mix_data;
+
+/******************************************************************************/
+
+const xyzColor identityXYZ( 100.0, 100.0, 100.0 );
 
 /******************************************************************************/
 
