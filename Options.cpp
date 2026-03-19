@@ -25,19 +25,199 @@ using json = nlohmann::json;
 
 /******************************************************************************/
 
-// TODO - write me!
-extern void to_json( json &j, const settings_spec &p );
-extern void from_json( const json &j, settings_spec &p );
+void ReadString( const json &input, const char *key, std::string &result )
+{
+    auto dataFound = input.find(key);
+    if (dataFound != input.end())
+        {
+        auto type = dataFound.value().type();
+        if (type == json::value_t::null)
+            return;
+        assert( type == json::value_t::string );
+        result = dataFound.value();
+        }
+}
 
-extern void to_json( json &j, const inkColorSet &p );
-extern void from_json( const json &j, inkColorSet &p );
+/*********************************************************************/
 
-extern void to_json( json &j, const labColor &p );
-extern void from_json( const json &j, labColor &p );
+void ReadInt( const json &input, const char *key, int &result )
+{
+    auto dataFound = input.find(key);
+    if (dataFound != input.end())
+        {
+        auto type = dataFound.value().type();
+        if (type == json::value_t::null )
+            {
+            result = -1;
+            return;
+            }
+        assert( type == json::value_t::number_unsigned
+        || type == json::value_t::number_integer );
+        result = dataFound.value();
+        }
+}
 
-extern void to_json( json &j, const labColorNamed &p );
-extern void from_json( const json &j, labColorNamed &p );
+/*********************************************************************/
 
+void ReadSize( const json &input, const char *key, size_t &result )
+{
+    auto dataFound = input.find(key);
+    if (dataFound != input.end())
+        {
+        auto type = dataFound.value().type();
+        if (type == json::value_t::null )
+            {
+            result = -1;
+            return;
+            }
+        assert( type == json::value_t::number_unsigned
+        || type == json::value_t::number_integer );
+        result = dataFound.value();
+        }
+}
+
+/******************************************************************************/
+
+void ReadFloat( const json &input, const char *key, float &result )
+{
+    auto dataFound = input.find(key);
+    if (dataFound != input.end())
+        {
+        auto type = dataFound.value().type();
+        if (type == json::value_t::null )
+            return;
+        assert( type == json::value_t::number_float
+                || type == json::value_t::number_unsigned
+                || type == json::value_t::number_integer );
+        result = dataFound.value();
+        }
+}
+
+/******************************************************************************/
+
+void ReadBool( const json &input, const char *key, bool &result )
+{
+    auto dataFound = input.find(key);
+    if (dataFound != input.end())
+        {
+        auto type = dataFound.value().type();
+        if (type == json::value_t::null )
+            return;
+        assert( type == json::value_t::boolean
+                || type == json::value_t::number_unsigned
+                || type == json::value_t::number_integer );
+        result = (dataFound.value() != false);
+        }
+}
+
+/******************************************************************************/
+
+void to_json( json &j, const labColor &p )
+{
+    j = json{ {"L", p.L }, {"a", p.A }, {"b", p.B } };
+}
+
+/******************************************************************************/
+
+void from_json( const json &j, labColor &p )
+{
+    p.L = j["L"];
+    p.A = j["a"];
+    p.B = j["b"];
+}
+
+/******************************************************************************/
+
+void to_json( json &j, const namedColor &p )
+{
+    j = json{ {"Name", p.name }, {"L", p.color.L }, {"a", p.color.A }, {"b", p.color.B } };
+}
+
+/******************************************************************************/
+
+void from_json( const json &j, namedColor &p )
+{
+    p.name = j["Name"];
+    p.color.L = j["L"];
+    p.color.A = j["a"];
+    p.color.B = j["b"];
+}
+
+/******************************************************************************/
+
+void to_json( json &j, const inkColorSet &p )
+{
+    j = json{ { "filename", p.name },
+              { "description", p.description },
+              { "copyright", p.copyright },
+              { "paperColor", p.paperColor },
+              { "darkColor", p.darkColor },
+              { "primariesList", p.primaries },
+            };
+
+    // remaining struct variables are calculated at runtime
+}
+
+/******************************************************************************/
+
+void from_json( const json &j, inkColorSet &p )
+{
+    p.darkColor =  labColor(-1,0,0);
+    
+    ReadString( j, "filename", p.name );
+    ReadString( j, "description", p.description );
+    ReadString( j, "copyright", p.copyright );
+
+    p.paperColor = j["paperColor"];
+    p.darkColor = j["darkColor"];
+
+    auto dataFound = j.find("primariesList");
+    if (dataFound != j.end())
+        p.primaries = dataFound.value();
+}
+
+/******************************************************************************/
+
+void to_json( json &j, const settings_spec &p )
+{
+    j = json{ { "tableDepth", p.gDataDepth },
+              { "gridPoints", p.gDataGridPoints },
+              
+              { "tableSizeLimit", p.gTableSizeLimit },
+              
+              { "debugEnable", p.gDebugMode },
+              { "createOutputProfiles", p.gCreateOutput },
+              { "createAbstractProfiles", p.gCreateAbstract },
+              { "createTIFFTables", p.gTIFFTables },
+              
+              { "defaultCopyright", p.gDefaultCopyright },
+              
+              { "colorSets", p.colorSets },
+            };
+}
+
+/******************************************************************************/
+
+void from_json( const json &j, settings_spec &p )
+{
+    ReadInt( j, "tableDepth", p.gDataDepth );
+    ReadInt( j, "gridPoints", p.gDataGridPoints );
+    
+    ReadSize( j, "tableSizeLimit", p.gTableSizeLimit );
+    
+    ReadBool( j, "debugEnable", p.gDebugMode );
+    ReadBool( j, "createOutputProfiles", p.gCreateOutput );
+    ReadBool( j, "createAbstractProfiles", p.gCreateAbstract );
+    ReadBool( j, "createTIFFTables", p.gTIFFTables );
+    
+    ReadString( j, "defaultCopyright", p.gDefaultCopyright );
+
+    auto dataFound = j.find("colorSets");
+    if (dataFound != j.end())
+        p.colorSets = dataFound.value();
+}
+
+/******************************************************************************/
 /******************************************************************************/
 
 static void print_usage(char *argv[])
@@ -53,6 +233,7 @@ static void print_usage(char *argv[])
 
     printf("\t-version        Prints this message and exits immediately\n" );
     printf("Version %s, Compiled %s %s\n", kVersionString, __DATE__, __TIME__ );
+    printf("Nlohmann JSON Version %d.%d.%d\n", NLOHMANN_JSON_VERSION_MAJOR, NLOHMANN_JSON_VERSION_MINOR, NLOHMANN_JSON_VERSION_PATCH );
 }
 
 /******************************************************************************/
@@ -61,10 +242,17 @@ void parse_arguments( int argc, char *argv[] )
 {
     std::vector<std::string> filenames;
 
-
+#if 1
 // TODO - first time run, convert hard coded color sets into a JSON file
 // then delete that code
-// or maybe use the output for debug mode
+// or maybe use the output for debug mode       filename_parsed.json
+
+        json settings = globalSettings;
+        std::ofstream out( "oldinksets.json" );
+        out << std::setw(4) << settings.dump(4);
+        out.close();
+#endif
+
 
     for ( int c = 1; c < argc; ++c ) {
         
@@ -141,8 +329,16 @@ void parse_arguments( int argc, char *argv[] )
             std::ifstream in( name );
             if (in.is_open()) {
                 json settings = json::parse(in);
-//                globalSettings = settings;
+                globalSettings = settings;
                 in.close();
+                
+                if (globalSettings.gDebugMode) {
+                    // rewrite the input, for verification, when debugging
+                    json setTemp = globalSettings;
+                    std::ofstream out( name + "_verify.json" );
+                    out << std::setw(4) << setTemp.dump(4);
+                    out.close();
+                }
 
                 // process the inksets from this json file
                 processInkSetList();

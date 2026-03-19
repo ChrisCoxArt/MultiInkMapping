@@ -38,12 +38,13 @@ public:
 
 /******************************************************************************/
 
-struct labColorNamed {
+struct namedColor {
     std::string name;
     labColor color;
     
 public:
-    labColorNamed( const std::string &n, float l, float a, float b) : name(n), color(l,a,b) {}
+    namedColor( const std::string &n, float l, float a, float b) : name(n), color(l,a,b) {}
+    namedColor() {} // type must be default constructable for JSON
 };
 
 /******************************************************************************/
@@ -93,7 +94,7 @@ typedef std::vector< Point > PointList;
 
 typedef std::vector< labColor > color_list;
 
-typedef std::vector< labColorNamed > named_color_list;
+typedef std::vector< namedColor > named_color_list;
 
 typedef std::vector< color_list > spline_list;
 

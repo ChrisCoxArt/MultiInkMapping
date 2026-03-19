@@ -39,29 +39,6 @@ Current:
 
 TODO - JSON input?
     add more error checking/reporting on color sets
-    Probably easiest with many per file.
-
-    split options to another file so JSON doesn't block or slow compilation of the main file
-
-    global gridpoints
-    global depth
-    global limit on table size
-    global debug mode
-    global TIFF dump
-    default copyright
-    create output or just create abstract?
-
-    list of sets
-        {
-        name
-        description
-        copyright
-        whiteLAB
-        darkLAB
-        list of inks
-            { name, LAB }
-        }
-
 
 
 TODO - write XML profile data, once I have V4 working?
@@ -124,7 +101,7 @@ std::vector<inkColorSet> colorSets =
         { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
     },
 
-#if 0
+#if 1
 // Chris's experiments
     {   "GreenGold-Magenta",
         "GreenGold and Magenta Paint",
@@ -231,7 +208,7 @@ std::vector<inkColorSet> colorSets =
           {"Yellow", 90.2, 2.7, 97.7}  }
     },
 
-#if 0
+#if 1
 // Chris's experiments
     {   "Violet-Magenta-YellowOrange",
         "Violet-Magenta-YellowOrange",
@@ -262,7 +239,7 @@ std::vector<inkColorSet> colorSets =
           {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0} }
     },
 
-#if 0
+#if 1
 // Chris's experiments
     {   "Teal-Cerulean-Orange-Magenta",
         "Teal-Cerulean-Orange-Magenta",
@@ -591,7 +568,7 @@ color_list mix_pure_ink_spline( int steps, const labColor &paperColor, const lab
 
 /********************************************************************************/
 
-bool labHueLess(const labColorNamed &a, const labColorNamed &b)
+bool labHueLess(const namedColor &a, const namedColor &b)
 {
     float angle1 = M_PI + atan2f(a.color.A,a.color.B);
     float angle2 = M_PI + atan2f(b.color.A,b.color.B);
@@ -673,7 +650,7 @@ xyzColor estimate_darkest_ink_overprint( const std::vector<xyzColor> &inkList, c
 /********************************************************************************/
 
 // convenience converter
-xyzColor estimate_darkest_ink_overprint( const std::vector<labColorNamed> &inkList, const xyzColor &paperColor )
+xyzColor estimate_darkest_ink_overprint( const std::vector<namedColor> &inkList, const xyzColor &paperColor )
 {
     std::vector<xyzColor> tempListXYZ( inkList.size() );
     for (size_t i = 0; i < inkList.size(); ++i)
@@ -2159,7 +2136,7 @@ settings_spec globalSettings;
 
 int main (int argc, char * argv[])
 {
-    // defaults
+    // Set defaults
     globalSettings.gDataDepth = 8;
     globalSettings.gDataGridPoints = 21;
     globalSettings.gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
@@ -2170,11 +2147,13 @@ int main (int argc, char * argv[])
     globalSettings.gTIFFTables = false;
     globalSettings.colorSets = colorSets;
 
+
+
     // handle our command line arguments
     // and load inksets from json files
     parse_arguments( argc, argv );
 
-    // do the work
+    // do any remaining work
     processInkSetList();
 
     // and we're all done
