@@ -22,15 +22,23 @@ This further assumes that the primaries are really transparent, so ink order doe
 PERFORMANCE - estimate_ink_mix and estimate_fractional_ink_mix reconvert LAB to XYZ constantly
     change inlists to XYZ and pass those in
 Currently 1.3 seconds for ALL profiles and TIFF files - so not exactly slow to start with.
-DONE -
-798.30 ms  100.0%    0 s      Main Thread  0x1359666
-157.10 ms  19.7%    0 s       cbrtf
-129.70 ms  16.2%    0 s       FindClosestPointInList(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point&)
-107.00 ms  13.4%    0 s       pointInPoly(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point)
-61.20 ms   7.7%    0 s       createA2B_table(inkColorSet const&, int, profileData&)
-45.80 ms   5.7%    0 s       nanov2_malloc
-36.90 ms   4.6%    0 s       _nanov2_free
+Current:
+722.60 ms  100.0%	0 s	  Main Thread  0x16d9532
+154.90 ms  21.4%	0 s	   cbrtf
+123.40 ms  17.1%	0 s	   pointInPoly(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point)
+92.20 ms  12.8%	0 s	   FindClosestPointInList(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point&)
+60.30 ms   8.3%	0 s	   createA2B_table(inkColorSet const&, int, profileData&)
+31.00 ms   4.3%	0 s	   estimate_fractional_ink_mix(std::__1::vector<xyzColor, std::__1::allocator<xyzColor>> const&, std::__1::vector<float, std::__1::allocator<float>> const&, xyzColor const&, int)
+30.30 ms   4.2%	0 s	   nanov2_malloc
+29.00 ms   4.0%	0 s	   _nanov2_free
 
+
+
+TODO - B2A 3 inks isn't getting full hue inks for yellow or magenta - why?
+
+TODO - JSON input?
+    add copyright field
+    add more error checking/reporting on color sets
 
 
 TODO - write XML profile data, once I have V4 working?
@@ -174,7 +182,7 @@ std::vector<inkColorSet> colorSets =
         { {"Orange", 62.0, 32, 58.0 }, {"Turquoise", 44.4, -35.9, -32.5 } }
     },
 
-#if 1
+#if 0
 // Chris's experiments
     {   "GreenGold-Magenta",
         "GreenGold and Magenta Paint",
@@ -191,14 +199,14 @@ std::vector<inkColorSet> colorSets =
     },
     
     {   "YellowOrange-Violet",
-        "YellowORange and Violet Paint",
+        "YellowOrange and Violet Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"YellowOrange", 81.5, 27.9, 102.3}, {"Violet", 51.3, 58.0, -67.0} }
     },
-    
+
     {   "YellowOrange-Indigo",
-        "YellowORange and Indigo Paint",
+        "YellowOrange and Indigo Paint",
         { 97.12126, -0.024685, 0.025155 },
         { -1,0,0 },
         { {"YellowOrange", 81.5, 27.9, 102.3}, {"Indigo", 31, 35, -68} }
@@ -269,7 +277,7 @@ std::vector<inkColorSet> colorSets =
           {"Yellow", 90.2, 2.7, 97.7}  }
     },
 
-#if 1
+#if 0
 // Chris's experiments
     {   "Violet-Magenta-YellowOrange",
         "Violet-Magenta-YellowOrange",
@@ -297,7 +305,7 @@ std::vector<inkColorSet> colorSets =
           {"Yellow", 90.2, 2.7, 97.7}, {"Violet", 51.3, 58.0, -67.0} }
     },
 
-#if 1
+#if 0
 // Chris's experiments
     {   "Teal-Cerulean-Orange-Magenta",
         "Teal-Cerulean-Orange-Magenta",
@@ -326,7 +334,6 @@ std::vector<inkColorSet> colorSets =
           {"Green", 71.2, -54.2, 62.9} }
     },
 
-#if 1
 // 6
     {   "Turquoise-Magenta-Yellow-Violet-Green-Blue",
         "6 Paints",
@@ -451,7 +458,6 @@ std::vector<inkColorSet> colorSets =
           {"Cerulean", 63.3, -16.1, -35.3 }, {"GreenGold", 57.1, -14.3, 54.0},
           {"Indigo", 31, 35, -68} }
     },
-#endif
 
 };
 
@@ -866,17 +872,23 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
     // d == division is this pure ink spline (handled elsewhere)
     for (int d = 1; d < divisions; ++d) {
         float t = (float)d / (float)divisions;
+        float t1 = 1.0;
+        float t2 = 1.0;
 
         xyzColor mix;
-        if (t <= 0.5)
+        if (t <= 0.5) {
             mix = interp2inks( t*2.0, ink1Color, halfwayMix );
-        else
+            t2 = t*2.0; // going 0 -> 1
+        }
+        else {
             mix = interp2inks( (t-0.5)*2.0, halfwayMix, ink2Color );
+            t1 = (1.0 - t) * 2.0;   // going 1 -> 0
+        }
 
         mixLAB = XYZ2LAB( mix );
         temp = mix_pure_ink_spline( steps, inkSet.paperColor, mixLAB, inkSet.darkColor );
         inkSet.splines.push_back( temp );
-        inkSet.mixData.push_back( inkMixPair( ink1Index, ink2Index, (1.0-t), t ) );
+        inkSet.mixData.push_back( inkMixPair( ink1Index, ink2Index, t1, t2 ) );
     }
 }
 
@@ -937,7 +949,7 @@ void mix_ink_splines( inkColorSet &inkSet )
     // if we can make a solid, then wrap around from last ink to the first!
     if (inkCount > 2) {
         subdivide_ink_splines( inkSet, divisions, steps,
-            inkCount-1, inkCount-1,
+            inkCount-1, 0,
             paperColor);
     }
 }
@@ -1212,9 +1224,8 @@ void InterpMixList( const size_t subdivisions, const spline_mix_data &input, spl
 // TODO - still generating too many cases where index1 == index2, even for 3 or more inks
         float fraction1 = LERP( t, input[p1].ink1Fraction, input[p2].ink1Fraction );
         float fraction2 = LERP( t, input[p1].ink2Fraction, input[p2].ink2Fraction );
-
-        // double check that fractions add up to unity
-        assert( fabsf(fraction1 + fraction2 - 1.0f) < 1e-3 );
+        
+        // fractions will not add up to unity, because we have overprints!
         
         result.emplace_back( inkMixPair(index1,index2,fraction1,fraction2 ) );
         
@@ -1380,6 +1391,10 @@ int floatAB_to_fileAB65535( float A )
 inline
 float Smooth3( float a, float b, float c)
 {
+    // scum dot reduction
+    if (b == 1.0 || b == 0.0)
+        return b;
+    
     return (a + 4*b + c) / 6.0;
 }
 
@@ -1553,7 +1568,7 @@ bool pointInPoly( const PointList &poly, const Point a )
 }
 
 /********************************************************************************/
-#if 0
+#if 1
 // debugging tool
 static
 void DumpPointList( const std::string &name, const PointList &planePoints )
@@ -1775,7 +1790,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
 /********************************************************************************/
 
 static
-std::vector<float> MixInkWeights( float t, std::vector<float> &a, std::vector<float> &b, const int channels )
+std::vector<float> MixInkWeights( float t, const std::vector<float> &a, const std::vector<float> &b, const int channels )
 {
     std::vector<float> result(15);
     for (int c = 0; c < channels; ++c)
@@ -1786,7 +1801,7 @@ std::vector<float> MixInkWeights( float t, std::vector<float> &a, std::vector<fl
 /********************************************************************************/
 #if 0
 static
-std::vector<float> AddInkWeights( std::vector<float> &a, std::vector<float> &b, const int channels )
+std::vector<float> AddInkWeights( const std::vector<float> &a, const std::vector<float> &b, const int channels )
 {
     std::vector<float> result(15);
     for (int c = 0; c < channels; ++c)
@@ -1797,9 +1812,23 @@ std::vector<float> AddInkWeights( std::vector<float> &a, std::vector<float> &b, 
 /********************************************************************************/
 
 static
-std::vector<float> ScaleInkWeights( float t, std::vector<float> &a, const int channels )
+std::vector<float> ScaleInkWeights( float t, const std::vector<float> &a, const int channels )
 {
     std::vector<float> result(15);
+    for (int c = 0; c < channels; ++c)
+       result[c] = t * a[c];
+    return result;
+}
+/********************************************************************************/
+
+static
+std::vector<float> SaturateInkWeights( const std::vector<float> &a, const int channels )
+{
+    std::vector<float> result(15);
+    float maxValue = a[0];
+    for (int c = 1; c < channels; ++c)
+        maxValue = std::max( a[c], maxValue );
+    float t = 1.0 / maxValue;
     for (int c = 0; c < channels; ++c)
        result[c] = t * a[c];
     return result;
@@ -1807,7 +1836,8 @@ std::vector<float> ScaleInkWeights( float t, std::vector<float> &a, const int ch
 
 /********************************************************************************/
 
-// this is mostly for debugging, but at one point I had some > 1.0 values
+#if 0
+// this is for debugging
 static
 std::vector<float> ClipInkWeights( std::vector<float> &a, const int channels )
 {
@@ -1828,6 +1858,7 @@ std::vector<float> ClipInkWeights( std::vector<float> &a, const int channels )
     
     return result;
 }
+#endif
 
 /********************************************************************************/
 
@@ -1840,81 +1871,56 @@ bool splineHueIndexLess(const splineHuePair &a, const splineHuePair &b)
 
 /********************************************************************************/
 
+// TODO - get a lot of repeat values here, could cache?
 static
 void AdjustInkMixForL( float Ltarget, const std::vector<xyzColor> &inkListXYZ,
             std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
     const float tolerance = 0.1;
-// TODO - this needs work to guarantee convergence or bail, and be faster!
-// would a simple binary search be easier and faster?
-    const float step = 0.7;     // determined by trial and error, probably not optimal
+    const float epsilon = 1e-4;
+    const std::vector<float> neutralWeights( 15, 1.0 );
     
-    std::vector<float> neutralWeights( inkCount );
-    for (int c = 0; c < inkCount; ++c)
-        neutralWeights[c] = 1.0;
+    // first scale inks to full saturation, just in case
+    std::vector<float> satList = SaturateInkWeights( inkFractionList, inkCount );
     
     std::vector<float> workingList = inkFractionList;
 
     // calc initial L*
-    xyzColor tempXYZ = estimate_fractional_ink_mix( inkListXYZ, inkFractionList, paperColor, inkCount );
+    xyzColor tempXYZ = estimate_fractional_ink_mix( inkListXYZ, satList, paperColor, inkCount );
     labColor tempLAB = XYZ2LAB( tempXYZ );
     float Lstart = tempLAB.L;
     float Lcurrent = Lstart;
-    float delta = 0;
-    float tPaper = 0.0;
-    float tDark = 0.0;
+    float t = (Lstart < Ltarget) ? 0.0 : 1.0;
+    float tTop = 1.0;
+    float tBottom = 0.0;
+
+    // binary search to find values, and bail with best effort if we can't reach them
+    while (fabs(Lcurrent - Ltarget) > tolerance) {
+        
+        if (Lcurrent < Ltarget)
+            tBottom = t;
+        else
+            tTop = t;
     
-    // iteratively adjust mix to target L*
-    while ((delta = fabs(Lcurrent - Ltarget)) > tolerance) {
-    
-        workingList = inkFractionList;
+        t = (tBottom + tTop) * 0.5;
         
-        if (Lcurrent < Ltarget) {
-            // too dark, blend toward paper or reduce dark
-            if (Lcurrent < Lstart) {
-                // we added neutral, reduce that
-                tDark -= step * delta/100.0;
-                if (tDark < 0.0)
-                    tDark = 0.0;
-            } else {
-                // we added paper, increase that
-                tPaper += step * delta/100.0;
-                if (tPaper > 1.0)
-                    tPaper = 1.0;
-            }
-        }  else {
-            // too light, blend toward neutral (all 1s) mix, or reduce light
-            if (Lcurrent <= Lstart) {
-                // we need more neutral, increase that
-                tDark += 0.7 * step * delta/100.0;  // asymmetrical to prevent infinite loops
-                if (tDark > 1.0)
-                    tDark = 1.0;
-            } else {
-                // we added paper, reduce that
-                tPaper -= 0.7 * step * delta/100.0;  // asymmetrical to prevent infinite loops
-                if (tPaper < 0.0)
-                    tPaper = 0.0;
-            }
-        }
-        
-        // adjust new blend
-        // these should be exclusive!
-        if (tPaper > 0.0)
-            workingList = ScaleInkWeights( (1.0-tPaper), workingList, inkCount );
-        
-        if (tDark > 0.0)
-            workingList = MixInkWeights( tDark, workingList, neutralWeights, inkCount );
+        if (Lstart < Ltarget)
+            // adjust new blend toward paper
+            workingList = ScaleInkWeights( (1.0-t), satList, inkCount );
+        else
+            // adjust new blend toward dark
+            workingList = MixInkWeights( (1.0-t), satList, neutralWeights, inkCount );
         
         // sometimes our estimates just don't match expectations
         // but we don't want to loop forever on a goal we can't reach
-        if (tDark == 1.0 || tPaper == 1.0)
+        if ( (tTop-tBottom) < epsilon )
             break;
         
         tempXYZ = estimate_fractional_ink_mix( inkListXYZ, workingList, paperColor, inkCount );
         tempLAB = XYZ2LAB( tempXYZ );
         Lcurrent = tempLAB.L;
     }
-    
+
     inkFractionList = workingList;
 }
 
@@ -1956,7 +1962,6 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     std::vector<float> inkWeights( inkCount );
     std::vector<float> inkWeights2( inkCount );
     std::vector<float> neutralWeights( inkCount );
-    std::vector<splineHuePair> splineHueAngles( inkSet.splines.size() );
     
     for (int L = 0; L < gridPoints; ++L) {
         // setup slices variables
@@ -1986,12 +1991,6 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
         float tNeutral = (Lfloat - inkSet.darkColor.L) / (inkSet.paperColor.L - inkSet.darkColor.L);
         labColor neutral = interp2inks( tNeutral, inkSet.darkColor, inkSet.paperColor );
         // neutral.L should be close to Lfloat/100
-        
-        
-        // create an ink mixture for our neutral, assuming all inks at 100% for darkColor (not realistic)
-        // and we know that inks = 0 for paperColor
-        for (int c = 0; c < inkCount; ++c)
-            neutralWeights[c] = (1.0 - tNeutral);
   
   
         // interpolate splines in L to get points along this AB plane
@@ -2003,18 +2002,13 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
             planeSpline.push_back( Point( A1, B1 ) );
         }
         
-        // create hue angles from points in this plane
-        for (size_t i = 0; i < planeSpline.size(); ++i) {
-            float hue = M_PI + atan2f( planeSpline[i].a - neutral.A, planeSpline[i].b - neutral.B );
-            splineHueAngles[i] = { hue, i };
-        }
-        
-        std::sort( splineHueAngles.begin(), splineHueAngles.end(), splineHueIndexLess );
-        
         // create interpolated point list from the splines
         PointList planePoints;
         size_t subDivisions = std::min( 300, 50*inkCount );
         PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
+
+// DEBUG the last set generated to check the gamut shape and area
+//DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 
         spline_mix_data mixPoints;
         MixPointsFromSplines( subDivisions, inkSet.mixData, mixPoints, (inkCount > 2) );
@@ -2043,95 +2037,31 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                 inkWeights[ resultMix.inkIndex1 ] += resultMix.ink1Fraction;
                 inkWeights[ resultMix.inkIndex2 ] += resultMix.ink2Fraction;
                 // now we have full saturation ink mix
-                
-                // add neutralWeights to get gray component if this is a 1 or 2 ink mix
-                inkWeights = MixInkWeights( tNeutral, inkWeights, neutralWeights, inkCount );
 
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
-                    //bool inside = pointInPoly( planePoints, thisSpot );
-                    
-                    float thisHue = M_PI + atan2f( Afloat - neutral.A, Bfloat - neutral.B );
+                    bool inside = pointInPoly( planePoints, thisSpot );
 
-                    // use ratio of distances from neutral and outer point as chroma estimate
-                    // assuming neutral is origin of AB plane
-// TODO - closest is not a good measure here! But may be good enough...
-                    float pointDist = hypotf( closestPoint.a - neutral.A, closestPoint.b - neutral.B );
-                    if (pointDist < 1e-6)   // just in case, avoid divide by zero
-                        pointDist = 1e-2;
-                    float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
-                    float tchroma = thisDist / pointDist;
-                    if (tchroma > 1.0)  // clamp colors outside of gamut
-                        tchroma = 1.0;
-    
-                    // find bounding hue angles (and handle wrap around!)
-                    // lower and upper bound reverse the arguments to less()
-                    auto found = std::lower_bound( splineHueAngles.begin(), splineHueAngles.end(), thisHue,
-                                            [](const splineHuePair &a, float b) { return a.angle < b; } );
-                    long index = 0;
-                    long index1 = 0;
-                    if (found != splineHueAngles.end()) {
-                        index = (long)found->index;
-                        index1 = index - 1;
-                    }
-                    else {
-                        index = (long)splineHueAngles.size() - 1;
-                        index1 = 0;
-                    }
-                    
-                    if (index1 < 0) {
-                        index1 = (long)splineHueAngles.size() - 1;
-                    }
-                    
-                    // interpolate to get primary ink mix
-                    float angle1 = splineHueAngles[index].angle;
-                    float angle2 = splineHueAngles[index1].angle;
-                    if (thisHue > angle1) {
-                        angle2 += 2*M_PI;
-                    }
-                    else if (angle2 > angle1)
-                        angle2 -= 2.0*M_PI;
-                    
-                    if (angle2 > angle1) {
-                        std::swap(angle2,angle1);
-                        std::swap(index,index1);
-                    }
+                    if (inside) {
+                        // use ratio of distances from neutral and outer point as chroma estimate
+                        // assuming neutral is origin of AB plane
+// TODO - closest is not a great measure here! But may be good enough...
+                        float pointDist = hypotf( closestPoint.a - neutral.A, closestPoint.b - neutral.B );
+                        if (pointDist < 1e-6)   // just in case, avoid divide by zero
+                            pointDist = 1e-2;
+                        float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
+                        float tchroma = thisDist / pointDist;
+                        if (tchroma > 1.0)  // clamp colors outside of gamut
+                            tchroma = 1.0;
 
-assert(angle2 <= angle1);
-                    float tempDist = angle1 - angle2;
-                    if (fabsf(tempDist) < 1e-6)
-                        tempDist = 1e-2;
-                    float hueFraction = (thisHue - angle2) / tempDist;
-
-// TODO - still clamping too often for negative hue angle!
-// not getting the right index from search.
-                    if (hueFraction < 0)
-                        hueFraction = 0;
-                    if (hueFraction > 1.0)
-                        hueFraction = 1.0;
-
-                    std::fill( inkWeights.begin(), inkWeights.end(), 0 );
-                    std::fill( inkWeights2.begin(), inkWeights2.end(), 0 );
-                    
-                    inkWeights[ inkSet.mixData[index].inkIndex1 ] += inkSet.mixData[index].ink1Fraction;
-                    inkWeights[ inkSet.mixData[index].inkIndex2 ] += inkSet.mixData[index].ink2Fraction;
-                    
-                    inkWeights2[ inkSet.mixData[index1].inkIndex1 ] += inkSet.mixData[index1].ink1Fraction;
-                    inkWeights2[ inkSet.mixData[index1].inkIndex2 ] += inkSet.mixData[index1].ink2Fraction;
-
-                    
-                    // interpolate inks
-                    inkWeights = MixInkWeights( hueFraction, inkWeights2, inkWeights, inkCount );
-                    
-                    // pin inks in case we have some out of range (also a debugging check)
-                    inkWeights = ClipInkWeights( inkWeights, inkCount );
-
-                    // scale from full inks to neutral  (aka: interp to no ink)
-                    assert( tchroma >= 0.0 );
-                    inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
-
-                    AdjustInkMixForL( Lfloat, inkListXYZ, inkWeights, paperColor, inkCount );
+                        // scale from full inks to neutral  (aka: interp to no ink)
+                        assert( tchroma >= 0.0 );
+                        inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
+                    }   // inside
                 }
+
+                // adjust L* for all ink mixes (also scales any over 1.0)
+                AdjustInkMixForL( Lfloat, inkListXYZ, inkWeights, paperColor, inkCount );
                 
                 // write values to the grid
                 for (int c = 0; c < inkCount; ++c)
