@@ -155,25 +155,30 @@ void to_json( json &j, const inkColorSet &p )
               { "primariesList", p.primaries },
             };
 
-    // remaining struct variables are calculated at runtime
+    // remaining struct variables are calculated at runtime, and not saved
 }
 
 /******************************************************************************/
 
 void from_json( const json &j, inkColorSet &p )
 {
-    p.darkColor =  labColor(-1,0,0);
+    // set some defaults
+    p.darkColor =  labColor(-1,0,0);            // flag to automatically calculate
+    p.paperColor = labColor(97.1,-0.025,0.025); // unbelievably white
     
     ReadString( j, "filename", p.name );
     ReadString( j, "description", p.description );
     ReadString( j, "copyright", p.copyright );
 
-    p.paperColor = j["paperColor"];
-    p.darkColor = j["darkColor"];
-
-    auto dataFound = j.find("primariesList");
-    if (dataFound != j.end())
-        p.primaries = dataFound.value();
+    p.primaries =  j["primariesList"];
+    
+    auto dataFound1 = j.find("paperColor");
+    if (dataFound1 != j.end())
+        p.paperColor = dataFound1.value();
+        
+    auto dataFound2 = j.find("darkColor");
+    if (dataFound2 != j.end())
+        p.darkColor = dataFound2.value();
 }
 
 /******************************************************************************/
@@ -200,6 +205,10 @@ void to_json( json &j, const settings_spec &p )
 
 void from_json( const json &j, settings_spec &p )
 {
+    // copy existing settings as default values
+    p = globalSettings;
+    p.colorSets.clear();
+    
     ReadInt( j, "tableDepth", p.gDataDepth );
     ReadInt( j, "gridPoints", p.gDataGridPoints );
     
@@ -212,9 +221,7 @@ void from_json( const json &j, settings_spec &p )
     
     ReadString( j, "defaultCopyright", p.gDefaultCopyright );
 
-    auto dataFound = j.find("colorSets");
-    if (dataFound != j.end())
-        p.colorSets = dataFound.value();
+    p.colorSets = j["colorSets"];
 }
 
 /******************************************************************************/
@@ -241,18 +248,6 @@ static void print_usage(char *argv[])
 void parse_arguments( int argc, char *argv[] )
 {
     std::vector<std::string> filenames;
-
-#if 1
-// TODO - first time run, convert hard coded color sets into a JSON file
-// then delete that code
-// or maybe use the output for debug mode       filename_parsed.json
-
-        json settings = globalSettings;
-        std::ofstream out( "oldinksets.json" );
-        out << std::setw(4) << settings.dump(4);
-        out.close();
-#endif
-
 
     for ( int c = 1; c < argc; ++c ) {
         
