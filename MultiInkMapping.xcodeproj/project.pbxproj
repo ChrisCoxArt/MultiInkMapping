@@ -31,6 +31,7 @@
 		F1769FEA2F5804E300D3103E /* MiniTIFF.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MiniTIFF.cpp; sourceTree = "<group>"; };
 		F1769FEC2F59165E00D3103E /* MiniICC.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MiniICC.hpp; sourceTree = "<group>"; };
 		F1769FED2F59165E00D3103E /* MiniICC.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MiniICC.cpp; sourceTree = "<group>"; };
+		F1769FEF2F6BB29E00D3103E /* MultiInkMapping.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MultiInkMapping.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,6 +52,7 @@
 				F1769FEA2F5804E300D3103E /* MiniTIFF.cpp */,
 				F1769FEC2F59165E00D3103E /* MiniICC.hpp */,
 				F1769FED2F59165E00D3103E /* MiniICC.cpp */,
+				F1769FEF2F6BB29E00D3103E /* MultiInkMapping.hpp */,
 				F1769FE72F55106900D3103E /* MultiInkMapping.cpp */,
 				F1769FDE2F55103200D3103E /* Products */,
 			);

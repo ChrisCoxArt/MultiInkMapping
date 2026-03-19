@@ -24,6 +24,7 @@ MultiInkMapping.cpp
 set( PROJECT_HEADERS
 MiniICC.hpp
 MiniTIFF.hpp
+MultiInkMapping.hpp
 )
 
 add_executable( MultiInkMapping
