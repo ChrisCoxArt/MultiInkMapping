@@ -93,7 +93,7 @@ typedef enum : uint32_t  {
     icSigMicrosoft                   = 0x4D534654,  /* 'MSFT' */
 
     icSigCCox                        = 0x43436F78,  /* 'CCox' */
-    icSigccox                        = 0x43636F78,  /* 'ccox' */
+    icSigccox                        = 0x63636F78,  /* 'ccox' */
     icSigNone                        = 0x6E6F6E65,  /* 'none' */
     icSigNote                        = 0x6E6F7465,  /* 'note' */
 
