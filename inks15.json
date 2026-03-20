@@ -28,8 +28,8 @@
                 "a": 2.5,
                 "b": 0.86
             },
-            "description": "Turquoise and Orange Paint",
-            "filename": "Turquoise-Orange",
+            "description": "Turquoise and Magenta Paint",
+            "filename": "Turquoise-Magenta",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -37,10 +37,10 @@
             },
             "primariesList": [
                 {
-                    "L": 62.0,
-                    "Name": "Orange",
-                    "a": 32.0,
-                    "b": 58.0
+                    "L": 52.0,
+                    "Name": "Magenta",
+                    "a": 81.1,
+                    "b": -1.7
                 },
                 {
                     "L": 44.4,
@@ -250,12 +250,6 @@
             ]
         },
         {
-            "copyright": "",
-            "darkColor": {
-                "L": -1.0,
-                "a": 0.0,
-                "b": 0.0
-            },
             "description": "8 Paints",
             "filename": "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen",
             "paperColor": {
@@ -315,12 +309,6 @@
             ]
         },
         {
-            "copyright": "",
-            "darkColor": {
-                "L": -1.0,
-                "a": 0.0,
-                "b": 0.0
-            },
             "description": "9 Paints",
             "filename": "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet",
             "paperColor": {
@@ -386,12 +374,6 @@
             ]
         },
         {
-            "copyright": "",
-            "darkColor": {
-                "L": -1.0,
-                "a": 0.0,
-                "b": 0.0
-            },
             "description": "10! Ten Paints! Hah, ha, ha!",
             "filename": "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red",
             "paperColor": {
@@ -463,12 +445,6 @@
             ]
         },
         {
-            "copyright": "",
-            "darkColor": {
-                "L": -1.0,
-                "a": 0.0,
-                "b": 0.0
-            },
             "description": "11 Paints",
             "filename": "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal",
             "paperColor": {
@@ -546,12 +522,6 @@
             ]
         },
         {
-            "copyright": "",
-            "darkColor": {
-                "L": -1.0,
-                "a": 0.0,
-                "b": 0.0
-            },
             "description": "12 Paints",
             "filename": "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange",
             "paperColor": {
@@ -635,12 +605,6 @@
             ]
         },
         {
-            "copyright": "",
-            "darkColor": {
-                "L": -1.0,
-                "a": 0.0,
-                "b": 0.0
-            },
             "description": "13 Paints",
             "filename": "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange-Cerulean",
             "paperColor": {
@@ -730,12 +694,6 @@
             ]
         },
         {
-            "copyright": "",
-            "darkColor": {
-                "L": -1.0,
-                "a": 0.0,
-                "b": 0.0
-            },
             "description": "14 Paints",
             "filename": "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange-Cerulean-GreenGold",
             "paperColor": {
@@ -831,12 +789,6 @@
             ]
         },
         {
-            "copyright": "",
-            "darkColor": {
-                "L": -1.0,
-                "a": 0.0,
-                "b": 0.0
-            },
             "description": "15 Paints",
             "filename": "Turquoise-Magenta-Yellow-Violet-Green-Blue-Orange-BlueGreen-PinkViolet-Red-Teal-YellowOrange-Cerulean-GreenGold-Indigo",
             "paperColor": {
