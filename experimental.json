@@ -1,0 +1,425 @@
+{
+    "defaultCopyright": "Copyright (c) Chris Cox 2026",
+    "gridPoints": 21,
+    "tableDepth": 8,
+    "tableSizeLimit": 1048576,
+
+    "colorSets": [
+        {
+            "copyright": "",
+            "darkColor": {
+                "L": 7.6,
+                "a": 2.5,
+                "b": 0.8
+            },
+            "description": "Turquoise and Orange Paint",
+            "filename": "Turquoise-Orange",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 62.0,
+                    "Name": "Orange",
+                    "a": 32.0,
+                    "b": 58.0
+                },
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                }
+            ]
+        },
+        {
+            "description": "GreenGold and Magenta Paint",
+            "filename": "GreenGold-Magenta",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 52.0,
+                    "Name": "Magenta",
+                    "a": 81.1,
+                    "b": -1.7
+                },
+                {
+                    "L": 57.1,
+                    "Name": "GreenGold",
+                    "a": -14.3,
+                    "b": 54.0
+                }
+            ]
+        },
+        {
+            "description": "Yellow and Teal Paint",
+            "filename": "Yellow-Teal",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 90.2,
+                    "Name": "Yellow",
+                    "a": 2.7,
+                    "b": 97.7
+                },
+                {
+                    "L": 66.8,
+                    "Name": "Teal",
+                    "a": -51.5,
+                    "b": -15.4
+                }
+            ]
+        },
+        {
+            "description": "YellowOrange and Violet Paint",
+            "filename": "YellowOrange-Violet",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 81.5,
+                    "Name": "YellowOrange",
+                    "a": 27.9,
+                    "b": 102.3
+                },
+                {
+                    "L": 51.3,
+                    "Name": "Violet",
+                    "a": 58.0,
+                    "b": -67.0
+                }
+            ]
+        },
+        {
+            "description": "YellowOrange and Indigo Paint",
+            "filename": "YellowOrange-Indigo",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 81.5,
+                    "Name": "YellowOrange",
+                    "a": 27.9,
+                    "b": 102.3
+                },
+                {
+                    "L": 31.0,
+                    "Name": "Indigo",
+                    "a": 35.0,
+                    "b": -68.0
+                }
+            ]
+        },
+        {
+            "description": "Green and Turquoise Paint",
+            "filename": "Green-Turquoise",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 71.2,
+                    "Name": "Green",
+                    "a": -54.2,
+                    "b": 62.9
+                },
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                }
+            ]
+        },
+        {
+            "description": "Teal and PinkViolet Paint",
+            "filename": "Teal-PinkViolet",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 66.8,
+                    "Name": "Teal",
+                    "a": -51.5,
+                    "b": -15.4
+                },
+                {
+                    "L": 67.0,
+                    "Name": "PinkViolet",
+                    "a": 59.0,
+                    "b": -25.0
+                }
+            ]
+        },
+        {
+            "description": "Violet and Orange Paint",
+            "filename": "Violet-Orange",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 62.0,
+                    "Name": "Orange",
+                    "a": 32.0,
+                    "b": 58.0
+                },
+                {
+                    "L": 51.3,
+                    "Name": "Violet",
+                    "a": 58.0,
+                    "b": -67.0
+                }
+            ]
+        },
+        {
+            "description": "Turquoise and Orange Paint on Lilac Paper",
+            "filename": "Turquoise-Orange-LilacPaper",
+            "paperColor": {
+                "L": 91.2,
+                "a": 17.0,
+                "b": -11.0
+            },
+            "primariesList": [
+                {
+                    "L": 62.0,
+                    "Name": "Orange",
+                    "a": 32.0,
+                    "b": 58.0
+                },
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                }
+            ]
+        },
+        {
+            "description": "Turquoise and Orange Paint on Lime Paper",
+            "filename": "Turquoise-Orange-LimePaper",
+            "paperColor": {
+                "L": 85.0,
+                "a": -25.5,
+                "b": 37.5
+            },
+            "primariesList": [
+                {
+                    "L": 62.0,
+                    "Name": "Orange",
+                    "a": 32.0,
+                    "b": 58.0
+                },
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                }
+            ]
+        },
+        {
+            "description": "Turquoise and Yellow Paint on Lilac Paper",
+            "filename": "Turquoise-Yellow-LilacPaper",
+            "paperColor": {
+                "L": 91.2,
+                "a": 17.0,
+                "b": -11.0
+            },
+            "primariesList": [
+                {
+                    "L": 90.2,
+                    "Name": "Yellow",
+                    "a": 2.7,
+                    "b": 97.7
+                },
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                }
+            ]
+        },
+        {
+            "description": "Turquoise, Orange, and Green Paint",
+            "filename": "Turquoise-Orange-Green",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 62.0,
+                    "Name": "Orange",
+                    "a": 32.0,
+                    "b": 58.0
+                },
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                },
+                {
+                    "L": 71.2,
+                    "Name": "Green",
+                    "a": -54.2,
+                    "b": 62.9
+                }
+            ]
+        },
+        {
+            "description": "Violet-Magenta-YellowOrange",
+            "filename": "Violet-Magenta-YellowOrange",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 51.3,
+                    "Name": "Violet",
+                    "a": 58.0,
+                    "b": -67.0
+                },
+                {
+                    "L": 52.0,
+                    "Name": "Magenta",
+                    "a": 81.1,
+                    "b": -1.7
+                },
+                {
+                    "L": 81.5,
+                    "Name": "YellowOrange",
+                    "a": 27.9,
+                    "b": 102.3
+                }
+            ]
+        },
+        {
+            "description": "Violet-Teal-Yellow",
+            "filename": "Violet-Teal-Yellow",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 51.3,
+                    "Name": "Violet",
+                    "a": 58.0,
+                    "b": -67.0
+                },
+                {
+                    "L": 90.2,
+                    "Name": "Yellow",
+                    "a": 2.7,
+                    "b": 97.7
+                },
+                {
+                    "L": 66.8,
+                    "Name": "Teal",
+                    "a": -51.5,
+                    "b": -15.4
+                }
+            ]
+        },
+        {
+            "description": "Teal-Cerulean-Orange-Magenta",
+            "filename": "Teal-Cerulean-Orange-Magenta",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 66.8,
+                    "Name": "Teal",
+                    "a": -51.5,
+                    "b": -15.4
+                },
+                {
+                    "L": 63.3,
+                    "Name": "Cerulean",
+                    "a": -16.1,
+                    "b": -35.3
+                },
+                {
+                    "L": 71.0,
+                    "Name": "Orange",
+                    "a": 50.7,
+                    "b": 68.6
+                },
+                {
+                    "L": 52.0,
+                    "Name": "Magenta",
+                    "a": 81.1,
+                    "b": -1.7
+                }
+            ]
+        },
+        {
+            "description": "Green-Yellow-Cerulean-Violet",
+            "filename": "Green-Yellow-Cerulean-Violet",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 71.2,
+                    "Name": "Green",
+                    "a": -54.2,
+                    "b": 62.9
+                },
+                {
+                    "L": 90.2,
+                    "Name": "Yellow",
+                    "a": 2.7,
+                    "b": 97.7
+                },
+                {
+                    "L": 63.3,
+                    "Name": "Cerulean",
+                    "a": -16.1,
+                    "b": -35.3
+                },
+                {
+                    "L": 51.3,
+                    "Name": "Violet",
+                    "a": 58.0,
+                    "b": -67.0
+                }
+            ]
+        }
+    ]
+}
