@@ -992,6 +992,7 @@ void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoin
     // set everything to out of gamut (inverted from a normal image/table, but ok...)
     memset( gamutData, 255, gridCount );
     
+    // 1 or 2 inks... doesn't really have a gamut volume
     if (inkCount > 2) {
     
         int gamutPlaneStep = gridPoints*gridPoints;
@@ -1035,6 +1036,18 @@ void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoin
                     
                     // for 3 or more inks, test for inside polygon, interpolate inside
                     bool inside = pointInPoly( planePoints, thisSpot );
+                    if (!inside) {
+                        // See if we're really close to the boundary.
+                        // Spreading the gamut slightly to allow for grid sampling.
+                        const float threshold = 0.8;
+                        
+                        size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
+                        Point result = planePoints[ closestIndex ];
+                        float dist = hypot( (result.a - thisSpot.a), (result.b - thisSpot.b) );
+                        if (dist < threshold)
+                            inside = true;
+                    }
+                    
                     if (inside)
                         gamutData[ L * gamutPlaneStep + A * gamutRowStep + B * gamutColStep ] = 0;
                     
