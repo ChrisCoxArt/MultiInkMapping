@@ -1,0 +1,199 @@
+{
+    "defaultCopyright": "",
+    "gridPoints": 1,
+    "tableDepth": 3,
+    "tableSizeLimit": 2048,
+
+    "colorSets": [
+        {
+            "description": "ExpectedToFail1",
+            "filename": "ExpectedToFail1",
+            "paperColor": {
+                "L": 90.0,
+                "a": 0,
+                "b": 0
+            },
+            "primariesList": [
+                {
+                    "L": 99.0,
+                    "Name": "FluorescentBlue",
+                    "a": -35.9,
+                    "b": -32.5
+                }
+            ]
+        },
+        {
+            "darkColor": {
+                "L": 17.6,
+                "a": 0,
+                "b": 0
+            },
+            "description": "ExpectedToFail2",
+            "filename": "ExpectedToFail2",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 2.0,
+                    "Name": "ReallyDarkMagenta",
+                    "a": 81.1,
+                    "b": -1.7
+                }
+            ]
+        },
+        {
+            "description": "ExpectedToFail3",
+            "filename": "ExpectedToFail3",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                },
+                {
+                    "L": 52.0,
+                    "Name": "Magenta",
+                    "a": 81.1,
+                    "b": -1.7
+                },
+                {
+                    "L": 90.2,
+                    "Name": "Yellow",
+                    "a": 2.7,
+                    "b": 97.7
+                },
+                {
+                    "L": 51.3,
+                    "Name": "Violet",
+                    "a": 58.0,
+                    "b": -67.0
+                },
+                {
+                    "L": 71.2,
+                    "Name": "Green",
+                    "a": -54.2,
+                    "b": 62.9
+                },
+                {
+                    "L": 38.2,
+                    "Name": "Blue",
+                    "a": 2.0,
+                    "b": -66.4
+                },
+                {
+                    "L": 71.0,
+                    "Name": "Orange",
+                    "a": 50.7,
+                    "b": 68.6
+                },
+                {
+                    "L": 70.9,
+                    "Name": "BlueGreen",
+                    "a": -60.4,
+                    "b": 20.5
+                },
+                {
+                    "L": 67.0,
+                    "Name": "PinkViolet",
+                    "a": 59.0,
+                    "b": -25.0
+                },
+                {
+                    "L": 57.7,
+                    "Name": "Red",
+                    "a": 78.1,
+                    "b": 48.5
+                },
+                {
+                    "L": 66.8,
+                    "Name": "Teal",
+                    "a": -51.5,
+                    "b": -15.4
+                },
+                {
+                    "L": 81.5,
+                    "Name": "YellowOrange",
+                    "a": 27.9,
+                    "b": 102.3
+                },
+                {
+                    "L": 63.3,
+                    "Name": "Cerulean",
+                    "a": -16.1,
+                    "b": -35.3
+                },
+                {
+                    "L": 57.1,
+                    "Name": "GreenGold",
+                    "a": -14.3,
+                    "b": 54.0
+                },
+                {
+                    "L": 31.0,
+                    "Name": "Indigo",
+                    "a": 35.0,
+                    "b": -68.0
+                },
+                {
+                    "L": 31.0,
+                    "Name": "Indigo",
+                    "a": 0.0,
+                    "b": 0.0
+                }
+            ]
+        },
+        {
+            "darkColor": {
+                "L": 1.6,
+                "a": 0,
+                "b": 0
+            },
+            "description": "ExpectedToFail4",
+            "filename": "ExpectedToFail4",
+            "paperColor": {
+                "L": 200.0,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 52.0,
+                    "Name": "Magenta",
+                    "a": 81.1,
+                    "b": -1.7
+                }
+            ]
+        },
+        {
+            "darkColor": {
+                "L": 20.0,
+                "a": 0,
+                "b": 0
+            },
+            "description": "ExpectedToFail5",
+            "filename": "ExpectedToFail5",
+            "paperColor": {
+                "L": 10.0,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 52.0,
+                    "Name": "Magenta",
+                    "a": 81.1,
+                    "b": -1.7
+                }
+            ]
+        }
+    ]
+}

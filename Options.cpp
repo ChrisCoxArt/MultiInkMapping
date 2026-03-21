@@ -210,7 +210,18 @@ void from_json( const json &j, settings_spec &p )
     p.colorSets.clear();
     
     ReadInt( j, "tableDepth", p.gDataDepth );
+    if (p.gDataDepth > 16)
+        p.gDataDepth = 16;
+    if (p.gDataDepth < 8)
+        p.gDataDepth = 8;
+    if (p.gDataDepth != 8 && p.gDataDepth != 16)
+        p.gDataDepth = 8;
+    
     ReadInt( j, "gridPoints", p.gDataGridPoints );
+    if (p.gDataGridPoints < 2)
+        p.gDataGridPoints = 2;
+    if (p.gDataGridPoints > 255)
+        p.gDataGridPoints = 255;
     
     ReadSize( j, "tableSizeLimit", p.gTableSizeLimit );
     

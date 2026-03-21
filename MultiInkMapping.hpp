@@ -369,7 +369,6 @@ public:
     spline_mix_data mixData;    // built from basic ink data
 };
 
-
 /******************************************************************************/
 
 // global variables, just because it was quicker to write it this way

@@ -80,6 +80,7 @@ TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
 
 /********************************************************************************/
 
+static
 void VerifyDecreasingL( const color_list &list )
 {
 // NOTE - this is just a debugging aid
@@ -99,32 +100,37 @@ const float XD50 = 96.4212;
 const float YD50 = 100.0;
 const float ZD50 = 82.5188;
 
+static
 float CIECurve( const float input )
 {
     const float scale = 7.787037;            // powf( 29.0/6.0, 2.0) / 3.0;
     const float breakpoint = 0.008856;        // powf( 6.0/29.0, 3.0 );
+    const float offset = 4.0/29.0;
     
     if (input > breakpoint)
         return cbrtf( input );
     else
-        return (input * scale + (4.0f/29.0f));
+        return (input * scale + offset);
 }
 
 /********************************************************************************/
 
+static
 float CIEReverseCurve( const float input )
 {
     const float scale = 1.0 / 7.787037;        // 0.128418549  // 3.0 * powf( 6.0/29.0, 2.0);
     const float breakpoint = 6.0/29.0;
+    const float offset = 4.0/29.0;
     
     if (input > breakpoint)
         return input*input*input;   // powf(input,3);
     else
-        return scale*(input - (4.0f/29.0f));
+        return scale*(input - offset);
 }
 
 /********************************************************************************/
 
+static
 xyzColor LAB2XYZ( const labColor &input )
 {
     xyzColor result;
@@ -144,6 +150,7 @@ xyzColor LAB2XYZ( const labColor &input )
 
 /********************************************************************************/
 
+static
 labColor XYZ2LAB( const xyzColor &input )
 {
     labColor result;
@@ -193,6 +200,7 @@ labColor interp2inks( const float t, const labColor &ink1, const labColor &ink2 
 
 /********************************************************************************/
 
+static
 color_list mix_pure_ink_spline( int steps, const labColor &paperColor, const labColor &inkColor, const labColor &darkColor)
 {
     int i;
@@ -248,9 +256,9 @@ bool labHueLess(const namedColor &a, const namedColor &b)
 /********************************************************************************/
 
 // here we want chromatic mixes, not darks
+static
 xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
 {
-    
     xyzColor overprint = identityXYZ;
     xyzColor average(0,0,0);
     for ( const auto &ink : inkList ) {
@@ -265,7 +273,7 @@ xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor 
 // 0.0 leads to some crazy intermediate colors, and crazier splines
 // 0.5 doesn't seem high enough, still some crazy splines
 // 1.0 leads to blah.
-    xyzColor mix = interp2inks( 0.6, overprint, average );
+    xyzColor mix = overprint;   // interp2inks( 0.6, overprint, average );
     
     return mix;
 }
@@ -273,6 +281,7 @@ xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor 
 /********************************************************************************/
 
 // trying to estimate appearance of overprints among arbitrary inks
+static
 xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
             const std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
@@ -296,9 +305,10 @@ xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
 /********************************************************************************/
 
 // here, we want the darkest possible result
+static
 xyzColor estimate_darkest_ink_overprint( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
 {
-    const float Ylimit = 1.3;
+    const float Ylimit = 1.3;   // author's preference
     
     xyzColor overprint = identityXYZ;
     for ( const auto &ink : inkList ) {
@@ -320,6 +330,7 @@ xyzColor estimate_darkest_ink_overprint( const std::vector<xyzColor> &inkList, c
 /********************************************************************************/
 
 // convenience converter
+static
 xyzColor estimate_darkest_ink_overprint( const std::vector<namedColor> &inkList, const xyzColor &paperColor )
 {
     std::vector<xyzColor> tempListXYZ( inkList.size() );
@@ -331,6 +342,7 @@ xyzColor estimate_darkest_ink_overprint( const std::vector<namedColor> &inkList,
 
 /********************************************************************************/
 
+static
 void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int steps,
             const size_t ink1Index, const size_t ink2Index, const xyzColor &paperColor )
 {
@@ -371,14 +383,31 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
 
 /********************************************************************************/
 
+static
+void prepare_ink_dark( inkColorSet &inkSet )
+{
+    // If the combined color has <= 0 L, estimate it from primaries
+    // so we can get something sort of realistic for the mix
+    if (inkSet.darkColor.L <= 0) {
+        xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
+        xyzColor mix = estimate_darkest_ink_overprint( inkSet.primaries, paperColor );
+        labColor mixLAB = XYZ2LAB( mix );
+        if (globalSettings.gDebugMode)
+            printf("Estimated overprint for %s is (%f, %f, %f)\n",
+                inkSet.name.c_str(),
+                mixLAB.L, mixLAB.A, mixLAB.B );
+        inkSet.darkColor = mixLAB;
+    }
+}
+
+/********************************************************************************/
+
 // create splines from mixes of inks and paper colors
+static
 void mix_ink_splines( inkColorSet &inkSet )
 {
     const int steps = 51;    // odd so we have a midpoint
     const int divisions = 4;    // even so we have a midpoint (5 splines per surface)
-    color_list temp;
-    xyzColor mix;
-    labColor mixLAB;
 
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
@@ -388,22 +417,8 @@ void mix_ink_splines( inkColorSet &inkSet )
 
     xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
 
-
-    // If the combined color has 0 L, estimate it from primaries
-    // so we can get something sort of realistic for the mix
-    if (inkSet.darkColor.L <= 0) {
-        mix = estimate_darkest_ink_overprint( inkSet.primaries, paperColor );
-        mixLAB = XYZ2LAB( mix );
-        if (globalSettings.gDebugMode)
-            printf("Estimated overprint for %s is (%f, %f, %f)\n",
-                inkSet.name.c_str(),
-                mixLAB.L, mixLAB.A, mixLAB.B );
-        inkSet.darkColor = mixLAB;
-    }
-    
-
     // first ink spline, always calculated
-    temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[0].color, inkSet.darkColor );
+    color_list temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[0].color, inkSet.darkColor );
     inkSet.splines.push_back( temp );
     inkSet.mixData.push_back( inkMixPair( 0, 0, 1.0, 0.0 ) );
 
@@ -436,7 +451,6 @@ void mix_ink_splines( inkColorSet &inkSet )
 static
 float SplineInterp( float t, float A, float B, float C, float D )
 {
-
 // catmull rom - cardinal spline with tension = 0.5
 // needs scaling by 0.5 at end
     const float    M11 = -1.0, M12 = 3.0, M13 = -3.0, M14 = 1.0;
@@ -459,7 +473,7 @@ float SplineInterp( float t, float A, float B, float C, float D )
 
 // need function to search spline for correct point and return interpolated values
 // given L*, binary search the spline and return the A and B values that go with it
-
+static
 void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
 {
     // find points in list that bracket L
@@ -519,11 +533,10 @@ void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
 /********************************************************************************/
 
 // are we less than our darkest, or greater than our brightest point?
+static
 bool ClippedL( float Linput, labColor &output, const inkColorSet &inkSet )
 {
-    output.L = 0.0f;
-    output.A = 0.0f;
-    output.B = 0.0f;
+    output.L = output.A = output.B = 0.0f;
     
     if (Linput < inkSet.darkColor.L) {
         output = inkSet.darkColor;
@@ -540,6 +553,7 @@ bool ClippedL( float Linput, labColor &output, const inkColorSet &inkSet )
 
 /********************************************************************************/
 
+static
 void SplineInterpList( const size_t subdivisions, const PointList &input, PointList &result,
                         bool wrapAround )
 {
@@ -590,6 +604,7 @@ void SplineInterpList( const size_t subdivisions, const PointList &input, PointL
 
 /********************************************************************************/
 
+static
 void LinearInterpList( const size_t subdivisions, const PointList &input, PointList &result,
                         bool wrapAround )
 {
@@ -631,6 +646,7 @@ void LinearInterpList( const size_t subdivisions, const PointList &input, PointL
 
 /********************************************************************************/
 
+static
 void PointListFromSplines( const size_t subdivisions, const PointList &input, PointList &result,
                                 bool wrapAround)
 {
@@ -653,6 +669,7 @@ void PointListFromSplines( const size_t subdivisions, const PointList &input, Po
 
 /********************************************************************************/
 
+static
 void InterpMixList( const size_t subdivisions, const spline_mix_data &input, spline_mix_data &result,
                         bool wrapAround )
 {
@@ -709,6 +726,7 @@ void InterpMixList( const size_t subdivisions, const spline_mix_data &input, spl
 
 /********************************************************************************/
 
+static
 void MixPointsFromSplines( const size_t subdivisions, const spline_mix_data &input, spline_mix_data &result,
                                 bool wrapAround)
 {
@@ -728,6 +746,7 @@ void MixPointsFromSplines( const size_t subdivisions, const spline_mix_data &inp
 
 /********************************************************************************/
 
+static
 size_t FindClosestPointInList( const PointList &list, Point &input )
 {
     // ccox - start with brute force linear search
@@ -742,7 +761,7 @@ DEFERRED - find a way to accelerate the search
         Could use radial projection for angles, with precomputed angles - we don't have the center here
         Could use grid to narrow search - with aux data structure
         Could limit the points by removing those closer than 0.1 deltaE
-        Count is between 1 and 15*50=750
+        Count is between 1 and 300
  */
     size_t count = list.size();
     assert( count > 0 );
@@ -771,7 +790,7 @@ DEFERRED - find a way to accelerate the search
 
 /********************************************************************************/
 
-// really simple tent
+// really simple tent, with a twist to reduce scum dots
 inline
 float Smooth3( float a, float b, float c)
 {
@@ -803,6 +822,7 @@ void Smooth3( float *a, float *b, float *c, int channels)
 /********************************************************************************/
 
 // filter in place, in one dimension, for 3 channels
+static
 void SmoothOneDirection3( float *data, int gridPoints, int planeStep, int rowStep, int colStep )
 {
     int i, j, k;
@@ -868,6 +888,7 @@ void SmoothOneDirection3( float *data, int gridPoints, int planeStep, int rowSte
 /********************************************************************************/
 
 // filter in place, in one dimension, for arbitrary channel counts
+static
 void SmoothOneDirection( float *data, int gridPoints, int planeStep, int rowStep, int colStep, int channels )
 {
     assert(channels > 0);
@@ -977,10 +998,9 @@ void DumpPointList( const std::string &name, const PointList &planePoints )
 gamut -- LAB to boolean mapping
 always 8 bit
 */
+static
 void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoints, profileData &myProfile )
 {
-    int L, A, B;    // my grid iteration indices
-
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
 
@@ -999,7 +1019,7 @@ void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoin
         int gamutRowStep = gridPoints;
         int gamutColStep = 1;
         
-        for (L = 0; L < gridPoints; ++L) {
+        for (int L = 0; L < gridPoints; ++L) {
             // setup slices variables
             float Lfloat = grid_to_L( L, gridPoints );
             
@@ -1019,16 +1039,17 @@ void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoin
             
             // create interpolated point list from the splines
             PointList planePoints;
-            PointListFromSplines( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
+            size_t subDivisions = std::min( (size_t)300, 50*inkCount );
+            PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
 // DEBUG the last set generated to check the gamut shape and area
 //DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 
             // now iterate over this plane/slice
-            for (A = 0; A < gridPoints; ++A) {
+            for (int A = 0; A < gridPoints; ++A) {
                 float Afloat = grid_to_AB( A, gridPoints );
                 
-                for (B = 0; B < gridPoints; ++B) {
+                for (int B = 0; B < gridPoints; ++B) {
                     float Bfloat = grid_to_AB( B, gridPoints );
 
                     // find closest point in our line/point list
@@ -1074,6 +1095,7 @@ A2B - inks and overprints to LAB, N-dimensional to 3 channels
     use ink mixing model and simple interpolation
     doesn't really need smoothing
 */
+static
 void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfile,
                     const size_t maxGridSize )
 {
@@ -1260,6 +1282,9 @@ std::vector<float> ClipInkWeights( std::vector<float> &a, const int channels )
 /********************************************************************************/
 
 // TODO - get a lot of repeat values here, could cache?
+// maybe just cache t, LTarget, LStart ?  Seems to work, but needs verification.
+#define CACHE 1
+
 static
 void AdjustInkMixForL( float Ltarget, const std::vector<xyzColor> &inkListXYZ,
             std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
@@ -1269,9 +1294,10 @@ void AdjustInkMixForL( float Ltarget, const std::vector<xyzColor> &inkListXYZ,
     const std::vector<float> neutralWeights( 15, 1.0 );
     
     // first scale inks to full saturation, just in case
+// TODO - won't this undo the chroma adjustment?
     std::vector<float> satList = SaturateInkWeights( inkFractionList, inkCount );
     
-    std::vector<float> workingList = inkFractionList;
+    std::vector<float> workingList = satList;
 
     // calc initial L*
     xyzColor tempXYZ = estimate_fractional_ink_mix( inkListXYZ, satList, paperColor, inkCount );
@@ -1281,6 +1307,22 @@ void AdjustInkMixForL( float Ltarget, const std::vector<xyzColor> &inkListXYZ,
     float t = (Lstart < Ltarget) ? 0.0 : 1.0;
     float tTop = 1.0;
     float tBottom = 0.0;
+
+#if CACHE
+    static float cacheLTarget = -5;
+    static float cacheLStart = -5;
+    static float cacheT = 0.0;
+    
+    if (Ltarget == cacheLTarget
+        && Lstart == cacheLStart) {
+        tTop = cacheT + epsilon;    // offset so we iterate once and update the workingList inkWeights
+        tBottom = cacheT - epsilon;
+        t = cacheT;
+    }
+    
+    cacheLStart = Lstart;
+    cacheLTarget = Ltarget;
+#endif
 
     // binary search to find values, and bail with best effort if we can't reach them
     while (fabs(Lcurrent - Ltarget) > tolerance) {
@@ -1309,6 +1351,10 @@ void AdjustInkMixForL( float Ltarget, const std::vector<xyzColor> &inkListXYZ,
         Lcurrent = tempLAB.L;
     }
 
+#if CACHE
+    cacheT = t;
+#endif
+
     inkFractionList = workingList;
 }
 
@@ -1319,6 +1365,7 @@ B2A - LAB to ink mixes, needs detail, 3D to N channels
     ignore GCR/UCR just write the raw mixes
     This needs smoothing.
 */
+static
 void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, profileData &myProfile )
 {
     const int maxChannels = 15;          // ICC spec. limit
@@ -1526,6 +1573,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 /********************************************************************************/
 
 // create LAB to LAB for color mapping/preview
+static
 void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoints,
                     const std::string &filename )
 {
@@ -1572,7 +1620,8 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
         
         // create interpolated point list from the splines
         PointList planePoints;
-        PointListFromSplines( 50*inkCount, planeSpline, planePoints, (inkCount > 2) );
+        size_t subDivisions = std::min( (size_t)300, 50*inkCount );
+        PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
 
 // DEBUG the last set generated to check the gamut shape and area
@@ -1713,6 +1762,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 /********************************************************************************/
 
 // full output profile: A2B, B2A, gamut
+static
 void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints,
                     const std::string &filename, size_t tableSizeLimit )
 {
@@ -1793,6 +1843,86 @@ void processInkSetList(void)
         
         if (inkSet.copyright.empty())
             inkSet.copyright = globalSettings.gDefaultCopyright;
+        
+        // first, check for errors
+        
+        // ink count must be >=1 && <= 15
+        size_t inkCount = inkSet.primaries.size();
+        if (inkCount < 1 ) {
+            fprintf(stderr,"Set %s has no inks defined\n", inkSet.name.c_str() );
+            continue;
+        }
+        if (inkCount > 15) {
+            fprintf(stderr,"There are more than 15 inks in %s\n", inkSet.name.c_str() );
+            continue;
+        }
+        
+        // calc dark if needed
+        prepare_ink_dark( inkSet );
+        
+        // no ink can be lighter than the paper color
+        // no ink can be darker than the dark color
+        float lightL = inkSet.paperColor.L;
+        float darkL = inkSet.darkColor.L;
+        
+        if (lightL > 100.0) {
+            fprintf(stderr,"Paper is brighter than white in %s\n", inkSet.name.c_str() );
+            continue;
+        }
+        if (lightL < 0.0) {
+            fprintf(stderr,"Paper is darker than black in %s\n", inkSet.name.c_str() );
+            continue;
+        }
+        if (darkL < 0.0) {
+            fprintf(stderr,"Dark color is darker than black in %s\n", inkSet.name.c_str() );
+            continue;
+        }
+        if (lightL < darkL) {
+            fprintf(stderr,"Paper is darker than the darkest ink combo in %s\n", inkSet.name.c_str() );
+            continue;
+        }
+        
+        bool fail = false;
+        for (const auto &ink : inkSet.primaries ) {
+            float L = ink.color.L;
+            float A = ink.color.A;
+            float B = ink.color.B;
+            
+            if (ink.name.empty()) {
+                fprintf(stderr,"A blank ink name isn't a good idea in %s\n", inkSet.name.c_str() );
+            }
+            
+            if (L > lightL) {
+                fprintf(stderr,"Ink %s is lighter than the paper in %s\n",
+                            ink.name.c_str(), inkSet.name.c_str() );
+                fail = true;
+                break;
+            }
+            if (L < darkL) {
+                fprintf(stderr,"Ink %s is darker than the dark in %s\n",
+                            ink.name.c_str(), inkSet.name.c_str() );
+                fail = true;
+                break;
+            }
+            
+            // check for NaN and Inf, just in case
+            if (isnan(L) || isnan(A) || isnan(B)) {
+                fprintf(stderr,"What color is NaN %s in %s?\n",
+                            ink.name.c_str(), inkSet.name.c_str() );
+                fail = true;
+                break;
+            }
+            if (isinf(L) || isinf(A) || isinf(B)) {
+                fprintf(stderr,"What color is Infinity %s in %s?\n",
+                            ink.name.c_str(), inkSet.name.c_str() );
+                fail = true;
+                break;
+            }
+        }   // end ink check loop
+
+        if (fail)
+            continue;
+
         
         // create splines from measured points using approximate mixing model
         mix_ink_splines( inkSet );
