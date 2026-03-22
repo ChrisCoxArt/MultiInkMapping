@@ -6,6 +6,11 @@
 
     "colorSets": [
         {
+            "darkColor": {
+                "L": 17.6,
+                "a": 0,
+                "b": 0
+            },
             "description": "ExpectedToFail1",
             "filename": "ExpectedToFail1",
             "paperColor": {
@@ -187,6 +192,84 @@
                 "b": 0.025
             },
             "primariesList": [
+                {
+                    "L": 52.0,
+                    "Name": "Magenta",
+                    "a": 81.1,
+                    "b": -1.7
+                }
+            ]
+        },
+        {
+            "darkColor": {
+                "L": 20.0,
+                "a": 0,
+                "b": 0
+            },
+            "description": "ExpectedToFail6",
+            "filename": "ExpectedToFail6",
+            "paperColor": {
+                "L": 10.0,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+            ]
+        },
+        {
+            "description": "",
+            "filename": "ExpectedToFail7",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                }
+            ]
+        },
+        {
+            "description": "ExpectedToFail8",
+            "filename": "",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                }
+            ]
+        },
+        {
+            "description": "JustWarning1",
+            "filename": "JustWarning1",
+            "darkColor": {
+                "L": 17.6,
+                "a": 0,
+                "b": 0
+            },
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 44.4,
+                    "Name": "",
+                    "a": -35.9,
+                    "b": -32.5
+                },
                 {
                     "L": 52.0,
                     "Name": "Magenta",

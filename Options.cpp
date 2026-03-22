@@ -52,7 +52,7 @@ void ReadInt( const json &input, const char *key, int &result )
             return;
             }
         assert( type == json::value_t::number_unsigned
-        || type == json::value_t::number_integer );
+             || type == json::value_t::number_integer );
         result = dataFound.value();
         }
 }
@@ -71,7 +71,7 @@ void ReadSize( const json &input, const char *key, size_t &result )
             return;
             }
         assert( type == json::value_t::number_unsigned
-        || type == json::value_t::number_integer );
+             || type == json::value_t::number_integer );
         result = dataFound.value();
         }
 }
@@ -87,8 +87,8 @@ void ReadFloat( const json &input, const char *key, float &result )
         if (type == json::value_t::null )
             return;
         assert( type == json::value_t::number_float
-                || type == json::value_t::number_unsigned
-                || type == json::value_t::number_integer );
+             || type == json::value_t::number_unsigned
+             || type == json::value_t::number_integer );
         result = dataFound.value();
         }
 }
@@ -104,8 +104,8 @@ void ReadBool( const json &input, const char *key, bool &result )
         if (type == json::value_t::null )
             return;
         assert( type == json::value_t::boolean
-                || type == json::value_t::number_unsigned
-                || type == json::value_t::number_integer );
+             || type == json::value_t::number_unsigned
+             || type == json::value_t::number_integer );
         result = (dataFound.value() != false);
         }
 }

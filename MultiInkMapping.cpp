@@ -410,7 +410,7 @@ void mix_ink_splines( inkColorSet &inkSet )
     const int divisions = 4;    // even so we have a midpoint (5 splines per surface)
 
     size_t inkCount = inkSet.primaries.size();
-    assert(inkCount > 0);
+    assert(inkCount > 0 && inkCount <= 15);
 
     // Need inks in hue angle order so the splines will be in order for hull
     std::sort( inkSet.primaries.begin(), inkSet.primaries.end(), labHueLess );
@@ -1002,7 +1002,7 @@ static
 void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoints, profileData &myProfile )
 {
     size_t inkCount = inkSet.primaries.size();
-    assert(inkCount > 0);
+    assert(inkCount > 0 && inkCount <= 15);
 
     // allocate my gamut grid
     size_t gridCount =  gridPoints*gridPoints*gridPoints;
@@ -1589,7 +1589,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     int colStep = 3;
     
     size_t inkCount = inkSet.primaries.size();
-    assert(inkCount > 0);
+    assert(inkCount > 0 && inkCount <= 15 );
     
     for (L = 0; L < gridPoints; ++L) {
         // setup slices variables
@@ -1767,7 +1767,7 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
                     const std::string &filename, size_t tableSizeLimit )
 {
     size_t inkCount = inkSet.primaries.size();
-    assert(inkCount > 0);
+    assert(inkCount > 0 && inkCount <= 15);
 
 
     // write ICC output profiles
@@ -1845,15 +1845,23 @@ void processInkSetList(void)
             inkSet.copyright = globalSettings.gDefaultCopyright;
         
         // first, check for errors
+        if (inkSet.name.empty() ) {
+            fprintf(stderr,"ERROR - There is an inkset without a filename, description is %s\n", inkSet.description.c_str() );
+            continue;
+        }
+        if (inkSet.description.empty() ) {
+            fprintf(stderr,"ERROR - There is no description for set %s\n", inkSet.name.c_str() );
+            continue;
+        }
         
         // ink count must be >=1 && <= 15
         size_t inkCount = inkSet.primaries.size();
         if (inkCount < 1 ) {
-            fprintf(stderr,"Set %s has no inks defined\n", inkSet.name.c_str() );
+            fprintf(stderr,"ERROR - There are no inks defined in set %s\n", inkSet.name.c_str() );
             continue;
         }
         if (inkCount > 15) {
-            fprintf(stderr,"There are more than 15 inks in %s\n", inkSet.name.c_str() );
+            fprintf(stderr,"ERROR - There are more than 15 inks in set %s\n", inkSet.name.c_str() );
             continue;
         }
         
@@ -1866,19 +1874,19 @@ void processInkSetList(void)
         float darkL = inkSet.darkColor.L;
         
         if (lightL > 100.0) {
-            fprintf(stderr,"Paper is brighter than white in %s\n", inkSet.name.c_str() );
+            fprintf(stderr,"ERROR - Paper color is brighter than white in set %s\n", inkSet.name.c_str() );
             continue;
         }
         if (lightL < 0.0) {
-            fprintf(stderr,"Paper is darker than black in %s\n", inkSet.name.c_str() );
+            fprintf(stderr,"ERROR - Paper color is darker than black in set %s\n", inkSet.name.c_str() );
             continue;
         }
         if (darkL < 0.0) {
-            fprintf(stderr,"Dark color is darker than black in %s\n", inkSet.name.c_str() );
+            fprintf(stderr,"ERROR - Dark color is darker than black in set %s\n", inkSet.name.c_str() );
             continue;
         }
         if (lightL < darkL) {
-            fprintf(stderr,"Paper is darker than the darkest ink combo in %s\n", inkSet.name.c_str() );
+            fprintf(stderr,"ERROR - Paper is darker than the darkest ink combination in set %s\n", inkSet.name.c_str() );
             continue;
         }
         
@@ -1889,17 +1897,17 @@ void processInkSetList(void)
             float B = ink.color.B;
             
             if (ink.name.empty()) {
-                fprintf(stderr,"A blank ink name isn't a good idea in %s\n", inkSet.name.c_str() );
+                fprintf(stderr,"WARNING - A blank ink name really isn't a good idea in set %s\n", inkSet.name.c_str() );
             }
             
             if (L > lightL) {
-                fprintf(stderr,"Ink %s is lighter than the paper in %s\n",
+                fprintf(stderr,"ERROR - Ink %s is lighter than the paper in set %s\n",
                             ink.name.c_str(), inkSet.name.c_str() );
                 fail = true;
                 break;
             }
             if (L < darkL) {
-                fprintf(stderr,"Ink %s is darker than the dark in %s\n",
+                fprintf(stderr,"ERROR - Ink %s is darker than the dark in set %s\n",
                             ink.name.c_str(), inkSet.name.c_str() );
                 fail = true;
                 break;
@@ -1907,13 +1915,13 @@ void processInkSetList(void)
             
             // check for NaN and Inf, just in case
             if (isnan(L) || isnan(A) || isnan(B)) {
-                fprintf(stderr,"What color is NaN %s in %s?\n",
+                fprintf(stderr,"ERROR - What color is NaN %s in set %s?\n",
                             ink.name.c_str(), inkSet.name.c_str() );
                 fail = true;
                 break;
             }
             if (isinf(L) || isinf(A) || isinf(B)) {
-                fprintf(stderr,"What color is Infinity %s in %s?\n",
+                fprintf(stderr,"ERROR - What color is Infinity %s in set %s?\n",
                             ink.name.c_str(), inkSet.name.c_str() );
                 fail = true;
                 break;
@@ -1953,8 +1961,8 @@ int main (int argc, char * argv[])
     globalSettings.gDataDepth = 8;
     globalSettings.gDataGridPoints = 21;
     globalSettings.gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
-    globalSettings.gDebugMode = true;
     globalSettings.gDefaultCopyright = "Copyright (c) Chris Cox 2026";
+    globalSettings.gDebugMode = true;
     globalSettings.gCreateOutput = true;
     globalSettings.gCreateAbstract = true;
     globalSettings.gTIFFTables = false;

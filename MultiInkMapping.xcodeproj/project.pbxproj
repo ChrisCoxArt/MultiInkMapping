@@ -35,7 +35,6 @@
 		F1769FEF2F6BB29E00D3103E /* MultiInkMapping.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MultiInkMapping.hpp; sourceTree = "<group>"; };
 		F1769FF02F6BFB1100D3103E /* Options.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Options.hpp; sourceTree = "<group>"; };
 		F1769FF12F6BFB1100D3103E /* Options.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Options.cpp; sourceTree = "<group>"; };
-		F1769FF32F6BFB7900D3103E /* MultiInkMapping.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = MultiInkMapping.xcodeproj; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,7 +51,6 @@
 		F1769FD42F55103200D3103E = {
 			isa = PBXGroup;
 			children = (
-				F1769FF32F6BFB7900D3103E /* MultiInkMapping.xcodeproj */,
 				F1769FF02F6BFB1100D3103E /* Options.hpp */,
 				F1769FF12F6BFB1100D3103E /* Options.cpp */,
 				F1769FE92F5804E300D3103E /* MiniTIFF.hpp */,
