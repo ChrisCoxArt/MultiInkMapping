@@ -1142,7 +1142,8 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
 
     assert( depth == 8 || depth == 16 );
     size_t gridCount = gridSize;
-    std::unique_ptr<uint8_t> gridBuffer(new uint8_t[ gridCount * 3 * (depth/8) ]);
+    size_t gridBufferSize = gridCount * 3 * (depth/8);
+    std::unique_ptr<uint8_t> gridBuffer(new uint8_t[ gridBufferSize ]);
     uint8_t *gridData = gridBuffer.get();
     uint16_t *grid16Ptr = (uint16_t*)gridData;
     
@@ -1195,6 +1196,30 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
     
     }   // overall table loop using a vector of counters
 
+
+    if ( globalSettings.gTIFFTables ) {
+        // calculate an image size that is close to square
+        size_t tiles = gridCount / (gridPoints*gridPoints);
+        if (tiles < 1) tiles = 1;
+        
+        size_t tilesWide = (int)sqrtf(tiles);
+        size_t tilesHigh = (tiles + (tilesWide-1)) / tilesWide;
+        
+        size_t tiffWidth = tilesWide * gridPoints;
+        size_t tiffHeight = tilesHigh * gridPoints;
+        if (inkCount == 1)
+            tiffWidth = 1;
+
+        // copy the data so LAB adjustments won't affect profile data
+        // and because we may need a larger image than the original LUT buffer
+        size_t tiffBufferSize = (tiffWidth*tiffHeight) * 3 * (depth/8);
+        std::unique_ptr<uint8_t> tiffBuffer(new uint8_t[ tiffBufferSize ]);
+        memset( tiffBuffer.get(), 0, tiffBufferSize );
+        memcpy( tiffBuffer.get(), gridBuffer.get(), gridBufferSize );
+        
+        WriteTIFF( inkSet.name + "_A2B.tiff", 96.0, TIFF_MODE_CIELAB, tiffBuffer.get(),
+                   tiffWidth, tiffHeight, 3, depth );
+    }
 
     tableFormat myTable;
     myTable.tableSig = icSigAToB0Tag;
@@ -1931,6 +1956,8 @@ void processInkSetList(void)
         if (fail)
             continue;
 
+
+        printf("Processing set %s\n", inkSet.name.c_str() );
         
         // create splines from measured points using approximate mixing model
         mix_ink_splines( inkSet );
@@ -1962,7 +1989,7 @@ int main (int argc, char * argv[])
     globalSettings.gDataGridPoints = 21;
     globalSettings.gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
     globalSettings.gDefaultCopyright = "Copyright (c) Chris Cox 2026";
-    globalSettings.gDebugMode = true;
+    globalSettings.gDebugMode = false;
     globalSettings.gCreateOutput = true;
     globalSettings.gCreateAbstract = true;
     globalSettings.gTIFFTables = false;
