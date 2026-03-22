@@ -33,8 +33,10 @@ void ReadString( const json &input, const char *key, std::string &result )
         auto type = dataFound.value().type();
         if (type == json::value_t::null)
             return;
-        assert( type == json::value_t::string );
-        result = dataFound.value();
+        if (type != json::value_t::string)
+            result.clear();
+        else
+            result = dataFound.value();
         }
 }
 
@@ -47,13 +49,12 @@ void ReadInt( const json &input, const char *key, int &result )
         {
         auto type = dataFound.value().type();
         if (type == json::value_t::null )
-            {
-            result = -1;
             return;
-            }
-        assert( type == json::value_t::number_unsigned
-             || type == json::value_t::number_integer );
-        result = dataFound.value();
+        if (type != json::value_t::number_unsigned
+         && type != json::value_t::number_integer)
+            result = 0;
+        else
+            result = dataFound.value();
         }
 }
 
@@ -66,13 +67,12 @@ void ReadSize( const json &input, const char *key, size_t &result )
         {
         auto type = dataFound.value().type();
         if (type == json::value_t::null )
-            {
-            result = -1;
             return;
-            }
-        assert( type == json::value_t::number_unsigned
-             || type == json::value_t::number_integer );
-        result = dataFound.value();
+        if (type != json::value_t::number_unsigned
+         && type != json::value_t::number_integer)
+            result = 0;
+        else
+            result = dataFound.value();
         }
 }
 
@@ -86,10 +86,12 @@ void ReadFloat( const json &input, const char *key, float &result )
         auto type = dataFound.value().type();
         if (type == json::value_t::null )
             return;
-        assert( type == json::value_t::number_float
-             || type == json::value_t::number_unsigned
-             || type == json::value_t::number_integer );
-        result = dataFound.value();
+        if (type != json::value_t::number_float
+         && type != json::value_t::number_unsigned
+         && type != json::value_t::number_integer)
+            result = 0.0f;
+        else
+            result = dataFound.value();
         }
 }
 
@@ -103,10 +105,12 @@ void ReadBool( const json &input, const char *key, bool &result )
         auto type = dataFound.value().type();
         if (type == json::value_t::null )
             return;
-        assert( type == json::value_t::boolean
-             || type == json::value_t::number_unsigned
-             || type == json::value_t::number_integer );
-        result = (dataFound.value() != false);
+        if (type != json::value_t::boolean
+         && type != json::value_t::number_unsigned
+         && type != json::value_t::number_integer)
+            result = false;
+        else
+            result = (dataFound.value() != false);
         }
 }
 
@@ -164,7 +168,7 @@ void from_json( const json &j, inkColorSet &p )
 {
     // set some defaults
     p.darkColor =  labColor(-1,0,0);            // flag to automatically calculate
-    p.paperColor = labColor(97.1,-0.025,0.025); // unbelievably white
+    p.paperColor = labColor(98.0,0.0,0.0);      // unbelievably white
     
     ReadString( j, "filename", p.name );
     ReadString( j, "description", p.description );
@@ -242,10 +246,10 @@ static void print_usage(char *argv[])
 {
     printf("Usage: %s <args> input.json\n", argv[0] );
     
-    printf("\t-depth B        bit depth of data [8 or 16] (default %d)\n", globalSettings.gDataDepth );
+    printf("\t-depth B        bit depth of output data [8 or 16] (default %d)\n", globalSettings.gDataDepth );
     printf("\t-grid G         number of grid points (default %d)\n", globalSettings.gDataGridPoints );
     printf("\t-limit L        upper limit on A2B table size (default %zu)\n", globalSettings.gTableSizeLimit );
-    printf("\t-copyright C    default copyright string for profiles (default \"%s\")\n", globalSettings.gDefaultCopyright.c_str() );
+    printf("\t-copyright C    copyright string for profiles (default \"%s\")\n", globalSettings.gDefaultCopyright.c_str() );
     printf("\t-debug          enable debugging output\n" );
     printf("\t-tiff           output tables as TIFF files\n" );
 

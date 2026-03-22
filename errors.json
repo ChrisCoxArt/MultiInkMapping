@@ -3,6 +3,7 @@
     "gridPoints": 1,
     "tableDepth": 3,
     "tableSizeLimit": 2048,
+    "debugEnable": true,
 
     "colorSets": [
         {
@@ -251,10 +252,27 @@
             ]
         },
         {
+            "description": "ExpectedToFail9",
+            "filename": 3.141592654,
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                }
+            ]
+        },
+        {
             "description": "JustWarning1",
             "filename": "JustWarning1",
             "darkColor": {
-                "L": 17.6,
+                "L": 7.6,
                 "a": 0,
                 "b": 0
             },
