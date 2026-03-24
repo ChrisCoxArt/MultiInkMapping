@@ -24,19 +24,19 @@ TODO - write XML profile data, once I have V4 working?
 
 TODO - would be nice to add measured overprint colors
     need some sort of ink1,ink2 -> overprint mapping, then look that up when building splines.
-    can I use them when estimating ink fractions? Not easily without all combinations.
+    can I use them when estimating ink fractions?
+        could do a map lookup by names and use if found. But that would slowdown general calls.
+        and only be useful for 2 inks at 100% (which has to be tested before lookup)
+        Maybe prebuild a faster lookup system by ink fractions that can handle any fractions?
+            hash((int)(100*fraction1)) and chain?  Still expensive.
+            sum of fractions (scaled to int) for bucket, then sub lookup if match?
+                cheaper, might work.
     { "Ink1Name", "Ink2Name", measuredOverprint }
     add list of overprint data, make it optional
-    error check that all names match primaries
+        error check that all names match primaries - use mapping to catch missing names
 
-TODO - What about tints and shades?  need percentages of mixes, plus measurement.
-    Um, special case for "paper" and "dark"?
-    How to use these when building splines?
-    { "Ink1", 0.25, "Ink2", 0.75, measuredOverprint }
-    { "Ink1", 0.25, "none", 0, measuredTint }
-
-    Do I really want to support full IT8 profile data?  No.
-
+    Maybe { ["ink1","ink2","ink3"], measured }
+        create name->index and remap internal data
 
 TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
     take max chroma points for hull?
@@ -53,6 +53,17 @@ TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
     sort( overprints, hue_less );
     make midpoints into larger list?
     then make splines from list?
+
+
+TODO - What about tints and shades?  need percentages of mixes, plus measurement.
+    Um, special case names for "paper" and "dark"?
+    How to use these when building splines?
+    { "Ink1Name", 0.25, "Ink2Name", 0.75, measuredOverprint }
+    { "Ink1Name", 0.25, "none", 0, measuredTint }
+    { "InInk1Namek1", 0.25, "dark", 0.25, measuredShade }
+
+    Do I really want to support full IT8 profile data?  No.
+
 
 */
 
