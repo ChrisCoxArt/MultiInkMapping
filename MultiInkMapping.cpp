@@ -18,48 +18,41 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
-
-PERFORMANCE - estimate_ink_mix and estimate_fractional_ink_mix reconvert LAB to XYZ constantly
-    change inlists to XYZ and pass those in
-Was 1.3 seconds for ALL profiles and TIFF files - so not exactly slow to start with.
-Current:
-696.80 ms  100.0%	0 s	  Thread  0x1709081
-147.70 ms  21.2%	0 s	   cbrtf
-121.90 ms  17.5%	0 s	   pointInPoly(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point)
-96.30 ms  13.8%	0 s	   FindClosestPointInList(std::__1::vector<Point, std::__1::allocator<Point>> const&, Point&)
-56.10 ms   8.1%	0 s	   createA2B_table(inkColorSet const&, int, profileData&, unsigned long)
-31.80 ms   4.6%	0 s	   nanov2_malloc
-29.40 ms   4.2%	0 s	   _nanov2_free
-27.20 ms   3.9%	0 s	   estimate_fractional_ink_mix(std::__1::vector<xyzColor, std::__1::allocator<xyzColor>> const&, std::__1::vector<float, std::__1::allocator<float>> const&, xyzColor const&, int)
-23.30 ms   3.3%	0 s	   operator*=(xyzColor&, xyzColor const&)
-19.40 ms   2.8%	0 s	   CIECurve(float)
-
-
-
-
-TODO - JSON input?
-    add more error checking/reporting on color sets
-
-
 TODO - write XML profile data, once I have V4 working?
 
-TODO - consider moving utility definitions and functions to a header
 
 
 TODO - would be nice to add measured overprint colors
-    need some sort of ink1,ink2 -> overprint mapping.
-    { "Ink1", "Ink2", measuredOverprint }
-    
-    What about tints and shades?  need percentages of mixes, plus measurement.
-    Um, special case for "paper" and "dark"?
-    { "Ink1", 0.25, "Ink2", 0.75, measuredOverprint }
+    need some sort of ink1,ink2 -> overprint mapping, then look that up when building splines.
+    can I use them when estimating ink fractions? Not easily without all combinations.
+    { "Ink1Name", "Ink2Name", measuredOverprint }
+    add list of overprint data, make it optional
+    error check that all names match primaries
 
-    Do I really want to support full IT8 profile data?
+TODO - What about tints and shades?  need percentages of mixes, plus measurement.
+    Um, special case for "paper" and "dark"?
+    How to use these when building splines?
+    { "Ink1", 0.25, "Ink2", 0.75, measuredOverprint }
+    { "Ink1", 0.25, "none", 0, measuredTint }
+
+    Do I really want to support full IT8 profile data?  No.
 
 
 TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
     take max chroma points for hull?
+    maybe do all binary combinations, with lookup for any measured, then sort.
     or build in more combinations and sort midpoints by hue, before interpolating?
+    Mix data would need to be updated along with sort!  merge into single structure?
+    tertiary mixtures might be useful in some cases, but not most
+    quaternary mixtures... aren't likely to be useful (mostly mud)
+    maybe set limits on chroma and luma to keep mixtures?
+
+    for (i=0;i<inks;++i)
+      for (k=(i+1);j<inks;++j)
+         overprints.push_back( estimate(inkFractions(i,j)) )
+    sort( overprints, hue_less );
+    make midpoints into larger list?
+    then make splines from list?
 
 */
 
@@ -177,9 +170,7 @@ inline
 xyzColor interp2inks( const float t, const xyzColor &ink1, const xyzColor &ink2 )
 {
     xyzColor result;
-
     result = ink1 + t * (ink2 - ink1);
-    
     return result;
 }
 
@@ -190,11 +181,9 @@ inline
 labColor interp2inks( const float t, const labColor &ink1, const labColor &ink2 )
 {
     labColor result;
-
     result.L = LERP( t, ink1.L, ink2.L );
     result.A = LERP( t, ink1.A, ink2.A );
     result.B = LERP( t, ink1.B, ink2.B );
-    
     return result;
 }
 
@@ -285,7 +274,7 @@ static
 xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
             const std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
-    assert( inkCount >= 1 && inkCount <= 15 );
+    assert( inkCount >= 1 && inkCount <= kMaxChannels );
     
     xyzColor overprint = identityXYZ;
     for (int i = 0; i < inkCount; ++i) {
@@ -410,7 +399,7 @@ void mix_ink_splines( inkColorSet &inkSet )
     const int divisions = 4;    // even so we have a midpoint (5 splines per surface)
 
     size_t inkCount = inkSet.primaries.size();
-    assert(inkCount > 0 && inkCount <= 15);
+    assert(inkCount > 0 && inkCount <= kMaxChannels);
 
     // Need inks in hue angle order so the splines will be in order for hull
     std::sort( inkSet.primaries.begin(), inkSet.primaries.end(), labHueLess );
@@ -892,7 +881,7 @@ static
 void SmoothOneDirection( float *data, int gridPoints, int planeStep, int rowStep, int colStep, int channels )
 {
     assert(channels > 0);
-    assert(channels <= 15);
+    assert(channels <= kMaxChannels);
  
     if (channels == 3) {
         SmoothOneDirection3( data, gridPoints, planeStep, rowStep, colStep );
@@ -900,9 +889,9 @@ void SmoothOneDirection( float *data, int gridPoints, int planeStep, int rowStep
     }
     
     // there isn't an easy way to do this for arbitrary channel counts
-    std::vector<float> last(15);
-    std::vector<float> current(15);
-    std::vector<float> next(15);
+    std::vector<float> last(kMaxChannels);
+    std::vector<float> current(kMaxChannels);
+    std::vector<float> next(kMaxChannels);
 
     float *lastp = &last[0];
     float *currentp = &current[0];
@@ -1002,7 +991,7 @@ static
 void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoints, profileData &myProfile )
 {
     size_t inkCount = inkSet.primaries.size();
-    assert(inkCount > 0 && inkCount <= 15);
+    assert(inkCount > 0 && inkCount <= kMaxChannels);
 
     // allocate my gamut grid
     size_t gridCount =  gridPoints*gridPoints*gridPoints;
@@ -1099,8 +1088,8 @@ static
 void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfile,
                     const size_t maxGridSize )
 {
-    const int maxChannels = 15;          // ICC spec. limit
-    const int maxGridPoints = 31;        // sanity limit (could be increased)
+    const int maxChannels = kMaxChannels;          // ICC spec. limit
+    const int maxGridPoints = 31;                  // sanity limit (could be increased)
     
     int inkCount = (int)inkSet.primaries.size();
     assert(inkCount > 0);
@@ -1236,7 +1225,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
 static
 std::vector<float> MixInkWeights( float t, const std::vector<float> &a, const std::vector<float> &b, const int channels )
 {
-    std::vector<float> result(15);
+    std::vector<float> result(kMaxChannels);
     for (int c = 0; c < channels; ++c)
        result[c] = LERP( t, a[c], b[c] );
     return result;
@@ -1247,7 +1236,7 @@ std::vector<float> MixInkWeights( float t, const std::vector<float> &a, const st
 static
 std::vector<float> AddInkWeights( const std::vector<float> &a, const std::vector<float> &b, const int channels )
 {
-    std::vector<float> result(15);
+    std::vector<float> result(kMaxChannels);
     for (int c = 0; c < channels; ++c)
        result[c] = a[c] + b[c];
     return result;
@@ -1258,7 +1247,7 @@ std::vector<float> AddInkWeights( const std::vector<float> &a, const std::vector
 static
 std::vector<float> ScaleInkWeights( float t, const std::vector<float> &a, const int channels )
 {
-    std::vector<float> result(15);
+    std::vector<float> result(kMaxChannels);
     for (int c = 0; c < channels; ++c)
        result[c] = t * a[c];
     return result;
@@ -1268,7 +1257,7 @@ std::vector<float> ScaleInkWeights( float t, const std::vector<float> &a, const 
 static
 std::vector<float> SaturateInkWeights( const std::vector<float> &a, const int channels )
 {
-    std::vector<float> result(15);
+    std::vector<float> result(kMaxChannels);
     float maxValue = a[0];
     for (int c = 1; c < channels; ++c)
         maxValue = std::max( a[c], maxValue );
@@ -1316,7 +1305,7 @@ void AdjustInkMixForL( float Ltarget, const std::vector<xyzColor> &inkListXYZ,
 {
     const float tolerance = 0.1;
     const float epsilon = 1e-4;
-    const std::vector<float> neutralWeights( 15, 1.0 );
+    const std::vector<float> neutralWeights( kMaxChannels, 1.0 );
     
     // first scale inks to full saturation, just in case
 // TODO - won't this undo the chroma adjustment?
@@ -1393,15 +1382,13 @@ B2A - LAB to ink mixes, needs detail, 3D to N channels
 static
 void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, profileData &myProfile )
 {
-    const int maxChannels = 15;          // ICC spec. limit
-    
     int inkCount = (int)inkSet.primaries.size();
     assert(inkCount > 0);
-    assert(inkCount <= maxChannels);
+    assert(inkCount <= kMaxChannels);
 
     xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
     
-    std::vector<xyzColor> inkListXYZ(maxChannels);
+    std::vector<xyzColor> inkListXYZ(kMaxChannels);
     for (size_t i = 0; i < inkCount; ++i)
         inkListXYZ[i] = LAB2XYZ(inkSet.primaries[i].color) / paperColor;
 
@@ -1614,7 +1601,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     int colStep = 3;
     
     size_t inkCount = inkSet.primaries.size();
-    assert(inkCount > 0 && inkCount <= 15 );
+    assert(inkCount > 0 && inkCount <= kMaxChannels );
     
     for (L = 0; L < gridPoints; ++L) {
         // setup slices variables
@@ -1792,7 +1779,7 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
                     const std::string &filename, size_t tableSizeLimit )
 {
     size_t inkCount = inkSet.primaries.size();
-    assert(inkCount > 0 && inkCount <= 15);
+    assert(inkCount > 0 && inkCount <= kMaxChannels);
 
 
     // write ICC output profiles
@@ -1879,14 +1866,14 @@ void processInkSetList(void)
             continue;
         }
         
-        // ink count must be >=1 && <= 15
+        // ink count must be >=1 && <= kMaxChannels
         size_t inkCount = inkSet.primaries.size();
         if (inkCount < 1 ) {
             fprintf(stderr,"ERROR - There are no inks defined in set %s\n", inkSet.name.c_str() );
             continue;
         }
-        if (inkCount > 15) {
-            fprintf(stderr,"ERROR - There are more than 15 inks in set %s\n", inkSet.name.c_str() );
+        if (inkCount > kMaxChannels) {
+            fprintf(stderr,"ERROR - There are more than %d inks in set %s\n", kMaxChannels, inkSet.name.c_str() );
             continue;
         }
         

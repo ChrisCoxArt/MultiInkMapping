@@ -394,4 +394,9 @@ extern void processInkSetList(void);
 
 /******************************************************************************/
 
+// ICC profile limit
+const int kMaxChannels = 15;
+
+/******************************************************************************/
+
 #endif /* MultiInkMapping_h */
