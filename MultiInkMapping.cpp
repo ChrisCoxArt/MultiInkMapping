@@ -1915,7 +1915,7 @@ int create_utility_maps( inkColorSet &inkSet )
             
             auto iter = inkSet.name_map.find(name);
             if ( iter == inkSet.name_map.end() ) {
-                fprintf(stderr,"ERROR - Bad overprint ink name %s, in set %s\n",
+                fprintf(stderr,"ERROR - Unknown overprint ink name %s, in set %s\n",
                     name.c_str(),
                     inkSet.description.c_str() );
                 return 1;

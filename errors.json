@@ -301,6 +301,102 @@
                     "b": -68.0
                 }
             ]
+        },
+        {
+            "darkColor": {
+                "L": 17.6,
+                "a": 0,
+                "b": 0
+            },
+            "description": "ExpectedToFail10",
+            "filename": "ExpectedToFail10",
+            "paperColor": {
+                "L": 90.0,
+                "a": 0,
+                "b": 0
+            },
+            "primariesList": [
+                {
+                    "L": 52.0,
+                    "Name": "Magenta",
+                    "a": 81.1,
+                    "b": -1.7
+                }
+            ],
+            "overprints": [
+                {
+                    "L": 99.0,
+                    "a": -35.9,
+                    "b": -32.5,
+                    "inkNames": [
+                        "Magenta"
+                    ]
+                }
+            ]
+        },
+        {
+            "darkColor": {
+                "L": 17.6,
+                "a": 0,
+                "b": 0
+            },
+            "description": "ExpectedToFail11",
+            "filename": "ExpectedToFail11",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 52.0,
+                    "Name": "Magenta",
+                    "a": 81.1,
+                    "b": -1.7
+                }
+            ],
+            "overprints": [
+                {
+                    "L": 2.0,
+                    "a": -35.9,
+                    "b": -32.5,
+                    "inkNames": [
+                        "Magenta"
+                    ]
+                }
+            ]
+        },
+        {
+            "darkColor": {
+                "L": 17.6,
+                "a": 0,
+                "b": 0
+            },
+            "description": "ExpectedToFail12",
+            "filename": "ExpectedToFail12",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 52.0,
+                    "Name": "Magenta",
+                    "a": 81.1,
+                    "b": -1.7
+                }
+            ],
+            "overprints": [
+                {
+                    "L": 32.0,
+                    "a": 65.9,
+                    "b": -2.5,
+                    "inkNames": [
+                        "BlueClue"
+                    ]
+                }
+            ]
         }
     ]
 }
