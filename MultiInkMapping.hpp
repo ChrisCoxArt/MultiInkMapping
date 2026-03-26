@@ -94,7 +94,10 @@ struct inkMixPair {
 struct overPrintSwatch {
     labColor color;                         // from XML
     std::vector< std::string > inkNames;    // from XML
+
+public:
     uint32_t inkBitmap;                     // filled in by matching names
+    xyzColor colorXYZ;                      // filled in after full set read
 };
 
 /******************************************************************************/

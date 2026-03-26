@@ -33,8 +33,11 @@ TODO - would be nice to add measured overprint colors
                 cheaper, might work.
     add list of overprint data, make it optional
         error check that all names match primaries - use mapping to catch missing names
-
     Maybe { ["ink1","ink2","ink3"], measured }
+
+NEXT
+    add lookup into overprint estimation
+    add into spline building
 
 
 TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
@@ -282,12 +285,53 @@ xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor 
 
 // trying to estimate appearance of overprints among arbitrary inks
 static
-xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
+xyzColor estimate_fractional_ink_mix( const inkColorSet &inkSet, const std::vector<xyzColor> &inkList,
             const std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
     assert( inkCount >= 1 && inkCount <= kMaxChannels );
     
     xyzColor overprint = identityXYZ;
+#if 1
+    uint32_t opBitmap = 0;
+    
+    // see if we have an overprint that can be looked up
+    if (inkSet.overprints.size() > 0) {
+        uint32_t lookupBitmap = 0;
+        int bitCount = 0;
+        for (int i = 0; i < inkCount; ++i) {
+            float thisFraction = inkFractionList[i];
+            if (thisFraction >= 1.0) {
+                lookupBitmap |= (1UL << i);
+                ++bitCount;
+            }
+        }
+        
+        if (bitCount > 1) {
+            // do we have a matching overprint?
+            auto iter = inkSet.overprint_bitmask_map.find(lookupBitmap);
+            if ( iter != inkSet.overprint_bitmask_map.end()) {
+                opBitmap = inkSet.overprints[ iter->second ].inkBitmap;
+                overprint = inkSet.overprints[ iter->second ].colorXYZ;
+            }
+
+            // Can we at least come close?  Need closest match ignoring some channels, while still having 2 or more channels.
+// TODO - Or should I add fake entries to the map for this? preprocess sounds saner.
+        }
+    }
+    
+    // interp and multiply remaining inks that weren't in the overprint data
+    for (int i = 0; i < inkCount; ++i) {
+        if ((opBitmap & (1UL << i)) != 0)
+            continue;
+        
+        auto &ink = inkList[i];
+        float thisFraction = inkFractionList[i];
+        if (thisFraction > 0.0) {
+            xyzColor fractionalInk = interp2inks( thisFraction, identityXYZ, ink );
+            overprint *= fractionalInk;
+        }
+    }
+#else
     for (int i = 0; i < inkCount; ++i) {
         auto &ink = inkList[i];
         float thisFraction = inkFractionList[i];
@@ -296,6 +340,7 @@ xyzColor estimate_fractional_ink_mix( const std::vector<xyzColor> &inkList,
             overprint *= fractionalInk;
         }
     }
+#endif
 
     overprint *= paperColor;
 
@@ -1155,7 +1200,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
         for (size_t k = 0; k < inkCount; ++k)
             inkFractions[k] = (float)loopCounters[k] / (float)(gridPoints-1);
         
-        xyzColor resultXYZ = estimate_fractional_ink_mix( inkListXYZ, inkFractions, paperColor, inkCount );
+        xyzColor resultXYZ = estimate_fractional_ink_mix( inkSet, inkListXYZ, inkFractions, paperColor, inkCount );
         labColor resultLAB = XYZ2LAB( resultXYZ );
         
         if (depth == 16) {
@@ -1308,7 +1353,7 @@ std::vector<float> ClipInkWeights( std::vector<float> &a, const int channels )
 #define CACHE 1
 
 static
-void AdjustInkMixForL( float Ltarget, const std::vector<xyzColor> &inkListXYZ,
+void AdjustInkMixForL( const inkColorSet &inkSet, float Ltarget, const std::vector<xyzColor> &inkListXYZ,
             std::vector<float> &inkFractionList, const xyzColor &paperColor, int inkCount )
 {
     const float tolerance = 0.1;
@@ -1316,13 +1361,13 @@ void AdjustInkMixForL( float Ltarget, const std::vector<xyzColor> &inkListXYZ,
     const std::vector<float> neutralWeights( kMaxChannels, 1.0 );
     
     // first scale inks to full saturation, just in case
-// TODO - won't this undo the chroma adjustment?
+// TODO - won't this undo the chroma adjustment?  YES, it does!
     std::vector<float> satList = SaturateInkWeights( inkFractionList, inkCount );
     
     std::vector<float> workingList = satList;
 
     // calc initial L*
-    xyzColor tempXYZ = estimate_fractional_ink_mix( inkListXYZ, satList, paperColor, inkCount );
+    xyzColor tempXYZ = estimate_fractional_ink_mix( inkSet, inkListXYZ, satList, paperColor, inkCount );
     labColor tempLAB = XYZ2LAB( tempXYZ );
     float Lstart = tempLAB.L;
     float Lcurrent = Lstart;
@@ -1368,7 +1413,7 @@ void AdjustInkMixForL( float Ltarget, const std::vector<xyzColor> &inkListXYZ,
         if ( (tTop-tBottom) < epsilon )
             break;
         
-        tempXYZ = estimate_fractional_ink_mix( inkListXYZ, workingList, paperColor, inkCount );
+        tempXYZ = estimate_fractional_ink_mix( inkSet, inkListXYZ, workingList, paperColor, inkCount );
         tempLAB = XYZ2LAB( tempXYZ );
         Lcurrent = tempLAB.L;
     }
@@ -1516,7 +1561,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                 }
 
                 // adjust L* for all ink mixes (also scales any over 1.0)
-                AdjustInkMixForL( Lfloat, inkListXYZ, inkWeights, paperColor, inkCount );
+                AdjustInkMixForL( inkSet, Lfloat, inkListXYZ, inkWeights, paperColor, inkCount );
                 
                 // write values to the grid
                 for (int c = 0; c < inkCount; ++c)
@@ -1872,6 +1917,7 @@ int create_utility_maps( inkColorSet &inkSet )
     
     float lightL = inkSet.paperColor.L;
     float darkL = inkSet.darkColor.L;
+    xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
     
     // check overprints and make sure the ink names are in our map
     // construct ink bitmaps, add to our bitmap->index list
@@ -1906,6 +1952,7 @@ int create_utility_maps( inkColorSet &inkSet )
             return 1;
         }
         
+        
         for (const auto &name: op.inkNames ) {
             if (name.empty()) {
                 fprintf(stderr,"ERROR - Empty Overprint name in set %s?\n",
@@ -1924,6 +1971,7 @@ int create_utility_maps( inkColorSet &inkSet )
             op.inkBitmap |= ( 1UL << colorIndex );
         }
         
+        op.colorXYZ = LAB2XYZ(op.color) / paperColor;
         inkSet.overprint_bitmask_map.emplace( op.inkBitmap, index );
     }
 

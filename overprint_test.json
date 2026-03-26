@@ -1,0 +1,47 @@
+{
+    "defaultCopyright": "Copyright (c) Chris Cox 2026",
+    "gridPoints": 21,
+    "tableDepth": 8,
+    "tableSizeLimit": 1048576,
+
+    "colorSets": [
+        {
+            "description": "Blue and Red Ink",
+            "filename": "Blue-Red",
+            "darkColor": {
+                "L": 6.4,
+                "a": 9.9,
+                "b": -12.8
+            },
+            "paperColor": {
+                "L": 93.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "primariesList": [
+                {
+                    "L": 31.0,
+                    "Name": "Blue",
+                    "a": 1.4,
+                    "b": -58.0
+                },
+                {
+                    "L": 37.1,
+                    "Name": "Red",
+                    "a": 62.5,
+                    "b": 35.5
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 6.4,
+                    "a": 9.9,
+                    "b": -12.8,
+                    "inkNames": [
+                        "Red", "Blue"
+                    ]
+                }
+            ]
+        }
+    ]
+}
