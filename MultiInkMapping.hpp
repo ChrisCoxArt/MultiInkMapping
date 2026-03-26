@@ -17,6 +17,7 @@
 #include <vector>
 #include <cmath>
 #include <memory>
+#include <map>
 #include <algorithm>
 #include "MiniICC.hpp"
 
@@ -86,6 +87,14 @@ struct inkMixPair {
     float  ink2Fraction;
     
     bool operator==(const inkMixPair& other) const = default;
+};
+
+/******************************************************************************/
+
+struct overPrintSwatch {
+    labColor color;                         // from XML
+    std::vector< std::string > inkNames;    // from XML
+    uint32_t inkBitmap;                     // filled in by matching names
 };
 
 /******************************************************************************/
@@ -363,10 +372,13 @@ struct inkColorSet {
     labColor paperColor;            // lightest possible color
     labColor darkColor;             // darkest possible color from combination of inks, calculated if L <= 0
     named_color_list primaries;     // saturated hues
+    std::vector< overPrintSwatch > overprints;    // may be empty
 
 public:
     spline_list splines;        // built from basic ink data
     spline_mix_data mixData;    // built from basic ink data
+    std::map< std::string, int > name_map;              // built from inks
+    std::map< uint32_t, int > overprint_bitmask_map;    // built from inks and overprints
 };
 
 /******************************************************************************/

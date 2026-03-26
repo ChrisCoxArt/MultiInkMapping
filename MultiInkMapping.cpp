@@ -31,12 +31,11 @@ TODO - would be nice to add measured overprint colors
             hash((int)(100*fraction1)) and chain?  Still expensive.
             sum of fractions (scaled to int) for bucket, then sub lookup if match?
                 cheaper, might work.
-    { "Ink1Name", "Ink2Name", measuredOverprint }
     add list of overprint data, make it optional
         error check that all names match primaries - use mapping to catch missing names
 
     Maybe { ["ink1","ink2","ink3"], measured }
-        create name->index and remap internal data
+
 
 TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
     take max chroma points for hull?
@@ -76,6 +75,7 @@ TODO - What about tints and shades?  need percentages of mixes, plus measurement
 #include <vector>
 #include <cmath>
 #include <memory>
+#include <map>
 #include <algorithm>
 #include "MultiInkMapping.hpp"
 #include "Options.hpp"
@@ -411,9 +411,6 @@ void mix_ink_splines( inkColorSet &inkSet )
 
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0 && inkCount <= kMaxChannels);
-
-    // Need inks in hue angle order so the splines will be in order for hull
-    std::sort( inkSet.primaries.begin(), inkSet.primaries.end(), labHueLess );
 
     xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
 
@@ -1855,6 +1852,84 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     // buffers are freed automatically
 }
 
+/********************************************************************************/
+
+// create utility mappings for an inkSet
+// and do a bit more error checking if overprints are present
+static
+int create_utility_maps( inkColorSet &inkSet )
+{
+    // Need inks in hue angle order so the splines will be in order for hull
+    // and we need the indices to remain fixed after this
+    std::sort( inkSet.primaries.begin(), inkSet.primaries.end(), labHueLess );
+    
+    // create map of primary names -> indices
+    int index = 0;
+    for (index = 0; index< inkSet.primaries.size(); ++index) {
+        const auto &ink = inkSet.primaries[index];
+        inkSet.name_map.emplace( ink.name, index );
+    }
+    
+    float lightL = inkSet.paperColor.L;
+    float darkL = inkSet.darkColor.L;
+    
+    // check overprints and make sure the ink names are in our map
+    // construct ink bitmaps, add to our bitmap->index list
+    for (index = 0; index< inkSet.overprints.size(); ++index) {
+        auto &op = inkSet.overprints[index];
+        op.inkBitmap = 0;
+        
+        float L = op.color.L;
+        float A = op.color.A;
+        float B = op.color.B;
+    
+        if (L > lightL) {
+            fprintf(stderr,"ERROR - Overprint %d is lighter than the paper in set %s\n",
+                        index, inkSet.name.c_str() );
+            return 1;
+        }
+        if (L < darkL) {
+            fprintf(stderr,"ERROR - Overprint %d is darker than the dark in set %s\n",
+                        index, inkSet.name.c_str() );
+            return 1;
+        }
+        
+        // check for NaN and Inf, just in case
+        if (isnan(L) || isnan(A) || isnan(B)) {
+            fprintf(stderr,"ERROR - What color is NaN in overprint %d in set %s?\n",
+                        index, inkSet.name.c_str() );
+            return 1;
+        }
+        if (isinf(L) || isinf(A) || isinf(B)) {
+            fprintf(stderr,"ERROR - What color is Infinity in overprint %d in set %s?\n",
+                        index, inkSet.name.c_str() );
+            return 1;
+        }
+        
+        for (const auto &name: op.inkNames ) {
+            if (name.empty()) {
+                fprintf(stderr,"ERROR - Empty Overprint name in set %s?\n",
+                        inkSet.name.c_str() );
+                return 1;
+            }
+            
+            auto iter = inkSet.name_map.find(name);
+            if ( iter == inkSet.name_map.end() ) {
+                fprintf(stderr,"ERROR - Bad overprint ink name %s, in set %s\n",
+                    name.c_str(),
+                    inkSet.description.c_str() );
+                return 1;
+            }
+            int colorIndex = iter->second;
+            op.inkBitmap |= ( 1UL << colorIndex );
+        }
+        
+        inkSet.overprint_bitmask_map.emplace( op.inkBitmap, index );
+    }
+
+    return 0;
+}
+
 /******************************************************************************/
 /******************************************************************************/
 
@@ -1914,13 +1989,16 @@ void processInkSetList(void)
         }
         
         bool fail = false;
-        for (const auto &ink : inkSet.primaries ) {
+        int inkNameCounter = 1;
+        for (auto &ink : inkSet.primaries ) {
             float L = ink.color.L;
             float A = ink.color.A;
             float B = ink.color.B;
             
             if (ink.name.empty()) {
                 fprintf(stderr,"WARNING - A blank ink name really isn't a good idea in set %s\n", inkSet.name.c_str() );
+                ink.name = std::string("unnamed") + std::to_string(inkNameCounter);
+                inkNameCounter++;
             }
             
             if (L > lightL) {
@@ -1953,7 +2031,11 @@ void processInkSetList(void)
 
         if (fail)
             continue;
-
+        
+        // create utility mappings and do more error checking
+        if ( create_utility_maps( inkSet ) != 0 )
+            continue;
+        
 
         printf("Processing set %s\n", inkSet.name.c_str() );
         

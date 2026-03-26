@@ -149,6 +149,26 @@ void from_json( const json &j, namedColor &p )
 
 /******************************************************************************/
 
+void to_json( json &j, const overPrintSwatch &p )
+{
+    j = json{ {"L", p.color.L }, {"a", p.color.A }, {"b", p.color.B }, {"inkNames", p.inkNames} };
+
+    // bitmap is calculated at runtime, and not saved
+}
+
+/******************************************************************************/
+
+void from_json( const json &j, overPrintSwatch &p )
+{
+    p.color.L = j["L"];
+    p.color.A = j["a"];
+    p.color.B = j["b"];
+
+    p.inkNames =  j["inkNames"];
+}
+
+/******************************************************************************/
+
 void to_json( json &j, const inkColorSet &p )
 {
     j = json{ { "filename", p.name },
@@ -158,6 +178,12 @@ void to_json( json &j, const inkColorSet &p )
               { "darkColor", p.darkColor },
               { "primariesList", p.primaries },
             };
+    
+    // overprints are optional
+    // so don't record any if there aren't any
+    if (p.overprints.size() > 0) {
+        j["overprints"] = p.overprints;
+    }
 
     // remaining struct variables are calculated at runtime, and not saved
 }
@@ -173,16 +199,21 @@ void from_json( const json &j, inkColorSet &p )
     ReadString( j, "filename", p.name );
     ReadString( j, "description", p.description );
     ReadString( j, "copyright", p.copyright );
-
+    
     p.primaries =  j["primariesList"];
     
     auto dataFound1 = j.find("paperColor");
     if (dataFound1 != j.end())
         p.paperColor = dataFound1.value();
-        
+    
     auto dataFound2 = j.find("darkColor");
     if (dataFound2 != j.end())
         p.darkColor = dataFound2.value();
+    
+    // overprints are optional
+    auto dataFound3 = j.find("overprints");
+    if (dataFound3 != j.end())
+        p.overprints = dataFound3.value();
 }
 
 /******************************************************************************/
