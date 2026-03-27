@@ -6,39 +6,145 @@
 
     "colorSets": [
         {
-            "description": "Blue and Red Ink",
-            "filename": "Blue-Red",
-            "darkColor": {
-                "L": 6.4,
-                "a": 9.9,
-                "b": -12.8
-            },
+            "description": "Aquamarine and Fuchsia Markers",
+            "filename": "Aquamarine-Fuchsia",
             "paperColor": {
-                "L": 93.121,
-                "a": -0.025,
-                "b": 0.025
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 14.8,
+                "a": 8.6,
+                "b": -15.8
             },
             "primariesList": [
                 {
-                    "L": 31.0,
-                    "Name": "Blue",
-                    "a": 1.4,
-                    "b": -58.0
+                    "Name": "Aquamarine",
+                    "L": 51.6,
+                    "a": -36.0,
+                    "b": -9.0
                 },
                 {
-                    "L": 37.1,
-                    "Name": "Red",
-                    "a": 62.5,
-                    "b": 35.5
+                    "Name": "Fuchsia",
+                    "L": 53.34,
+                    "a": 70.12,
+                    "b": -23.3
                 }
             ],
             "overprints" : [
                 {
-                    "L": 6.4,
-                    "a": 9.9,
-                    "b": -12.8,
+                    "L": 34.0,
+                    "a": 14.6,
+                    "b": -25.0,
                     "inkNames": [
-                        "Red", "Blue"
+                        "Aquamarine", "Fuchsia"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Fuchsia and Navy Markers",
+            "filename": "Fuchsia-Navy",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 12.0,
+                "a": 7.6,
+                "b": -12.8
+            },
+            "primariesList": [
+                {
+                    "Name": "Navy",
+                    "L": 32.9,
+                    "a": 6.4,
+                    "b": -16.7
+                },
+                {
+                    "Name": "Fuchsia",
+                    "L": 53.34,
+                    "a": 70.12,
+                    "b": -23.3
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 30.9,
+                    "a": 12.3,
+                    "b": -19.0,
+                    "inkNames": [
+                        "Navy", "Fuchsia"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Aquamarine, Fuchsia, and Navy Markers",
+            "filename": "Aquamarine-Fuchsia-Navy",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 11.0,
+                "a": 7.6,
+                "b": -12.8
+            },
+            "primariesList": [
+                {
+                    "Name": "Navy",
+                    "L": 32.9,
+                    "a": 6.4,
+                    "b": -16.7
+                },
+                {
+                    "Name": "Aquamarine",
+                    "L": 51.6,
+                    "a": -36.0,
+                    "b": -9.0
+                },
+                {
+                    "Name": "Fuchsia",
+                    "L": 53.34,
+                    "a": 70.12,
+                    "b": -23.3
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 34.0,
+                    "a": 14.6,
+                    "b": -25.0,
+                    "inkNames": [
+                        "Aquamarine", "Fuchsia"
+                    ]
+                },
+                {
+                    "L": 30.9,
+                    "a": 12.3,
+                    "b": -19.0,
+                    "inkNames": [
+                        "Navy", "Fuchsia"
+                    ]
+                },
+                {
+                    "L": 29.6,
+                    "a": 5.1,
+                    "b": -13.3,
+                    "inkNames": [
+                        "Navy", "Aquamarine"
+                    ]
+                },
+                {
+                    "L": 24.8,
+                    "a": 8.65,
+                    "b": -15.8,
+                    "inkNames": [
+                        "Navy", "Fuchsia", "Aquamarine"
                     ]
                 }
             ]

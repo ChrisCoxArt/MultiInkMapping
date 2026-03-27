@@ -18,9 +18,6 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
-TODO - write XML profile data, once I have V4 working?
-
-
 
 TODO - would be nice to add measured overprint colors
     need some sort of ink1,ink2 -> overprint mapping, then look that up when building splines.
@@ -36,8 +33,14 @@ TODO - would be nice to add measured overprint colors
     Maybe { ["ink1","ink2","ink3"], measured }
 
 NEXT
-    add lookup into overprint estimation
-    add into spline building
+    add overprints into spline building
+
+
+
+
+
+
+TODO - write XML profile data, once I have V4 working?
 
 
 TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
@@ -260,25 +263,57 @@ bool labHueLess(const namedColor &a, const namedColor &b)
 
 // here we want chromatic mixes, not darks
 static
-xyzColor estimate_ink_mix( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
+xyzColor estimate_ink_mix( inkColorSet &inkSet, const std::vector<xyzColor> &inkList,
+                            const std::vector<size_t> &inkIndices,
+                            const xyzColor &paperColor, int inkCount )
 {
     xyzColor overprint = identityXYZ;
-    xyzColor average(0,0,0);
-    for ( const auto &ink : inkList ) {
-        average += ink;
+#if 1
+    uint32_t opBitmap = 0;
+    
+    // see if we have an overprint that can be looked up
+    if (inkSet.overprints.size() > 0) {
+        uint32_t lookupBitmap = 0;
+        int bitCount = inkCount;
+        
+        for (int i = 0; i < inkCount; ++i) {
+            size_t index = inkIndices[i];
+            lookupBitmap |= (1UL << index);
+        }
+        
+        if (bitCount > 1) {
+            // do we have a matching overprint?
+            auto iter = inkSet.overprint_bitmask_map.find(lookupBitmap);
+            if ( iter != inkSet.overprint_bitmask_map.end() ) {
+                int opIndex = iter->second;
+                opBitmap = inkSet.overprints[ opIndex ].inkBitmap;
+                overprint = inkSet.overprints[ opIndex ].colorXYZ;
+            }
+
+            // Can we at least come close?  Need closest match ignoring some channels, while still having 2 or more channels.
+// TODO - Or should I add fake entries to the map for this? preprocess sounds saner.
+        }
+    }
+    
+    // interp and multiply remaining inks that weren't in the overprint data
+    for (int i = 0; i < inkCount; ++i) {
+        size_t index = inkIndices[i];
+        if ((opBitmap & (1UL << index)) != 0)
+            continue;
+        
+        auto &ink = inkList[i];
         overprint *= ink;
     }
-    overprint *= paperColor;
-    average /= (float)inkList.size();
-    average *= paperColor;
 
-// TODO - find best parameter
-// 0.0 leads to some crazy intermediate colors, and crazier splines
-// 0.5 doesn't seem high enough, still some crazy splines
-// 1.0 leads to blah.
-    xyzColor mix = overprint;   // interp2inks( 0.6, overprint, average );
-    
-    return mix;
+#else
+    for ( const auto &ink : inkList ) {
+        overprint *= ink;
+    }
+#endif
+
+    overprint *= paperColor;
+
+    return overprint;
 }
 
 /********************************************************************************/
@@ -309,9 +344,10 @@ xyzColor estimate_fractional_ink_mix( const inkColorSet &inkSet, const std::vect
         if (bitCount > 1) {
             // do we have a matching overprint?
             auto iter = inkSet.overprint_bitmask_map.find(lookupBitmap);
-            if ( iter != inkSet.overprint_bitmask_map.end()) {
-                opBitmap = inkSet.overprints[ iter->second ].inkBitmap;
-                overprint = inkSet.overprints[ iter->second ].colorXYZ;
+            if ( iter != inkSet.overprint_bitmask_map.end() ) {
+                int opIndex = iter->second;
+                opBitmap = inkSet.overprints[ opIndex ].inkBitmap;
+                overprint = inkSet.overprints[ opIndex ].colorXYZ;
             }
 
             // Can we at least come close?  Need closest match ignoring some channels, while still having 2 or more channels.
@@ -349,7 +385,8 @@ xyzColor estimate_fractional_ink_mix( const inkColorSet &inkSet, const std::vect
 
 /********************************************************************************/
 
-// here, we want the darkest possible result
+// here, we want the darkest possible result - which mixes all the inks
+// DEFERRED - should prefer a near neutral.
 static
 xyzColor estimate_darkest_ink_overprint( const std::vector<xyzColor> &inkList, const xyzColor &paperColor )
 {
@@ -400,7 +437,8 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
     xyzColor ink1Color = LAB2XYZ( ink1 );
     xyzColor ink2Color = LAB2XYZ( ink2 );
 
-    xyzColor halfwayMix = estimate_ink_mix( { ink1Color/paperColor, ink2Color/paperColor }, paperColor );
+    xyzColor halfwayMix = estimate_ink_mix( inkSet, { ink1Color/paperColor, ink2Color/paperColor },
+                                            {ink1Index, ink2Index}, paperColor, 2 );
 
     // d == 0 is the last pure ink spline
     // d == division is this pure ink spline (handled elsewhere)
@@ -1410,7 +1448,7 @@ void AdjustInkMixForL( const inkColorSet &inkSet, float Ltarget, const std::vect
         
         // sometimes our estimates just don't match expectations
         // but we don't want to loop forever on a goal we can't reach
-        if ( (tTop-tBottom) < epsilon )
+        if ( (tTop-tBottom) < epsilon || t < 0.0 || t > 1.0)
             break;
         
         tempXYZ = estimate_fractional_ink_mix( inkSet, inkListXYZ, workingList, paperColor, inkCount );
