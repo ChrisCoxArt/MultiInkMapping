@@ -1,0 +1,536 @@
+{
+    "defaultCopyright": "Copyright (c) Chris Cox 2026",
+    "gridPoints": 21,
+    "tableDepth": 8,
+    "tableSizeLimit": 1048576,
+
+    "colorSets": [
+        {
+            "description": "Cyan and Magenta Markers",
+            "filename": "Markers1-Cyan-Magenta",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 12.4,
+                "a": 8.7,
+                "b": -12.1
+            },
+            "primariesList": [
+                {
+                    "Name": "Cyan",
+                    "L": 48.1,
+                    "a": -17.2,
+                    "b": -44.2
+                },
+                {
+                    "Name": "Magenta",
+                    "L": 53.4,
+                    "a": 76.9,
+                    "b": -2.8
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 25.9,
+                    "a": 28.5,
+                    "b": -37.4,
+                    "inkNames": [
+                        "Cyan", "Magenta"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Cyan and Yellow Markers",
+            "filename": "Markers1-Cyan-Yellow",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 14.5,
+                "a": -9.2,
+                "b": 5.1
+            },
+            "primariesList": [
+                {
+                    "Name": "Cyan",
+                    "L": 48.1,
+                    "a": -17.2,
+                    "b": -44.2
+                },
+                {
+                    "Name": "Yellow",
+                    "L": 90.78,
+                    "a": -7.6,
+                    "b": 90.4
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 46.6,
+                    "a": -47.1,
+                    "b": 16.0,
+                    "inkNames": [
+                        "Cyan", "Yellow"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Yellow and Magenta Markers",
+            "filename": "Markers1-Yellow-Magenta",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 14.5,
+                "a": 27.2,
+                "b": 8.4
+            },
+            "primariesList": [
+                {
+                    "Name": "Magenta",
+                    "L": 53.4,
+                    "a": 76.9,
+                    "b": -2.8
+                },
+                {
+                    "Name": "Yellow",
+                    "L": 90.78,
+                    "a": -7.6,
+                    "b": 90.4
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 53.2,
+                    "a": 69.3,
+                    "b": 39.0,
+                    "inkNames": [
+                        "Magenta", "Yellow"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Cyan, Magenta, Yelllow Markers",
+            "filename": "Markers1-Cyan-Magenta-Yellow",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 9.0,
+                "a": 3.0,
+                "b": -7.0
+            },
+            "primariesList": [
+                {
+                    "Name": "Cyan",
+                    "L": 48.1,
+                    "a": -17.2,
+                    "b": -44.2
+                },
+                {
+                    "Name": "Magenta",
+                    "L": 53.4,
+                    "a": 76.9,
+                    "b": -2.8
+                },
+                {
+                    "Name": "Yellow",
+                    "L": 90.78,
+                    "a": -7.6,
+                    "b": 90.4
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 25.9,
+                    "a": 28.5,
+                    "b": -37.4,
+                    "inkNames": [
+                        "Cyan", "Magenta"
+                    ]
+                },
+                {
+                    "L": 46.6,
+                    "a": -47.1,
+                    "b": 16.0,
+                    "inkNames": [
+                        "Cyan", "Yellow"
+                    ]
+                },
+                {
+                    "L": 53.2,
+                    "a": 69.3,
+                    "b": 39.0,
+                    "inkNames": [
+                        "Magenta", "Yellow"
+                    ]
+                },
+                {
+                    "L": 24.7,
+                    "a": 4.1,
+                    "b": -7.7,
+                    "inkNames": [
+                        "Cyan", "Magenta", "Yellow"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Cyan, Magenta, and Orange Markers",
+            "filename": "Markers1-Cyan-Magenta-Orange",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 10.2,
+                "a": 1.2,
+                "b": -2.0
+            },
+            "primariesList": [
+                {
+                    "Name": "Cyan",
+                    "L": 48.1,
+                    "a": -17.2,
+                    "b": -44.2
+                },
+                {
+                    "Name": "Magenta",
+                    "L": 53.4,
+                    "a": 76.9,
+                    "b": -2.8
+                },
+                {
+                    "Name": "Orange",
+                    "L": 70.8,
+                    "a": 49.2,
+                    "b": 70.7
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 25.9,
+                    "a": 28.5,
+                    "b": -37.4,
+                    "inkNames": [
+                        "Cyan", "Magenta"
+                    ]
+                },
+                {
+                    "L": 29.0,
+                    "a": -2,
+                    "b": 5.2,
+                    "inkNames": [
+                        "Cyan", "Orange"
+                    ]
+                },
+                {
+                    "L": 52.2,
+                    "a": 70.0,
+                    "b": 45.0,
+                    "inkNames": [
+                        "Magenta", "Orange"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Cyan, Magenta, and Green Markers",
+            "filename": "Markers1-Cyan-Magenta-Green",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 10.2,
+                "a": 1.2,
+                "b": -2.0
+            },
+            "primariesList": [
+                {
+                    "Name": "Cyan",
+                    "L": 48.1,
+                    "a": -17.2,
+                    "b": -44.2
+                },
+                {
+                    "Name": "Magenta",
+                    "L": 53.4,
+                    "a": 76.9,
+                    "b": -2.8
+                },
+                {
+                    "Name": "Green",
+                    "L": 65.1,
+                    "a": -50.4,
+                    "b": 51.7
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 25.9,
+                    "a": 28.5,
+                    "b": -37.4,
+                    "inkNames": [
+                        "Cyan", "Magenta"
+                    ]
+                },
+                {
+                    "L": 39.0,
+                    "a": -40.5,
+                    "b": 13.9,
+                    "inkNames": [
+                        "Cyan", "Green"
+                    ]
+                },
+                {
+                    "L": 28.7,
+                    "a": 15.3,
+                    "b": 3.5,
+                    "inkNames": [
+                        "Green", "Magenta"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Cyan, Magenta, Orange, and Green Markers",
+            "filename": "Markers1-Cyan-Magenta-Green-Orange",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 10.2,
+                "a": 1.2,
+                "b": -2.0
+            },
+            "primariesList": [
+                {
+                    "Name": "Cyan",
+                    "L": 48.1,
+                    "a": -17.2,
+                    "b": -44.2
+                },
+                {
+                    "Name": "Magenta",
+                    "L": 53.4,
+                    "a": 76.9,
+                    "b": -2.8
+                },
+                {
+                    "Name": "Green",
+                    "L": 65.1,
+                    "a": -50.4,
+                    "b": 51.7
+                },
+                {
+                    "Name": "Orange",
+                    "L": 70.8,
+                    "a": 49.2,
+                    "b": 70.7
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 25.9,
+                    "a": 28.5,
+                    "b": -37.4,
+                    "inkNames": [
+                        "Cyan", "Magenta"
+                    ]
+                },
+                {
+                    "L": 39.0,
+                    "a": -40.5,
+                    "b": 13.9,
+                    "inkNames": [
+                        "Cyan", "Green"
+                    ]
+                },
+                {
+                    "L": 28.7,
+                    "a": 15.3,
+                    "b": 3.5,
+                    "inkNames": [
+                        "Green", "Magenta"
+                    ]
+                },
+                {
+                    "L": 29.0,
+                    "a": -2,
+                    "b": 5.2,
+                    "inkNames": [
+                        "Cyan", "Orange"
+                    ]
+                },
+                {
+                    "L": 52.2,
+                    "a": 70.0,
+                    "b": 45.0,
+                    "inkNames": [
+                        "Magenta", "Orange"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Cyan, Yellow and Orange Markers",
+            "filename": "Markers1-Cyan-Yellow-Orange",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 14.5,
+                "a": -9.2,
+                "b": 5.1
+            },
+            "primariesList": [
+                {
+                    "Name": "Cyan",
+                    "L": 48.1,
+                    "a": -17.2,
+                    "b": -44.2
+                },
+                {
+                    "Name": "Yellow",
+                    "L": 90.78,
+                    "a": -7.6,
+                    "b": 90.4
+                },
+                {
+                    "Name": "Orange",
+                    "L": 70.8,
+                    "a": 49.2,
+                    "b": 70.7
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 46.6,
+                    "a": -47.1,
+                    "b": 16.0,
+                    "inkNames": [
+                        "Cyan", "Yellow"
+                    ]
+                },
+                {
+                    "L": 29.0,
+                    "a": -2,
+                    "b": 5.2,
+                    "inkNames": [
+                        "Cyan", "Orange"
+                    ]
+                },
+                {
+                    "L": 69.3,
+                    "a": 52.0,
+                    "b": 74.1,
+                    "inkNames": [
+                        "Yellow", "Orange"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Yellow, Magenta, and Green Markers",
+            "filename": "Markers1-Yellow-Magenta-Green",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 14.5,
+                "a": 7.7,
+                "b": 2.1
+            },
+            "primariesList": [
+                {
+                    "Name": "Magenta",
+                    "L": 53.4,
+                    "a": 76.9,
+                    "b": -2.8
+                },
+                {
+                    "Name": "Yellow",
+                    "L": 90.78,
+                    "a": -7.6,
+                    "b": 90.4
+                },
+                {
+                    "Name": "Green",
+                    "L": 65.1,
+                    "a": -50.4,
+                    "b": 51.7
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 53.2,
+                    "a": 69.3,
+                    "b": 39.0,
+                    "inkNames": [
+                        "Magenta", "Yellow"
+                    ]
+                },
+                {
+                    "L": 28.7,
+                    "a": 15.3,
+                    "b": 3.5,
+                    "inkNames": [
+                        "Green", "Magenta"
+                    ]
+                },
+                {
+                    "L": 59.4,
+                    "a": -47.8,
+                    "b": 51.0,
+                    "inkNames": [
+                        "Green", "Yellow"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Green, and Orange Markers",
+            "filename": "Markers1-Green-Orange",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "primariesList": [
+                {
+                    "Name": "Green",
+                    "L": 65.1,
+                    "a": -50.4,
+                    "b": 51.7
+                },
+                {
+                    "Name": "Orange",
+                    "L": 70.8,
+                    "a": 49.2,
+                    "b": 70.7
+                }
+            ]
+        }
+    ]
+}
