@@ -148,6 +148,82 @@
                     ]
                 }
             ]
+        },
+        {
+            "description": "Red and SkyBlue Markers",
+            "filename": "Red-SkyBlue",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 14.8,
+                "a": 8.6,
+                "b": -15.8
+            },
+            "primariesList": [
+                {
+                    "Name": "Red",
+                    "L": 38.4,
+                    "a": 51.9,
+                    "b": 22.1
+                },
+                {
+                    "Name": "SkyBlue",
+                    "L": 69.29,
+                    "a": 1.16,
+                    "b": -32.23
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 33.2,
+                    "a": 33.4,
+                    "b": 9.6,
+                    "inkNames": [
+                        "Red", "SkyBlue"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "FluorescentYellow and FluorescentPink Markers",
+            "filename": "FLPink-FLYellow",
+            "paperColor": {
+                "L": 96.2,
+                "a": -1,
+                "b": -0.36
+            },
+            "darkColor": {
+                "L": 11.0,
+                "a": 23.2,
+                "b": 12.1
+            },
+            "primariesList": [
+                {
+                    "Name": "FLYellow",
+                    "L": 93.82,
+                    "a": -14.5,
+                    "b": 87.7
+                },
+                {
+                    "Name": "FLPink",
+                    "L": 68.0,
+                    "a": 81.68,
+                    "b": -5.1
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 70.3,
+                    "a": 68.8,
+                    "b": 57.1,
+                    "inkNames": [
+                        "FLYellow", "FLPink"
+                    ]
+                }
+            ]
         }
     ]
 }

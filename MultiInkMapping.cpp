@@ -16,28 +16,18 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
-
+TODO - chroma inside gamut still seems off in B2A tables
+    probably because of saturation inside L search
+    need to adjust chroma after L ?
 
 
 TODO - would be nice to add measured overprint colors
-    need some sort of ink1,ink2 -> overprint mapping, then look that up when building splines.
-    can I use them when estimating ink fractions?
-        could do a map lookup by names and use if found. But that would slowdown general calls.
-        and only be useful for 2 inks at 100% (which has to be tested before lookup)
+        might only be useful for inks at 100% (which has to be tested before lookup)
         Maybe prebuild a faster lookup system by ink fractions that can handle any fractions?
             hash((int)(100*fraction1)) and chain?  Still expensive.
             sum of fractions (scaled to int) for bucket, then sub lookup if match?
                 cheaper, might work.
-    add list of overprint data, make it optional
-        error check that all names match primaries - use mapping to catch missing names
-    Maybe { ["ink1","ink2","ink3"], measured }
-
-NEXT
-    add overprints into spline building
-
-
-
-
+                but still suffers from "find closest" versus "exact" problems
 
 
 TODO - write XML profile data, once I have V4 working?
@@ -1388,7 +1378,7 @@ std::vector<float> ClipInkWeights( std::vector<float> &a, const int channels )
 
 // TODO - get a lot of repeat values here, could cache?
 // maybe just cache t, LTarget, LStart ?  Seems to work, but needs verification.
-#define CACHE 1
+#define CACHE 0
 
 static
 void AdjustInkMixForL( const inkColorSet &inkSet, float Ltarget, const std::vector<xyzColor> &inkListXYZ,
@@ -1400,9 +1390,10 @@ void AdjustInkMixForL( const inkColorSet &inkSet, float Ltarget, const std::vect
     
     // first scale inks to full saturation, just in case
 // TODO - won't this undo the chroma adjustment?  YES, it does!
-    std::vector<float> satList = SaturateInkWeights( inkFractionList, inkCount );
+//    auto satList = SaturateInkWeights( inkFractionList, inkCount );
+    auto satList = inkFractionList;
     
-    std::vector<float> workingList = satList;
+    auto workingList = satList;
 
     // calc initial L*
     xyzColor tempXYZ = estimate_fractional_ink_mix( inkSet, inkListXYZ, satList, paperColor, inkCount );
@@ -1414,8 +1405,8 @@ void AdjustInkMixForL( const inkColorSet &inkSet, float Ltarget, const std::vect
     float tBottom = 0.0;
 
 #if CACHE
-    static float cacheLTarget = -5;
-    static float cacheLStart = -5;
+    static float cacheLTarget = -50;
+    static float cacheLStart = -50;
     static float cacheT = 0.0;
     
     if (Ltarget == cacheLTarget
@@ -1529,8 +1520,9 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
         float tNeutral = (Lfloat - inkSet.darkColor.L) / (inkSet.paperColor.L - inkSet.darkColor.L);
         labColor neutral = interp2inks( tNeutral, inkSet.darkColor, inkSet.paperColor );
         // neutral.L should be close to Lfloat/100
-  
-  
+// TODO - check this, create fractions, adjustL if needed!
+
+
         // interpolate splines in L to get points along this AB plane
         PointList planeSpline;
         planeSpline.reserve( inkSet.splines.size() );
@@ -1568,7 +1560,6 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                 // use closest point outside or for 1 or 2 inks
                 size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
                 Point closestPoint = planePoints[ closestIndex ];
-                //Point result = closestPoint;
                 inkMixPair resultMix = mixPoints[ closestIndex ];
                 
                 std::fill( inkWeights.begin(), inkWeights.end(), 0 );
@@ -1582,16 +1573,17 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 
                     if (inside) {
                         // use ratio of distances from neutral and outer point as chroma estimate
-                        // assuming neutral is origin of AB plane
+                        // assuming neutral is close to centered in our color volume
 // TODO - closest is not a great measure here! But may be good enough...
                         float pointDist = hypotf( closestPoint.a - neutral.A, closestPoint.b - neutral.B );
                         if (pointDist < 1e-6)   // just in case, avoid divide by zero
-                            pointDist = 1e-2;
+                            pointDist = 1e-6;
                         float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
                         float tchroma = thisDist / pointDist;
                         if (tchroma > 1.0)  // clamp colors outside of gamut
                             tchroma = 1.0;
 
+// TODO - chroma handling seems wrong, adjustInkMix just resaturates
                         // scale from full inks to neutral  (aka: interp to no ink)
                         assert( tchroma >= 0.0 );
                         inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
@@ -1619,7 +1611,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 
 
 
-// convert the float table to integer
+    // convert the float table to integer
     assert( depth == 8 || depth == 16 );
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount * inkCount * (depth/8) ]);
     uint8_t *outData = outBuffer.get();

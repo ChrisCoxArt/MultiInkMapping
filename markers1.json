@@ -531,6 +531,234 @@
                     "b": 70.7
                 }
             ]
+        },
+        {
+            "description": "Green and Magenta Markers",
+            "filename": "Markers1-Green-Magenta",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 12.4,
+                "a": 7.3,
+                "b": 1.2
+            },
+            "primariesList": [
+                {
+                    "Name": "Green",
+                    "L": 65.1,
+                    "a": -50.4,
+                    "b": 51.7
+                },
+                {
+                    "Name": "Magenta",
+                    "L": 53.4,
+                    "a": 76.9,
+                    "b": -2.8
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 28.7,
+                    "a": 15.3,
+                    "b": 3.5,
+                    "inkNames": [
+                        "Green", "Magenta"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Cyan and Orange Markers",
+            "filename": "Markers1-Cyan-Orange",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 14.5,
+                "a": -0.8,
+                "b": 2.3
+            },
+            "primariesList": [
+                {
+                    "Name": "Cyan",
+                    "L": 48.1,
+                    "a": -17.2,
+                    "b": -44.2
+                },
+                {
+                    "Name": "Orange",
+                    "L": 70.8,
+                    "a": 49.2,
+                    "b": 70.7
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 29.0,
+                    "a": -2,
+                    "b": 5.2,
+                    "inkNames": [
+                        "Cyan", "Orange"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Violet and Orange Markers",
+            "filename": "Markers1-Violet-Orange",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 14.5,
+                "a": 7.1,
+                "b": 1.2
+            },
+            "primariesList": [
+                {
+                    "Name": "Violet",
+                    "L": 29.5,
+                    "a": 48.7,
+                    "b": -60.1
+                },
+                {
+                    "Name": "Orange",
+                    "L": 70.8,
+                    "a": 49.2,
+                    "b": 70.7
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 25.2,
+                    "a": 16.2,
+                    "b": 2.3,
+                    "inkNames": [
+                        "Violet", "Orange"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Violet and Yellow Markers",
+            "filename": "Markers1-Violet-Yellow",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 14.0,
+                "a": 3.1,
+                "b": -0.1
+            },
+            "primariesList": [
+                {
+                    "Name": "Violet",
+                    "L": 29.5,
+                    "a": 48.7,
+                    "b": -60.1
+                },
+                {
+                    "Name": "Yellow",
+                    "L": 90.78,
+                    "a": -7.6,
+                    "b": 90.4
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 27.8,
+                    "a": 7.5,
+                    "b": -0.5,
+                    "inkNames": [
+                        "Violet", "Yellow"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Violet and Cyan Markers",
+            "filename": "Markers1-Violet-Cyan",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 12.1,
+                "a": 12.2,
+                "b": -22.4
+            },
+            "primariesList": [
+                {
+                    "Name": "Violet",
+                    "L": 29.5,
+                    "a": 48.7,
+                    "b": -60.1
+                },
+                {
+                    "Name": "Cyan",
+                    "L": 43.4,
+                    "a": -11.9,
+                    "b": -44.4
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 23.6,
+                    "a": 25.0,
+                    "b": -45.5,
+                    "inkNames": [
+                        "Violet", "Cyan"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Violet and Green Markers",
+            "filename": "Markers1-Violet-Green",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 12.5,
+                "a": -4.2,
+                "b": 1.1
+            },
+            "primariesList": [
+                {
+                    "Name": "Violet",
+                    "L": 29.5,
+                    "a": 48.7,
+                    "b": -60.1
+                },
+                {
+                    "Name": "Green",
+                    "L": 65.1,
+                    "a": -50.4,
+                    "b": 51.7
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 25.6,
+                    "a": -8.3,
+                    "b": 2.3,
+                    "inkNames": [
+                        "Violet", "Green"
+                    ]
+                }
+            ]
         }
     ]
 }

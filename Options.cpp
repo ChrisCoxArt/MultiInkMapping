@@ -153,7 +153,7 @@ void to_json( json &j, const overPrintSwatch &p )
 {
     j = json{ {"L", p.color.L }, {"a", p.color.A }, {"b", p.color.B }, {"inkNames", p.inkNames} };
 
-    // bitmap is calculated at runtime, and not saved
+    // bitmap, xyz are calculated at runtime, and not saved
 }
 
 /******************************************************************************/
