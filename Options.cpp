@@ -125,6 +125,7 @@ void to_json( json &j, const labColor &p )
 
 void from_json( const json &j, labColor &p )
 {
+    // all required
     p.L = j["L"];
     p.A = j["a"];
     p.B = j["b"];
@@ -141,6 +142,7 @@ void to_json( json &j, const namedColor &p )
 
 void from_json( const json &j, namedColor &p )
 {
+    // all required
     p.name = j["Name"];
     p.color.L = j["L"];
     p.color.A = j["a"];
@@ -160,6 +162,7 @@ void to_json( json &j, const overPrintSwatch &p )
 
 void from_json( const json &j, overPrintSwatch &p )
 {
+    // all required
     p.color.L = j["L"];
     p.color.A = j["a"];
     p.color.B = j["b"];
@@ -196,12 +199,14 @@ void from_json( const json &j, inkColorSet &p )
     p.darkColor =  labColor(-1,0,0);            // flag to automatically calculate
     p.paperColor = labColor(98.0,0.0,0.0);      // unbelievably white
     
+    // these are required
     ReadString( j, "filename", p.name );
     ReadString( j, "description", p.description );
     ReadString( j, "copyright", p.copyright );
     
     p.primaries =  j["primariesList"];
     
+    // these are optional
     auto dataFound1 = j.find("paperColor");
     if (dataFound1 != j.end())
         p.paperColor = dataFound1.value();
@@ -222,16 +227,12 @@ void to_json( json &j, const settings_spec &p )
 {
     j = json{ { "tableDepth", p.gDataDepth },
               { "gridPoints", p.gDataGridPoints },
-              
               { "tableSizeLimit", p.gTableSizeLimit },
-              
               { "debugEnable", p.gDebugMode },
               { "createOutputProfiles", p.gCreateOutput },
               { "createAbstractProfiles", p.gCreateAbstract },
               { "createTIFFTables", p.gTIFFTables },
-              
               { "defaultCopyright", p.gDefaultCopyright },
-              
               { "colorSets", p.colorSets },
             };
 }
@@ -245,29 +246,44 @@ void from_json( const json &j, settings_spec &p )
     p.colorSets.clear();
     
     ReadInt( j, "tableDepth", p.gDataDepth );
+    ReadInt( j, "gridPoints", p.gDataGridPoints );
+    ReadSize( j, "tableSizeLimit", p.gTableSizeLimit );
+    ReadBool( j, "debugEnable", p.gDebugMode );
+    ReadBool( j, "createOutputProfiles", p.gCreateOutput );
+    ReadBool( j, "createAbstractProfiles", p.gCreateAbstract );
+    ReadBool( j, "createTIFFTables", p.gTIFFTables );
+    ReadString( j, "defaultCopyright", p.gDefaultCopyright );
+
+    p.colorSets = j["colorSets"];
+}
+
+/******************************************************************************/
+
+// make the settings safe & sane
+void pinSettings( settings_spec &p )
+{
+    const size_t maxTable = ( 1ULL << 31)/3; // upper limit is really the 2 Gig ICC Profile limit
+
     if (p.gDataDepth > 16)
         p.gDataDepth = 16;
     if (p.gDataDepth < 8)
         p.gDataDepth = 8;
     if (p.gDataDepth != 8 && p.gDataDepth != 16)
         p.gDataDepth = 8;
-    
-    ReadInt( j, "gridPoints", p.gDataGridPoints );
+
     if (p.gDataGridPoints < 2)
         p.gDataGridPoints = 2;
     if (p.gDataGridPoints > 255)
         p.gDataGridPoints = 255;
-    
-    ReadSize( j, "tableSizeLimit", p.gTableSizeLimit );
-    
-    ReadBool( j, "debugEnable", p.gDebugMode );
-    ReadBool( j, "createOutputProfiles", p.gCreateOutput );
-    ReadBool( j, "createAbstractProfiles", p.gCreateAbstract );
-    ReadBool( j, "createTIFFTables", p.gTIFFTables );
-    
-    ReadString( j, "defaultCopyright", p.gDefaultCopyright );
 
-    p.colorSets = j["colorSets"];
+    if (globalSettings.gTableSizeLimit < 1024)
+        globalSettings.gTableSizeLimit = 1024;
+    if (globalSettings.gTableSizeLimit > maxTable)
+        globalSettings.gTableSizeLimit = maxTable;
+
+    if (globalSettings.gDefaultCopyright == std::string())  // nope, can't be empty
+        globalSettings.gDefaultCopyright = "Copyright Unknown";
+
 }
 
 /******************************************************************************/
@@ -310,22 +326,13 @@ void parse_arguments( int argc, char *argv[] )
         else if ( (strcasecmp( argv[c], "-depth" ) == 0 || strcasecmp( argv[c], "-d" ) == 0 )
             && c < (argc-1) ) {
             int temp = atoi( argv[c+1] );
-            if (temp > 16)
-                temp = 16;
-            if (temp < 8)
-                temp = 8;
-            if (temp != 8 && temp != 16)
-                temp = 8;
             globalSettings.gDataDepth = temp;
             ++c;
         }
         else if ( (strcasecmp( argv[c], "-limit" ) == 0 || strcasecmp( argv[c], "-l" ) == 0 )
             && c < (argc-1) ) {
             size_t temp = atoll( argv[c+1] );
-            if (temp < 1024)
-                temp = 1024;
             globalSettings.gTableSizeLimit = temp;
-            // upper limit is really the 2 Gig ICC Profile limit
             ++c;
         }
         else if ( (strcasecmp( argv[c], "-copyright" ) == 0 || strcasecmp( argv[c], "-c" ) == 0 )
@@ -360,34 +367,36 @@ void parse_arguments( int argc, char *argv[] )
         }
     }
 
+    pinSettings( globalSettings );
 
     // process json files
     for ( const auto &name : filenames ) {
+        if (name.empty())
+            continue;
         
-        if (!name.empty()) {
-            globalSettings.colorSets.clear();
-            
-            std::ifstream in( name );
-            if (in.is_open()) {
-                json settings = json::parse(in);
-                globalSettings = settings;
-                in.close();
-                
-                if (globalSettings.gDebugMode) {
-                    // rewrite the input, for verification, when debugging
-                    json setTemp = globalSettings;
-                    std::ofstream out( name + "_verify.json" );
-                    out << std::setw(4) << setTemp.dump(4);
-                    out.close();
-                }
-
-                // process the inksets from this json file
-                processInkSetList();
-            
-            } else {
-                std::cerr << "Could not open json file " << name << "\n";
-            }
+        std::ifstream in( name );
+        if (!in.is_open()) {
+            std::cerr << "Could not open json file " << name << "\n";
+            continue;
         }
+        
+        globalSettings.colorSets.clear();
+        
+        json settings = json::parse(in);
+        globalSettings = settings;
+        in.close();
+        
+        if (globalSettings.gDebugMode) {
+            // rewrite the input, for verification, when debugging
+            json setTemp = globalSettings;
+            std::ofstream out( name + "_verify.json" );
+            out << std::setw(4) << setTemp.dump(4);
+            out.close();
+        }
+
+        // process the inksets from this json file
+        processInkSetList();
+        
     }
 
 }

@@ -409,7 +409,7 @@ extern void processInkSetList(void);
 
 /******************************************************************************/
 
-// ICC profile limit
+// ICC profile v4 limit
 const int kMaxChannels = 15;
 
 /******************************************************************************/

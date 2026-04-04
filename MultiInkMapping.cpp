@@ -22,7 +22,6 @@ TODO - chroma inside gamut still seems off in B2A tables
 
 
 TODO - would be nice to add measured overprint colors
-        might only be useful for inks at 100% (which has to be tested before lookup)
         Maybe prebuild a faster lookup system by ink fractions that can handle any fractions?
             hash((int)(100*fraction1)) and chain?  Still expensive.
             sum of fractions (scaled to int) for bucket, then sub lookup if match?
@@ -33,7 +32,7 @@ TODO - would be nice to add measured overprint colors
 TODO - write XML profile data, once I have V4 working?
 
 
-TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
+TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.) when building splines
     take max chroma points for hull?
     maybe do all binary combinations, with lookup for any measured, then sort.
     or build in more combinations and sort midpoints by hue, before interpolating?
@@ -43,7 +42,7 @@ TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.)
     maybe set limits on chroma and luma to keep mixtures?
 
     for (i=0;i<inks;++i)
-      for (k=(i+1);j<inks;++j)
+      for (j=(i+1);j<inks;++j)
          overprints.push_back( estimate(inkFractions(i,j)) )
     sort( overprints, hue_less );
     make midpoints into larger list?
