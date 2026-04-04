@@ -1,0 +1,387 @@
+{
+    "defaultCopyright": "Copyright (c) Chris Cox 2026",
+    "gridPoints": 21,
+    "tableDepth": 8,
+    "tableSizeLimit": 1048576,
+    "Comment": "Alcohol Markers",
+
+    "colorSets": [
+        {
+            "description": "SteelBlue, Tan, and Wine Markers",
+            "filename": "Markers4-SteelBlue-Tan-Wine",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "70",
+                    "L": 63.3,
+                    "a": -9.4,
+                    "b": -22.9
+                },
+                {
+                    "Name": "48",
+                    "L": 85.9,
+                    "a": -7.6,
+                    "b": 44.8
+                },
+                {
+                    "Name": "1",
+                    "L": 42.6,
+                    "a": 35.3,
+                    "b": 4.4
+                }
+            ]
+        },
+        {
+            "description": "SteelBlue, Brown, and Moss Markers",
+            "filename": "Markers4-SteelBlue-Brown-Moss",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "70",
+                    "L": 63.3,
+                    "a": -9.4,
+                    "b": -22.9
+                },
+                {
+                    "Name": "97",
+                    "L": 64.3,
+                    "a": 21.5,
+                    "b": 20.2
+                },
+                {
+                    "Name": "47",
+                    "L": 66.3,
+                    "a": -18.3,
+                    "b": 22.7
+                }
+            ]
+        },
+        {
+            "description": "BlueGray, Gold, and Green Markers",
+            "filename": "Markers4-BlueGray-Gold-Green",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "BG9",
+                    "L": 63.0,
+                    "a": -6.2,
+                    "b": -12.7
+                },
+                {
+                    "Name": "33",
+                    "L": 86.5,
+                    "a": 2.9,
+                    "b": 62.1
+                },
+                {
+                    "Name": "52",
+                    "L": 53.9,
+                    "a": -34.1,
+                    "b": 8.9
+                }
+            ]
+        },
+        {
+            "description": "Chocolate, Ice, and Lavender Markers",
+            "filename": "Markers4-Chocolate-Ice-Lavender",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "102",
+                    "L": 57.4,
+                    "a": 12.9,
+                    "b": 16.9
+                },
+                {
+                    "Name": "66",
+                    "L": 86.1,
+                    "a": -16.7,
+                    "b": -10.0
+                },
+                {
+                    "Name": "83",
+                    "L": 73.27,
+                    "a": 23.8,
+                    "b": -27.3
+                }
+            ]
+        },
+        {
+            "description": "Chocolate, Ice, and Pink Markers",
+            "filename": "Markers4-Chocolate-Ice-Pink",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "102",
+                    "L": 57.4,
+                    "a": 12.9,
+                    "b": 16.9
+                },
+                {
+                    "Name": "66",
+                    "L": 86.1,
+                    "a": -16.7,
+                    "b": -10.0
+                },
+                {
+                    "Name": "17",
+                    "L": 88.4,
+                    "a": 29.9,
+                    "b": -3.8
+                }
+            ]
+        },
+        {
+            "description": "Chocolate, Ice, and Lime Markers",
+            "filename": "Markers4-Chocolate-Ice-Lime",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "102",
+                    "L": 57.4,
+                    "a": 12.9,
+                    "b": 16.9
+                },
+                {
+                    "Name": "66",
+                    "L": 86.1,
+                    "a": -16.7,
+                    "b": -10.0
+                },
+                {
+                    "Name": "59",
+                    "L": 88.7,
+                    "a": -13.9,
+                    "b": 20.9
+                }
+            ]
+        },
+        {
+            "description": "Marigold, Lavender, and Aqua Markers",
+            "filename": "Markers4-Marigold-Lavender-Aqua",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "44",
+                    "L": 89.8,
+                    "a": 0.0,
+                    "b": 66.7
+                },
+                {
+                    "Name": "83",
+                    "L": 73.3,
+                    "a": 23.8,
+                    "b": -27.3
+                },
+                {
+                    "Name": "63",
+                    "L": 71.7,
+                    "a": -32.0,
+                    "b": -19.7
+                }
+            ]
+        },
+        {
+            "description": "SteelBlue, Gingerbread, and Lime Markers",
+            "filename": "Markers4-SteelBlue-Gingerbread-Lime",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "70",
+                    "L": 63.3,
+                    "a": -9.4,
+                    "b": -22.9
+                },
+                {
+                    "Name": "31",
+                    "L": 75.9,
+                    "a": 16.2,
+                    "b": 40.3
+                },
+                {
+                    "Name": "175",
+                    "L": 91.22,
+                    "a": -10.7,
+                    "b": 20.3
+                }
+            ]
+        },
+        {
+            "description": "Blue, Vermillion, and Grass Markers",
+            "filename": "Markers4-Blue-Vermillion-Grass",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "74",
+                    "L": 40.5,
+                    "a": 18.9,
+                    "b": -67.1
+                },
+                {
+                    "Name": "14",
+                    "L": 68.8,
+                    "a": 52.6,
+                    "b": 38.6
+                },
+                {
+                    "Name": "172",
+                    "L": 79.4,
+                    "a": -21.5,
+                    "b": 10.8
+                }
+            ]
+        },
+        {
+            "description": "Blue, Gingerbread, and Lime Markers",
+            "filename": "Markers4-Blue-Gingerbread-Lime",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "74",
+                    "L": 40.5,
+                    "a": 18.9,
+                    "b": -67.1
+                },
+                {
+                    "Name": "31",
+                    "L": 75.9,
+                    "a": 16.2,
+                    "b": 40.3
+                },
+                {
+                    "Name": "175",
+                    "L": 91.22,
+                    "a": -10.7,
+                    "b": 20.3
+                }
+            ]
+        },
+        {
+            "description": "Red, Sky, and Lime Markers",
+            "filename": "Markers4-Red-Sky-Lime",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "4",
+                    "L": 53.1,
+                    "a": 66.1,
+                    "b": 29.9
+                },
+                {
+                    "Name": "76",
+                    "L": 78.2,
+                    "a": -20.6,
+                    "b": -22.4
+                },
+                {
+                    "Name": "175",
+                    "L": 91.22,
+                    "a": -10.7,
+                    "b": 20.3
+                }
+            ]
+        },
+        {
+            "description": "Rose, Grass, and Tan Markers",
+            "filename": "Markers4-Rose-Grass-Tan",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "125",
+                    "L": 53.1,
+                    "a": 66.1,
+                    "b": 29.9
+                },
+                {
+                    "Name": "172",
+                    "L": 79.4,
+                    "a": -21.5,
+                    "b": 10.8
+                },
+                {
+                    "Name": "48",
+                    "L": 85.9,
+                    "a": -7.6,
+                    "b": 44.8
+                }
+            ]
+        },
+        {
+            "description": "Forest, Oak, and Sky Markers",
+            "filename": "Markers4-Forest-Oak-Sky",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "52",
+                    "L": 53.9,
+                    "a": -34.1,
+                    "b": 8.9
+                },
+                {
+                    "Name": "21",
+                    "L": 60.6,
+                    "a": 30.1,
+                    "b": 32.3
+                },
+                {
+                    "Name": "76",
+                    "L": 78.2,
+                    "a": -20.6,
+                    "b": -22.4
+                }
+            ]
+        }
+    ]
+}
