@@ -262,7 +262,8 @@ void from_json( const json &j, settings_spec &p )
 // make the settings safe & sane
 void pinSettings( settings_spec &p )
 {
-    const size_t maxTable = ( 1ULL << 31)/3; // upper limit is really the 2 Gig ICC Profile limit
+    // assume max size table will A2B with 3 channel PCS output
+    const size_t maxTable = ( 1ULL << 31 ) / 3; // upper limit is really the 2 Gig ICC Profile limit
 
     if (p.gDataDepth > 16)
         p.gDataDepth = 16;
@@ -278,8 +279,9 @@ void pinSettings( settings_spec &p )
 
     if (globalSettings.gTableSizeLimit < 1024)
         globalSettings.gTableSizeLimit = 1024;
-    if (globalSettings.gTableSizeLimit > maxTable)
-        globalSettings.gTableSizeLimit = maxTable;
+    size_t maxSize = (p.gDataDepth > 8) ? (maxTable/2) : maxTable;
+    if (globalSettings.gTableSizeLimit > maxSize)
+        globalSettings.gTableSizeLimit = maxSize;
 
     if (globalSettings.gDefaultCopyright == std::string())  // nope, can't be empty
         globalSettings.gDefaultCopyright = "Copyright Unknown";
@@ -316,10 +318,6 @@ void parse_arguments( int argc, char *argv[] )
         if ( (strcasecmp( argv[c], "-grid" ) == 0 || strcasecmp( argv[c], "-g" ) == 0 )
             && c < (argc-1) ) {
             int temp = atoi( argv[c+1] );
-            if (temp < 2)
-                temp = 2;
-            if (temp > 255)
-                temp = 255;
             globalSettings.gDataGridPoints = temp;
             ++c;
         }
