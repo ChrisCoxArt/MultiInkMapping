@@ -385,6 +385,8 @@ void parse_arguments( int argc, char *argv[] )
         json settings = json::parse(in);
         globalSettings = settings;
         in.close();
+
+        pinSettings( globalSettings );
         
         if (globalSettings.gDebugMode) {
             // rewrite the input, for verification, when debugging
