@@ -58,6 +58,22 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "../../experimental.json"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "../../markers1.json"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "../../markers2.json"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "../../markers3.json"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "../../markers4.json"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
