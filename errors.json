@@ -4,6 +4,7 @@
     "tableDepth": 3,
     "tableSizeLimit": 2048,
     "debugEnable": true,
+    "Comment": "These are expected to fail or give a warning, for testing purposes.",
 
     "colorSets": [
         {

@@ -3,6 +3,7 @@
     "gridPoints": 21,
     "tableDepth": 8,
     "tableSizeLimit": 1048576,
+    "Comment": "Inexpensive waterbased markers",
 
     "colorSets": [
         {

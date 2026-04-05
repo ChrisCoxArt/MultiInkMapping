@@ -3,6 +3,7 @@
     "gridPoints": 21,
     "tableDepth": 8,
     "tableSizeLimit": 1048576,
+    "Comment": "Transparent Watercolors, spaced carefully in CIECAM16, in up to 15 primary combinations to test ICC tools and workflows.",
 
     "colorSets": [
         {
