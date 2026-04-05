@@ -382,6 +382,313 @@
                     "b": -22.4
                 }
             ]
+        },
+        {
+            "description": "Gingerbread and Sky Markers",
+            "filename": "Markers4-Gingerbread-Sky",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "31",
+                    "L": 75.9,
+                    "a": 16.2,
+                    "b": 40.3
+                },
+                {
+                    "Name": "76",
+                    "L": 78.2,
+                    "a": -20.6,
+                    "b": -22.4
+                }
+            ]
+        },
+        {
+            "description": "Gingerbread, Sky, Pink Markers",
+            "filename": "Markers4-Gingerbread-Sky-Pink",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "31",
+                    "L": 75.9,
+                    "a": 16.2,
+                    "b": 40.3
+                },
+                {
+                    "Name": "76",
+                    "L": 78.2,
+                    "a": -20.6,
+                    "b": -22.4
+                },
+                {
+                    "Name": "17",
+                    "L": 88.4,
+                    "a": 29.9,
+                    "b": -3.8
+                }
+            ]
+        },
+        {
+            "description": "Gingerbread, Sky, Grass Markers",
+            "filename": "Markers4-Gingerbread-Sky-Grass",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "31",
+                    "L": 75.9,
+                    "a": 16.2,
+                    "b": 40.3
+                },
+                {
+                    "Name": "76",
+                    "L": 78.2,
+                    "a": -20.6,
+                    "b": -22.4
+                },
+                {
+                    "Name": "172",
+                    "L": 79.4,
+                    "a": -21.5,
+                    "b": 10.8
+                }
+            ]
+        },
+        {
+            "description": "Gingerbread, Sky, Violet Markers",
+            "filename": "Markers4-Gingerbread-Sky-Violet",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "31",
+                    "L": 75.9,
+                    "a": 16.2,
+                    "b": 40.3
+                },
+                {
+                    "Name": "76",
+                    "L": 78.2,
+                    "a": -20.6,
+                    "b": -22.4
+                },
+                {
+                    "Name": "81",
+                    "L": 36.9,
+                    "a": 37.3,
+                    "b": -43.8
+                }
+            ]
+        },
+        {
+            "description": "SteelBlue and Rose Markers",
+            "filename": "Markers4-SteelBlue-Rose",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "70",
+                    "L": 63.3,
+                    "a": -9.4,
+                    "b": -22.9
+                },
+                {
+                    "Name": "125",
+                    "L": 53.1,
+                    "a": 66.1,
+                    "b": 29.9
+                }
+            ]
+        },
+        {
+            "description": "SteelBlue, Rose, Lime Markers",
+            "filename": "Markers4-SteelBlue-Rose-Lime",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "70",
+                    "L": 63.3,
+                    "a": -9.4,
+                    "b": -22.9
+                },
+                {
+                    "Name": "125",
+                    "L": 53.1,
+                    "a": 66.1,
+                    "b": 29.9
+                },
+                {
+                    "Name": "175",
+                    "L": 91.22,
+                    "a": -10.7,
+                    "b": 20.3
+                }
+            ]
+        },
+        {
+            "description": "Marigold, Rose, Violet Markers",
+            "filename": "Markers4-Marigold-Rose-Violet",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "44",
+                    "L": 89.8,
+                    "a": 0.0,
+                    "b": 66.7
+                },
+                {
+                    "Name": "125",
+                    "L": 53.1,
+                    "a": 66.1,
+                    "b": 29.9
+                },
+                {
+                    "Name": "81",
+                    "L": 36.9,
+                    "a": 37.3,
+                    "b": -43.8
+                }
+            ]
+        },
+        {
+            "description": "FLYellow, Aqua, Lavender Markers",
+            "filename": "Markers4-FLYellow-Aqua-Lavender",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "123",
+                    "L": 94.1,
+                    "a": -11.7,
+                    "b": 28.8
+                },
+                {
+                    "Name": "63",
+                    "L": 71.7,
+                    "a": -32.0,
+                    "b": -19.7
+                },
+                {
+                    "Name": "83",
+                    "L": 73.3,
+                    "a": 23.8,
+                    "b": -27.3
+                }
+            ]
+        },
+        {
+            "description": "Lemon, Green, Blue Markers",
+            "filename": "Markers4-Lemon-Green-Blue",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "49",
+                    "L": 93.4,
+                    "a": -9.5,
+                    "b": 35.3
+                },
+                {
+                    "Name": "55",
+                    "L": 58.8,
+                    "a": -50.7,
+                    "b": 10.9
+                },
+                {
+                    "Name": "69",
+                    "L": 43.8,
+                    "a": -2.5,
+                    "b": -36.8
+                }
+            ]
+        },
+        {
+            "description": "Coral, Green, SteelBlue Markers",
+            "filename": "Markers4-Coral-Green-SteelBlue",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "121",
+                    "L": 66.6,
+                    "a": 61.8,
+                    "b": 2.5
+                },
+                {
+                    "Name": "46",
+                    "L": 79.3,
+                    "a": -40.4,
+                    "b": 15.8
+                },
+                {
+                    "Name": "70",
+                    "L": 63.3,
+                    "a": -9.4,
+                    "b": -22.9
+                }
+            ]
+        },
+        {
+            "description": "Coral, Aqua, Gold Markers",
+            "filename": "Markers4-Coral-Aqua-Gold",
+            "paperColor": {
+                "L": 94.3,
+                "a": -0.7,
+                "b": -0.6
+            },
+            "primariesList": [
+                {
+                    "Name": "121",
+                    "L": 66.6,
+                    "a": 61.8,
+                    "b": 2.5
+                },
+                {
+                    "Name": "63",
+                    "L": 71.7,
+                    "a": -32.0,
+                    "b": -19.7
+                },
+                {
+                    "Name": "44",
+                    "L": 89.8,
+                    "a": 0.0,
+                    "b": 66.7
+                }
+            ]
         }
     ]
 }
