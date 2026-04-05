@@ -28,6 +28,9 @@ TODO - would be nice to add measured overprint colors
                 cheaper, might work.
                 but still suffers from "find closest" versus "exact" problems
 
+        build predictable lookup for full inks, then fractional extrapolation for partials?
+            currently looks up only fulls, then multiply for partials
+
 
 TODO - write XML profile data, once I have V4 working?
 

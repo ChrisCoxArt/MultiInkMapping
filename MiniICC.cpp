@@ -81,6 +81,8 @@ void padFile4( FILE *output )
 /********************************************************************************/
 
 // ICC Profiles are BigEndian
+// because Endian Little Despise Programmers
+// and Unreadable Is Endian Little that know Programmers
 
 uint16_t constexpr SwabShort( uint16_t x )
 {
@@ -248,7 +250,6 @@ void add_colorantTable_tag( profileDataInner &data, uint32_t signature, const st
 static
 uint32_t calcClutSize( int inChannels, int outChannels, int gridPoints )
 {
-    // (gridPoints^input_channels) * output_channels
     uint32_t clutSize = gridPoints;
     
     switch (inChannels) {
@@ -500,7 +501,7 @@ void create_tags( profileDataInner &data )
     if (data.optionalNoteText.length() != 0)
         add_text_tag( data, icSigNote, data.optionalNoteText );
     
-    // white point 'wtpt'
+    // white point
     add_xyz_tag( data, icSigMediaWhitePointTag, 0x0000F6D6, 0x00010000, 0x0000D32D );    // D50
     
     // change the rest based on type of profile
@@ -575,11 +576,11 @@ void write_header( const profileDataInner &data, FILE *output )
 {
     uint32_t temp = 0;
     
-    // 4 bytes size - write a dummy value now, fill it in at end
+    // 4 bytes size - write a dummy value now, then fill it in at end
     temp = 0;
     fwrite( &temp, 4, 1, output );
     
-    // 4 byte preferred CMM
+    // 4 byte preferred CMM == IccDev
     uint32_t CMM_type = data.preferredCMM; // 'ICCD', iccDev
     temp = SwabLong( CMM_type );
     fwrite( &temp, 4, 1, output );
@@ -601,7 +602,7 @@ void write_header( const profileDataInner &data, FILE *output )
     temp = SwabLong( data.pcsSpace );
     fwrite( &temp, 4, 1, output );
     
-    // 12 bytes data/time created
+    // 12 bytes data/time created - using gm time since nothing else really makes sense
     /*  binary numbers
         2 bytes year
         2 bytes month
