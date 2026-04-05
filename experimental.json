@@ -3,6 +3,7 @@
     "gridPoints": 21,
     "tableDepth": 8,
     "tableSizeLimit": 1048576,
+    "Comment": "Experiments with Watercolors, Sharpies, OLD Alcohol markers, Colored Papers, plus first overprint tests",
 
     "colorSets": [
         {
@@ -13,7 +14,7 @@
                 "b": 0.8
             },
             "description": "Turquoise and Orange Paint",
-            "filename": "Turquoise-Orange",
+            "filename": "Experimental-Turquoise-Orange",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -36,7 +37,7 @@
         },
         {
             "description": "GreenGold and Magenta Paint",
-            "filename": "GreenGold-Magenta",
+            "filename": "Experimental-GreenGold-Magenta",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -59,7 +60,7 @@
         },
         {
             "description": "Yellow and Teal Paint",
-            "filename": "Yellow-Teal",
+            "filename": "Experimental-Yellow-Teal",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -82,7 +83,7 @@
         },
         {
             "description": "YellowOrange and Violet Paint",
-            "filename": "YellowOrange-Violet",
+            "filename": "Experimental-YellowOrange-Violet",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -105,7 +106,7 @@
         },
         {
             "description": "YellowOrange and Indigo Paint",
-            "filename": "YellowOrange-Indigo",
+            "filename": "Experimental-YellowOrange-Indigo",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -128,7 +129,7 @@
         },
         {
             "description": "Green and Turquoise Paint",
-            "filename": "Green-Turquoise",
+            "filename": "Experimental-Green-Turquoise",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -151,7 +152,7 @@
         },
         {
             "description": "Teal and PinkViolet Paint",
-            "filename": "Teal-PinkViolet",
+            "filename": "Experimental-Teal-PinkViolet",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -174,7 +175,7 @@
         },
         {
             "description": "Violet and Orange Paint",
-            "filename": "Violet-Orange",
+            "filename": "Experimental-Violet-Orange",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -197,7 +198,7 @@
         },
         {
             "description": "Turquoise and Orange Paint on Lilac Paper",
-            "filename": "Turquoise-Orange-LilacPaper",
+            "filename": "Experimental-Turquoise-Orange-LilacPaper",
             "paperColor": {
                 "L": 91.2,
                 "a": 17.0,
@@ -220,7 +221,7 @@
         },
         {
             "description": "Turquoise and Orange Paint on Lime Paper",
-            "filename": "Turquoise-Orange-LimePaper",
+            "filename": "Experimental-Turquoise-Orange-LimePaper",
             "paperColor": {
                 "L": 85.0,
                 "a": -25.5,
@@ -243,7 +244,7 @@
         },
         {
             "description": "Turquoise and Yellow Paint on Lilac Paper",
-            "filename": "Turquoise-Yellow-LilacPaper",
+            "filename": "Experimental-Turquoise-Yellow-LilacPaper",
             "paperColor": {
                 "L": 91.2,
                 "a": 17.0,
@@ -266,7 +267,7 @@
         },
         {
             "description": "Turquoise, Orange, and Green Paint",
-            "filename": "Turquoise-Orange-Green",
+            "filename": "Experimental-Turquoise-Orange-Green",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -295,7 +296,7 @@
         },
         {
             "description": "Violet-Magenta-YellowOrange",
-            "filename": "Violet-Magenta-YellowOrange",
+            "filename": "Experimental-Violet-Magenta-YellowOrange",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -324,7 +325,7 @@
         },
         {
             "description": "Violet-Teal-Yellow",
-            "filename": "Violet-Teal-Yellow",
+            "filename": "Experimental-Violet-Teal-Yellow",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -353,7 +354,7 @@
         },
         {
             "description": "Teal-Cerulean-Orange-Magenta",
-            "filename": "Teal-Cerulean-Orange-Magenta",
+            "filename": "Experimental-Teal-Cerulean-Orange-Magenta",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -388,7 +389,7 @@
         },
         {
             "description": "Green-Yellow-Cerulean-Violet",
-            "filename": "Green-Yellow-Cerulean-Violet",
+            "filename": "Experimental-Green-Yellow-Cerulean-Violet",
             "paperColor": {
                 "L": 97.121,
                 "a": -0.025,
@@ -418,6 +419,226 @@
                     "Name": "Violet",
                     "a": 58.0,
                     "b": -67.0
+                }
+            ]
+        },
+        {
+            "description": "Aquamarine and Fuchsia Markers",
+            "filename": "Experimental-Aquamarine-Fuchsia",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 14.8,
+                "a": 8.6,
+                "b": -15.8
+            },
+            "primariesList": [
+                {
+                    "Name": "Aquamarine",
+                    "L": 51.6,
+                    "a": -36.0,
+                    "b": -9.0
+                },
+                {
+                    "Name": "Fuchsia",
+                    "L": 53.34,
+                    "a": 70.12,
+                    "b": -23.3
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 34.0,
+                    "a": 14.6,
+                    "b": -25.0,
+                    "inkNames": [
+                        "Aquamarine", "Fuchsia"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Fuchsia and Navy Markers",
+            "filename": "Experimental-Fuchsia-Navy",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 12.0,
+                "a": 7.6,
+                "b": -12.8
+            },
+            "primariesList": [
+                {
+                    "Name": "Navy",
+                    "L": 32.9,
+                    "a": 6.4,
+                    "b": -16.7
+                },
+                {
+                    "Name": "Fuchsia",
+                    "L": 53.34,
+                    "a": 70.12,
+                    "b": -23.3
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 30.9,
+                    "a": 12.3,
+                    "b": -19.0,
+                    "inkNames": [
+                        "Navy", "Fuchsia"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Aquamarine, Fuchsia, and Navy Markers",
+            "filename": "Experimental-Aquamarine-Fuchsia-Navy",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 11.0,
+                "a": 7.6,
+                "b": -12.8
+            },
+            "primariesList": [
+                {
+                    "Name": "Navy",
+                    "L": 32.9,
+                    "a": 6.4,
+                    "b": -16.7
+                },
+                {
+                    "Name": "Aquamarine",
+                    "L": 51.6,
+                    "a": -36.0,
+                    "b": -9.0
+                },
+                {
+                    "Name": "Fuchsia",
+                    "L": 53.34,
+                    "a": 70.12,
+                    "b": -23.3
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 34.0,
+                    "a": 14.6,
+                    "b": -25.0,
+                    "inkNames": [
+                        "Aquamarine", "Fuchsia"
+                    ]
+                },
+                {
+                    "L": 30.9,
+                    "a": 12.3,
+                    "b": -19.0,
+                    "inkNames": [
+                        "Navy", "Fuchsia"
+                    ]
+                },
+                {
+                    "L": 29.6,
+                    "a": 5.1,
+                    "b": -13.3,
+                    "inkNames": [
+                        "Navy", "Aquamarine"
+                    ]
+                },
+                {
+                    "L": 24.8,
+                    "a": 8.65,
+                    "b": -15.8,
+                    "inkNames": [
+                        "Navy", "Fuchsia", "Aquamarine"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Red and SkyBlue Markers",
+            "filename": "Experimental-Red-SkyBlue",
+            "paperColor": {
+                "L": 96.2,
+                "a": -0.42,
+                "b": 2.29
+            },
+            "darkColor": {
+                "L": 14.8,
+                "a": 8.6,
+                "b": -15.8
+            },
+            "primariesList": [
+                {
+                    "Name": "Red",
+                    "L": 38.4,
+                    "a": 51.9,
+                    "b": 22.1
+                },
+                {
+                    "Name": "SkyBlue",
+                    "L": 69.29,
+                    "a": 1.16,
+                    "b": -32.23
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 33.2,
+                    "a": 33.4,
+                    "b": 9.6,
+                    "inkNames": [
+                        "Red", "SkyBlue"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "FluorescentYellow and FluorescentPink Markers",
+            "filename": "Experimental-FLPink-FLYellow",
+            "paperColor": {
+                "L": 96.2,
+                "a": -1,
+                "b": -0.36
+            },
+            "darkColor": {
+                "L": 11.0,
+                "a": 23.2,
+                "b": 12.1
+            },
+            "primariesList": [
+                {
+                    "Name": "FLYellow",
+                    "L": 93.82,
+                    "a": -14.5,
+                    "b": 87.7
+                },
+                {
+                    "Name": "FLPink",
+                    "L": 68.0,
+                    "a": 81.68,
+                    "b": -5.1
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 70.3,
+                    "a": 68.8,
+                    "b": 57.1,
+                    "inkNames": [
+                        "FLYellow", "FLPink"
+                    ]
                 }
             ]
         }
