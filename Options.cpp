@@ -258,6 +258,7 @@ void from_json( const json &j, settings_spec &p )
 }
 
 /******************************************************************************/
+/******************************************************************************/
 
 // make the settings safe & sane
 void pinSettings( settings_spec &p )
@@ -289,6 +290,58 @@ void pinSettings( settings_spec &p )
 }
 
 /******************************************************************************/
+
+void defaultSettings( settings_spec &p )
+{
+    // Set defaults
+    p.gDataDepth = 8;
+    p.gDataGridPoints = 21;
+    p.gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
+    p.gDefaultCopyright = "Copyright (c) Chris Cox 2026";
+    p.gDebugMode = false;
+    p.gCreateOutput = true;
+    p.gCreateAbstract = true;
+    p.gTIFFTables = true;
+
+}
+
+/******************************************************************************/
+
+void process_json_filelist( const filename_list &filenames )
+{
+    for ( const auto &name : filenames ) {
+        if (name.empty())
+            continue;
+        
+        std::ifstream in( name );
+        if (!in.is_open()) {
+            std::cerr << "Could not open json file " << name << "\n";
+            continue;
+        }
+        
+        globalSettings.colorSets.clear();
+        
+        json settings = json::parse(in);
+        globalSettings = settings;
+        in.close();
+
+        pinSettings( globalSettings );
+        
+        if (globalSettings.gDebugMode) {
+            // rewrite the input, for verification, when debugging
+            json setTemp = globalSettings;
+            std::ofstream out( name + "_verify.json" );
+            out << std::setw(4) << setTemp.dump(4);
+            out.close();
+        }
+
+        // process the inksets from this json file
+        processInkSetList();
+    }
+
+}
+
+/******************************************************************************/
 /******************************************************************************/
 
 static void print_usage(char *argv[])
@@ -309,7 +362,7 @@ static void print_usage(char *argv[])
 
 /******************************************************************************/
 
-void parse_arguments( int argc, char *argv[] )
+filename_list parse_arguments( int argc, char *argv[] )
 {
     std::vector<std::string> filenames;
 
@@ -366,39 +419,8 @@ void parse_arguments( int argc, char *argv[] )
     }
 
     pinSettings( globalSettings );
-
-    // process json files
-    for ( const auto &name : filenames ) {
-        if (name.empty())
-            continue;
-        
-        std::ifstream in( name );
-        if (!in.is_open()) {
-            std::cerr << "Could not open json file " << name << "\n";
-            continue;
-        }
-        
-        globalSettings.colorSets.clear();
-        
-        json settings = json::parse(in);
-        globalSettings = settings;
-        in.close();
-
-        pinSettings( globalSettings );
-        
-        if (globalSettings.gDebugMode) {
-            // rewrite the input, for verification, when debugging
-            json setTemp = globalSettings;
-            std::ofstream out( name + "_verify.json" );
-            out << std::setw(4) << setTemp.dump(4);
-            out.close();
-        }
-
-        // process the inksets from this json file
-        processInkSetList();
-        
-    }
-
+    
+    return filenames;
 }
 
 /******************************************************************************/

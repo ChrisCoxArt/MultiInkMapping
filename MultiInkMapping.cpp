@@ -1337,6 +1337,7 @@ std::vector<float> ScaleInkWeights( float t, const std::vector<float> &a, const 
 }
 /********************************************************************************/
 
+#if 0
 static
 std::vector<float> SaturateInkWeights( const std::vector<float> &a, const int channels )
 {
@@ -1349,6 +1350,7 @@ std::vector<float> SaturateInkWeights( const std::vector<float> &a, const int ch
        result[c] = t * a[c];
     return result;
 }
+#endif
 
 /********************************************************************************/
 
@@ -2144,22 +2146,16 @@ settings_spec globalSettings;
 
 int main (int argc, char * argv[])
 {
-    // Set defaults
-    globalSettings.gDataDepth = 8;
-    globalSettings.gDataGridPoints = 21;
-    globalSettings.gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
-    globalSettings.gDefaultCopyright = "Copyright (c) Chris Cox 2026";
-    globalSettings.gDebugMode = false;
-    globalSettings.gCreateOutput = true;
-    globalSettings.gCreateAbstract = true;
-    globalSettings.gTIFFTables = false;
-
+    // settings to default
+    defaultSettings( globalSettings );
 
     // handle our command line arguments
+    // build list of json filenames from arguments
+    auto filenames = parse_arguments( argc, argv );
+    
     // load inksets from json files
     // and process the json files
-    parse_arguments( argc, argv );
-
+    process_json_filelist( filenames );
 
     // and we're all done
     return 0;
