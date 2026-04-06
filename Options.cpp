@@ -301,7 +301,7 @@ void defaultSettings( settings_spec &p )
     p.gDebugMode = false;
     p.gCreateOutput = true;
     p.gCreateAbstract = true;
-    p.gTIFFTables = true;
+    p.gTIFFTables = false;
 
 }
 
@@ -418,6 +418,7 @@ filename_list parse_arguments( int argc, char *argv[] )
         }
     }
 
+    // make sure the settings are safe to use
     pinSettings( globalSettings );
     
     return filenames;
