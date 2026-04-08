@@ -20,6 +20,11 @@ TODO - chroma inside gamut still seems off in B2A tables
     probably because of saturation inside L search
     need to adjust chroma after L ?
 
+    Create impossibly wide gamut inkset (near spectral colors)
+    check TIFF B2A for desaturation
+    yeah, saturation is off, even after disabling the saturation inside L search
+
+
 
 TODO - would be nice to add measured overprint colors
         Maybe prebuild a faster lookup system by ink fractions that can handle any fractions?
@@ -1084,12 +1089,12 @@ void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoin
     // set everything to out of gamut (inverted from a normal image/table, but ok...)
     memset( gamutData, 255, gridCount );
     
+    const int gamutPlaneStep = gridPoints*gridPoints;
+    const int gamutRowStep = gridPoints;
+    const int gamutColStep = 1;
+    
     // 1 or 2 inks... doesn't really have a gamut volume
     if (inkCount > 2) {
-    
-        int gamutPlaneStep = gridPoints*gridPoints;
-        int gamutRowStep = gridPoints;
-        int gamutColStep = 1;
         
         for (int L = 0; L < gridPoints; ++L) {
             // setup slices variables
@@ -1113,9 +1118,6 @@ void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoin
             PointList planePoints;
             size_t subDivisions = std::min( (size_t)300, 50*inkCount );
             PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
-
-// DEBUG the last set generated to check the gamut shape and area
-//DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
 
             // now iterate over this plane/slice
             for (int A = 0; A < gridPoints; ++A) {
@@ -1149,6 +1151,27 @@ void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoin
         }   // end for L
 
     }   // if inks > 2
+
+
+    if ( globalSettings.gTIFFTables ) {
+        // order the data for easy viewing as an image
+        std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount ]);
+        uint8_t *outData = outBuffer.get();
+    
+        for (int A = 0; A < gridPoints; ++A) {
+            for (int L = 0; L < gridPoints; ++L) {
+                for (int B = 0; B < gridPoints; ++B) {
+                    outData[0] = gamutData[ L * gamutPlaneStep + A * gamutRowStep + B*gamutColStep ];
+                    outData++;
+                }
+            }
+        }
+        
+        // write TIFF File
+        uint32_t mode = TIFF_MODE_GRAY_BLACKZERO;
+        WriteTIFF( inkSet.name + "_gamut.tiff", 96.0, mode, outBuffer.get(),
+                    gridPoints*gridPoints, gridPoints, 1, 8 );
+    }
 
     tableFormat myGamut;
     myGamut.tableSig = icSigGamutTag;
@@ -1393,7 +1416,7 @@ void AdjustInkMixForL( const inkColorSet &inkSet, float Ltarget, const std::vect
     const std::vector<float> neutralWeights( kMaxChannels, 1.0 );
     
     // first scale inks to full saturation, just in case
-// TODO - won't this undo the chroma adjustment?  YES, it does!
+// TODO - this undoes the chroma adjustment, leading to oversaturated results
 //    auto satList = SaturateInkWeights( inkFractionList, inkCount );
     auto satList = inkFractionList;
     
@@ -1578,7 +1601,6 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                     if (inside) {
                         // use ratio of distances from neutral and outer point as chroma estimate
                         // assuming neutral is close to centered in our color volume
-// TODO - closest is not a great measure here! But may be good enough...
                         float pointDist = hypotf( closestPoint.a - neutral.A, closestPoint.b - neutral.B );
                         if (pointDist < 1e-6)   // just in case, avoid divide by zero
                             pointDist = 1e-6;
@@ -1587,10 +1609,14 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                         if (tchroma > 1.0)  // clamp colors outside of gamut
                             tchroma = 1.0;
 
-// TODO - chroma handling seems wrong, adjustInkMix just resaturates
+// TODO - find hue angle matches not just closest (which gives hard edges in some areas)
+// try restoring some old code
+
                         // scale from full inks to neutral  (aka: interp to no ink)
                         assert( tchroma >= 0.0 );
                         inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
+//std::fill( inkWeights.begin(), inkWeights.end(), 0 );
+
                     }   // inside
                 }
 

@@ -278,14 +278,14 @@ void pinSettings( settings_spec &p )
     if (p.gDataGridPoints > 255)
         p.gDataGridPoints = 255;
 
-    if (globalSettings.gTableSizeLimit < 1024)
-        globalSettings.gTableSizeLimit = 1024;
+    if (p.gTableSizeLimit < 1024)
+        p.gTableSizeLimit = 1024;
     size_t maxSize = (p.gDataDepth > 8) ? (maxTable/2) : maxTable;
-    if (globalSettings.gTableSizeLimit > maxSize)
-        globalSettings.gTableSizeLimit = maxSize;
+    if (p.gTableSizeLimit > maxSize)
+        p.gTableSizeLimit = maxSize;
 
-    if (globalSettings.gDefaultCopyright == std::string())  // nope, can't be empty
-        globalSettings.gDefaultCopyright = "Copyright Unknown";
+    if (p.gDefaultCopyright == std::string())  // nope, can't be empty
+        p.gDefaultCopyright = "Copyright Unknown";
 
 }
 
@@ -353,7 +353,7 @@ static void print_usage(char *argv[])
     printf("\t-limit L        upper limit on A2B table size (default %zu)\n", globalSettings.gTableSizeLimit );
     printf("\t-copyright C    copyright string for profiles (default \"%s\")\n", globalSettings.gDefaultCopyright.c_str() );
     printf("\t-debug          enable debugging output\n" );
-    printf("\t-tiff           output tables as TIFF files\n" );
+    printf("\t-tiff           also output tables as TIFF files\n" );
 
     printf("\t-version        Prints this message and exits immediately\n" );
     printf("Version %s, Compiled %s %s\n", kVersionString, __DATE__, __TIME__ );
@@ -389,8 +389,7 @@ filename_list parse_arguments( int argc, char *argv[] )
         else if ( (strcasecmp( argv[c], "-copyright" ) == 0 || strcasecmp( argv[c], "-c" ) == 0 )
             && c < (argc-1) ) {
             std::string temp = argv[c+1];
-            if (temp != std::string())  // nope, can't be empty
-                globalSettings.gDefaultCopyright = temp;
+            globalSettings.gDefaultCopyright = temp;
             ++c;
         }
         else if ( strcasecmp( argv[c], "-debug" ) == 0 ) {
