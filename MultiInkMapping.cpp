@@ -1361,7 +1361,6 @@ std::vector<float> ScaleInkWeights( float t, const std::vector<float> &a, const 
 }
 /********************************************************************************/
 
-#if 1
 static
 std::vector<float> SaturateInkWeights( const std::vector<float> &a, const int channels )
 {
@@ -1374,7 +1373,6 @@ std::vector<float> SaturateInkWeights( const std::vector<float> &a, const int ch
        result[c] = t * a[c];
     return result;
 }
-#endif
 
 /********************************************************************************/
 
@@ -1416,9 +1414,7 @@ void AdjustInkMixForL( const inkColorSet &inkSet, float Ltarget, const std::vect
     const float epsilon = 1e-4;
     const std::vector<float> neutralWeights( kMaxChannels, 1.0 );
     
-    // first scale inks to full saturation, just in case
-// TODO - this undoes the chroma adjustment, leading to oversaturated results
-//    auto satList = SaturateInkWeights( inkFractionList, inkCount );
+// I used to saturate here, but that was a mistake
     auto satList = inkFractionList;
     
     auto workingList = satList;
@@ -1618,22 +1614,20 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                 Point closestPoint = planePoints[ closestIndex ];
                 inkMixPair resultMix = mixPoints[ closestIndex ];
 
-// TODO - use hue angles outside as well, interpolate more
-
                 std::fill( inkWeights.begin(), inkWeights.end(), 0 );
                 inkWeights[ resultMix.inkIndex1 ] += resultMix.ink1Fraction;
                 inkWeights[ resultMix.inkIndex2 ] += resultMix.ink2Fraction;
                 // now we have full saturation ink mix for this location
                 
-                // in practice, we may have > 1.0 ink values that need to be clipped
+                // in practice, we have some values > 1.0 that need to be scaled back
                 inkWeights = SaturateInkWeights( inkWeights, inkCount );
                 
 
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
-                    bool inside = pointInPoly( planePoints, thisSpot );
+                    //bool inside = pointInPoly( planePoints, thisSpot );
 
-                    if (inside) {
+                    if (true) {
                         // this we want relative to our splines, so offset by our neutral axis
                         float thisHue = M_PI + atan2f( Afloat - neutral.A, Bfloat - neutral.B );
 
@@ -1675,8 +1669,6 @@ assert( mixIndex1 >= 0 );
 assert( mixIndex < inkSet.mixData.size() );
 assert( mixIndex1 < inkSet.mixData.size() );
 
-
-
                         
                         if (thisHue > angle1) {
                             angle2 += 2.0f*M_PI;
@@ -1701,9 +1693,10 @@ assert(hueFraction >= 0.0);
                         else
                             hueFraction /= tempDist;
 assert(hueFraction <= 1.0);
+assert(hueFraction >= 0.0);
                         
-                        if (hueFraction < 0)
-                            hueFraction = 0;
+                        if (hueFraction < 0.0f)
+                            hueFraction = 0.0f;
                         if (hueFraction > 1.0f)
                             hueFraction = 1.0f;
 
@@ -1740,17 +1733,16 @@ assert(hueFraction <= 1.0);
                             tchroma = 1.0;
 assert( tchroma >= 0.0 );
 
-
-
+// this doesn't seem to have an effect here
+//                        inkWeights = SaturateInkWeights( inkWeights, inkCount );
 
                         // scale from full inks to neutral  (aka: interp to no ink)
                         inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
-//std::fill( inkWeights.begin(), inkWeights.end(), 0 );
 
                     }   // inside
                 }
 
-                // adjust L* for all ink mixes (also scales any over 1.0)
+                // adjust L* for all ink mixes
                 AdjustInkMixForL( inkSet, Lfloat, inkListXYZ, inkWeights, paperColor, inkCount );
                 
                 // write values to the grid
@@ -1765,10 +1757,11 @@ assert( tchroma >= 0.0 );
 
 
     // smooth the floating point table
+#if 1
     SmoothOneDirection( gridData, gridPoints, planeStep, rowStep, colStep, inkCount );
     SmoothOneDirection( gridData, gridPoints, rowStep, colStep, planeStep, inkCount );
     SmoothOneDirection( gridData, gridPoints, colStep, planeStep, rowStep, inkCount );
-
+#endif
 
 
     // convert the float table to integer
