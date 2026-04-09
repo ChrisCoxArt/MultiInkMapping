@@ -1361,7 +1361,7 @@ std::vector<float> ScaleInkWeights( float t, const std::vector<float> &a, const 
 }
 /********************************************************************************/
 
-#if 0
+#if 1
 static
 std::vector<float> SaturateInkWeights( const std::vector<float> &a, const int channels )
 {
@@ -1617,34 +1617,25 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                 size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
                 Point closestPoint = planePoints[ closestIndex ];
                 inkMixPair resultMix = mixPoints[ closestIndex ];
-                
+
+// TODO - use hue angles outside as well, interpolate more
+
                 std::fill( inkWeights.begin(), inkWeights.end(), 0 );
                 inkWeights[ resultMix.inkIndex1 ] += resultMix.ink1Fraction;
                 inkWeights[ resultMix.inkIndex2 ] += resultMix.ink2Fraction;
-                // now we have full saturation ink mix
+                // now we have full saturation ink mix for this location
+                
+                // in practice, we may have > 1.0 ink values that need to be clipped
+                inkWeights = SaturateInkWeights( inkWeights, inkCount );
+                
 
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
                     bool inside = pointInPoly( planePoints, thisSpot );
 
                     if (inside) {
-                    
+                        // this we want relative to our splines, so offset by our neutral axis
                         float thisHue = M_PI + atan2f( Afloat - neutral.A, Bfloat - neutral.B );
-
-#if 1
-                        // use ratio of distances from neutral and outer point as chroma estimate
-                        // assuming neutral is close to centered in our color volume
-                        float pointDist = hypotf( closestPoint.a, closestPoint.b );
-                        float thisDist = hypotf( Afloat, Bfloat );
-#else
-                        // use ratio of distances from neutral and outer point as chroma estimate
-                        // assuming neutral is close to centered in our color volume
-                        float pointDist = hypotf( closestPoint.a - neutral.A, closestPoint.b - neutral.B );
-                        float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
-#endif
-                        float tchroma = (pointDist > 1e-10) ? (thisDist / pointDist) : 0.0;
-                        if (tchroma > 1.0)  // clamp colors outside of gamut
-                            tchroma = 1.0;
 
                         // find bounding hue angles (and handle wrap around!)
                         // FYI - lower and upper bound reverse the arguments to less()
@@ -1655,15 +1646,15 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                         if (found != splineHueAngles.end()) {
                             index = (long)( found - splineHueAngles.begin() );
                             index1 = index - 1;
+                            
+                            if (index1 < 0)
+                                index1 = (long)splineHueAngles.size() - 1;
                         }
                         else {
                             index = (long)splineHueAngles.size() - 1;
                             index1 = 0;
                         }
                         
-                        if (index1 < 0) {
-                            index1 = (long)splineHueAngles.size() - 1;
-                        }
 
 assert( index != index1 );
 assert( index >= 0 );
@@ -1683,6 +1674,8 @@ assert( mixIndex >= 0 );
 assert( mixIndex1 >= 0 );
 assert( mixIndex < inkSet.mixData.size() );
 assert( mixIndex1 < inkSet.mixData.size() );
+
+
 
                         
                         if (thisHue > angle1) {
@@ -1704,15 +1697,15 @@ assert(angle2 <= angle1);
                         float hueFraction = (thisHue - angle2);
 assert(hueFraction >= 0.0);
                         if (fabsf(tempDist) < 1e-6)
-                            hueFraction = 0.0;
+                            hueFraction = 0.0f;
                         else
                             hueFraction /= tempDist;
 assert(hueFraction <= 1.0);
                         
                         if (hueFraction < 0)
                             hueFraction = 0;
-                        if (hueFraction > 1.0)
-                            hueFraction = 1.0;
+                        if (hueFraction > 1.0f)
+                            hueFraction = 1.0f;
 
                         std::fill( inkWeights.begin(), inkWeights.end(), 0 );
                         std::fill( inkWeights2.begin(), inkWeights2.end(), 0 );
@@ -1726,11 +1719,31 @@ assert(hueFraction <= 1.0);
                         // interpolate inks
                         inkWeights = MixInkWeights( hueFraction, inkWeights2, inkWeights, inkCount );
 
-// TODO - find hue angle matches not just closest (which gives hard edges in some areas)
-// try restoring some old code
+
+// neutral probably makes a difference in off-center gamuts
+// RETEST later
+#if 1
+                        // use ratio of distances from neutral and outer point as chroma estimate
+                        Point mixedAB;
+                        mixedAB.a = LERP( hueFraction, planeSpline[mixIndex1].a, planeSpline[mixIndex].a );
+                        mixedAB.b = LERP( hueFraction, planeSpline[mixIndex1].b, planeSpline[mixIndex].b );
+                        float closestDist = hypotf( mixedAB.a, mixedAB.b );
+                        float thisDist = hypotf( Afloat, Bfloat );
+#else
+                        // use ratio of distances from neutral and outer point as chroma estimate
+                        // assuming neutral is close to centered in our color volume
+                        float closestDist = hypotf( closestPoint.a - neutral.A, closestPoint.b - neutral.B );
+                        float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
+#endif
+                        float tchroma = (closestDist > 1e-10) ? (thisDist / closestDist) : 0.0;
+                        if (tchroma > 1.0)  // clamp colors outside of gamut
+                            tchroma = 1.0;
+assert( tchroma >= 0.0 );
+
+
+
 
                         // scale from full inks to neutral  (aka: interp to no ink)
-                        assert( tchroma >= 0.0 );
                         inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
 //std::fill( inkWeights.begin(), inkWeights.end(), 0 );
 
