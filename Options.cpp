@@ -315,25 +315,46 @@ void process_json_filelist( const filename_list &filenames )
         
         std::ifstream in( name );
         if (!in.is_open()) {
-            std::cerr << "Could not open json file " << name << "\n";
+            std::cerr << "Could not open JSON file " << name << "\n";
             continue;
         }
         
         globalSettings.colorSets.clear();
         
-        json settings = json::parse(in);
-        globalSettings = settings;
+        try {
+            json settings = json::parse(in);
+            globalSettings = settings;
+        }
+        catch (const std::exception& e) {
+          fprintf(stderr, "ERROR - JSON parsing in file '%s': %s\n", name.c_str(), e.what() );
+          continue;
+        }
+        catch (...) {
+          fprintf(stderr, "ERROR - Unknown exception in JSON file '%s'\n", name.c_str() );
+          continue;
+        }
+        
         in.close();
 
         pinSettings( globalSettings );
         
         if (globalSettings.gDebugMode) {
+            std::string outname = name + "_verify.json";
             // rewrite the input, for verification, when debugging
-            json setTemp = globalSettings;
-            std::ofstream out( name + "_verify.json" );
-            out << std::setw(4) << setTemp.dump(4);
-            out.close();
+            try {
+                json setTemp = globalSettings;
+                std::ofstream out( outname );
+                out << std::setw(4) << setTemp.dump(4);
+                out.close();
+            }
+            catch (const std::exception& e) {
+              fprintf(stderr, "ERROR - writing JSON file '%s': %s\n", outname.c_str(), e.what() );
+            }
+            catch (...) {
+              fprintf(stderr, "ERROR - Unknown exception writing JSON file '%s'\n", outname.c_str() );
+            }
         }
+
 
         // process the inksets from this json file
         processInkSetList();

@@ -1158,10 +1158,11 @@ void createGamut_table( const inkColorSet &inkSet, int /* depth */, int gridPoin
         std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount ]);
         uint8_t *outData = outBuffer.get();
     
-        for (int A = 0; A < gridPoints; ++A) {
+        for (int B = 0; B < gridPoints; ++B) {
+            int Bindex = (gridPoints-1 - B);    // need to flip B
             for (int L = 0; L < gridPoints; ++L) {
-                for (int B = 0; B < gridPoints; ++B) {
-                    outData[0] = gamutData[ L * gamutPlaneStep + A * gamutRowStep + B*gamutColStep ];
+                for (int A = 0; A < gridPoints; ++A) {
+                    outData[0] = gamutData[ L * gamutPlaneStep + A * gamutRowStep + Bindex*gamutColStep ];
                     outData++;
                 }
             }
@@ -1650,11 +1651,12 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
     if ( globalSettings.gTIFFTables ) {
         // order the data for easy viewing as an image
         uint8_t *tifPtr = outData;
-        for (int A = 0; A < gridPoints; ++A) {
+        for (int B = 0; B < gridPoints; ++B) {
+            int Bindex = (gridPoints-1 - B);    // need to flip B
             for (int L = 0; L < gridPoints; ++L) {
-                for (int B = 0; B < gridPoints; ++B) {
+                for (int A = 0; A < gridPoints; ++A) {
                     for (int c = 0; c < inkCount; ++c) {
-                        tifPtr[c] = float_to_file255( gridData[ L * planeStep + A * rowStep + B*colStep + c ] );
+                        tifPtr[c] = float_to_file255( gridData[ L * planeStep + A * rowStep + Bindex*colStep + c ] );
                     }
                     tifPtr += inkCount;
                 }
@@ -1800,14 +1802,15 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     if (globalSettings.gTIFFTables) {
         // order the data for easy viewing as an image
         uint8_t *tifPtr = outPtr;
-        for (A = 0; A < gridPoints; ++A) {
+        for (B = 0; B < gridPoints; ++B) {
+            int Bindex = (gridPoints-1 - B);    // need to flip B
             for (L = 0; L < gridPoints; ++L) {
-                for (B = 0; B < gridPoints; ++B) {
+                for (A = 0; A < gridPoints; ++A) {
 
                     // convert to integer output values
-                    int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + B*colStep + 0 ] );
-                    int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 1 ] );
-                    int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + B*colStep + 2 ] );
+                    int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 0 ] );
+                    int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 1 ] );
+                    int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 2 ] );
                     
                     // write value out to file (interleaved)
                     tifPtr[0] = (uint8_t)Lout;
@@ -2137,6 +2140,7 @@ void processInkSetList(void)
             }
         }   // end ink check loop
 
+        // if errors are bad, then continue to the next set
         if (fail)
             continue;
         
@@ -2147,18 +2151,26 @@ void processInkSetList(void)
 
         printf("Processing set %s\n", inkSet.name.c_str() );
         
-        // create splines from measured points using approximate mixing model
-        mix_ink_splines( inkSet );
-        
-        // create output files from the splines and measured data
-        if (globalSettings.gCreateOutput)
-            create_output_profile( inkSet, globalSettings.gDataDepth,
-                                globalSettings.gDataGridPoints, inkSet.name,
-                                globalSettings.gTableSizeLimit );
-        
-        if (globalSettings.gCreateAbstract)
-            create_abstract_profile( inkSet, globalSettings.gDataDepth,
-                            globalSettings.gDataGridPoints, inkSet.name );
+        try {
+            // create splines from measured points using approximate mixing model
+            mix_ink_splines( inkSet );
+            
+            // create output files from the splines and measured data
+            if (globalSettings.gCreateOutput)
+                create_output_profile( inkSet, globalSettings.gDataDepth,
+                                    globalSettings.gDataGridPoints, inkSet.name,
+                                    globalSettings.gTableSizeLimit );
+            
+            if (globalSettings.gCreateAbstract)
+                create_abstract_profile( inkSet, globalSettings.gDataDepth,
+                                globalSettings.gDataGridPoints, inkSet.name );
+        }
+        catch (const std::exception& e) {
+          fprintf(stderr, "error in set '%s': %s\n", inkSet.name.c_str(), e.what() );
+        }
+        catch (...) {
+          fprintf(stderr, "Unknown exception in set '%s'\n", inkSet.name.c_str() );
+        }
     
      }  // end for colorSets
 
