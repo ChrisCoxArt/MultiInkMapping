@@ -16,17 +16,13 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
-TODO - chroma inside gamut still seems off in B2A tables
-    probably because of saturation inside L search
-    need to adjust chroma after L ?
 
-    Create impossibly wide gamut inkset (near spectral colors)
-    check TIFF B2A for desaturation
-    yeah, saturation is off, even after disabling the saturation inside L search
+
 
 
 
 TODO - would be nice to add measured overprint colors
+        PART DONE
         Maybe prebuild a faster lookup system by ink fractions that can handle any fractions?
             hash((int)(100*fraction1)) and chain?  Still expensive.
             sum of fractions (scaled to int) for bucket, then sub lookup if match?
@@ -38,6 +34,7 @@ TODO - would be nice to add measured overprint colors
 
 
 TODO - write XML profile data, once I have V4 working?
+TODO - write JSON profile data, once I have V4 working?
 
 
 TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.) when building splines
@@ -1611,7 +1608,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
 
                 // use closest point outside or for 1 or 2 inks
                 size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
-                Point closestPoint = planePoints[ closestIndex ];
+                //Point closestPoint = planePoints[ closestIndex ];
                 inkMixPair resultMix = mixPoints[ closestIndex ];
 
                 std::fill( inkWeights.begin(), inkWeights.end(), 0 );
@@ -1712,22 +1709,13 @@ assert(hueFraction >= 0.0);
                         // interpolate inks
                         inkWeights = MixInkWeights( hueFraction, inkWeights2, inkWeights, inkCount );
 
-
-// neutral probably makes a difference in off-center gamuts
-// RETEST later
-#if 1
                         // use ratio of distances from neutral and outer point as chroma estimate
                         Point mixedAB;
                         mixedAB.a = LERP( hueFraction, planeSpline[mixIndex1].a, planeSpline[mixIndex].a );
                         mixedAB.b = LERP( hueFraction, planeSpline[mixIndex1].b, planeSpline[mixIndex].b );
-                        float closestDist = hypotf( mixedAB.a, mixedAB.b );
-                        float thisDist = hypotf( Afloat, Bfloat );
-#else
-                        // use ratio of distances from neutral and outer point as chroma estimate
-                        // assuming neutral is close to centered in our color volume
-                        float closestDist = hypotf( closestPoint.a - neutral.A, closestPoint.b - neutral.B );
+                        float closestDist = hypotf( mixedAB.a - neutral.A, mixedAB.b - neutral.B );
                         float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
-#endif
+
                         float tchroma = (closestDist > 1e-10) ? (thisDist / closestDist) : 0.0;
                         if (tchroma > 1.0)  // clamp colors outside of gamut
                             tchroma = 1.0;
@@ -1757,11 +1745,9 @@ assert( tchroma >= 0.0 );
 
 
     // smooth the floating point table
-#if 1
     SmoothOneDirection( gridData, gridPoints, planeStep, rowStep, colStep, inkCount );
     SmoothOneDirection( gridData, gridPoints, rowStep, colStep, planeStep, inkCount );
     SmoothOneDirection( gridData, gridPoints, colStep, planeStep, rowStep, inkCount );
-#endif
 
 
     // convert the float table to integer
@@ -1822,6 +1808,7 @@ assert( tchroma >= 0.0 );
 /********************************************************************************/
 
 // create LAB to LAB for color mapping/preview
+// similar to B2A, but with more exaggerated dark point, and just LAB values
 static
 void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoints,
                     const std::string &filename )
@@ -1839,6 +1826,8 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
     
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0 && inkCount <= kMaxChannels );
+    
+    std::vector<splineHuePair> splineHueAngles( inkSet.splines.size() );
     
     for (L = 0; L < gridPoints; ++L) {
         // setup slices variables
@@ -1859,6 +1848,10 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
             continue;
         }   // end ClippedL
         
+        // interpolate dark and paper in L to get neutral mix
+        float tNeutral = (Lfloat - inkSet.darkColor.L) / (inkSet.paperColor.L - inkSet.darkColor.L);
+        labColor neutral = interp2inks( tNeutral, inkSet.darkColor, inkSet.paperColor );
+        
         // interpolate splines in L to get points along this AB plane
         PointList planeSpline;
         for ( const auto &oneSpline: inkSet.splines ) {
@@ -1867,15 +1860,28 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
             planeSpline.push_back( Point( A1, B1 ) );
         }
         
+        // create hue angles from points in this plane
+        for (size_t i = 0; i < planeSpline.size(); ++i) {
+            float hue = M_PI + atan2f( planeSpline[i].a - neutral.A, planeSpline[i].b - neutral.B );
+            splineHueAngles[i] = { hue, i };
+        }
+        
+        std::sort( splineHueAngles.begin(), splineHueAngles.end(), splineHueIndexLess );
+        
         // create interpolated point list from the splines
         PointList planePoints;
         size_t subDivisions = std::min( (size_t)300, 50*inkCount );
         PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
-
 // DEBUG the last set generated to check the gamut shape and area
 //DumpPointList( std::string("pointSplines_") + std::to_string(L), planeSpline );
 //DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
+
+        spline_mix_data mixPoints;
+        MixPointsFromSplines( subDivisions, inkSet.mixData, mixPoints, (inkCount > 2) );
+      
+        // make sure mixPoints and planePoints have the same size!
+        assert( planePoints.size() == mixPoints.size() );
 
 
         // now iterate over this plane/slice
@@ -1894,9 +1900,105 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
                 
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
+#if 0
+// old, not very accuate for > 2 inks
                     bool inside = pointInPoly( planePoints, thisSpot );
                     if (inside)
                         result = thisSpot;
+#else
+                    // this we want relative to our splines, so offset by our neutral axis
+                    float thisHue = M_PI + atan2f( Afloat - neutral.A, Bfloat - neutral.B );
+
+                    // find bounding hue angles (and handle wrap around!)
+                    // FYI - lower and upper bound reverse the arguments to less()
+                    auto found = std::lower_bound( splineHueAngles.begin(), splineHueAngles.end(), thisHue,
+                                            [](const splineHuePair &a, float b) { return a.angle < b; } );
+                    long index = 0;
+                    long index1 = 0;
+                    if (found != splineHueAngles.end()) {
+                        index = (long)( found - splineHueAngles.begin() );
+                        index1 = index - 1;
+                        
+                        if (index1 < 0)
+                            index1 = (long)splineHueAngles.size() - 1;
+                    }
+                    else {
+                        index = (long)splineHueAngles.size() - 1;
+                        index1 = 0;
+                    }
+                    
+
+assert( index != index1 );
+assert( index >= 0 );
+assert( index1 >= 0 );
+assert( index < splineHueAngles.size() );
+assert( index1 < splineHueAngles.size() );
+
+                    // interpolate to get primary ink mix
+                    float angle1 = splineHueAngles[index].angle;
+                    float angle2 = splineHueAngles[index1].angle;
+                    
+                    // and look up the indices for the mixData based on the hue angle indices
+                    long mixIndex = splineHueAngles[index].index;
+                    long mixIndex1 = splineHueAngles[index1].index;
+assert( mixIndex != mixIndex1 );
+assert( mixIndex >= 0 );
+assert( mixIndex1 >= 0 );
+assert( mixIndex < inkSet.mixData.size() );
+assert( mixIndex1 < inkSet.mixData.size() );
+
+                    
+                    if (thisHue > angle1) {
+                        angle2 += 2.0f*M_PI;
+                    }
+                    else if (angle2 > angle1)
+                        angle2 -= 2.0f*M_PI;
+                    
+                    if (angle2 > angle1) {
+                        std::swap(angle2,angle1);
+                        std::swap(mixIndex,mixIndex1);
+                    }
+                    
+                    if (thisHue < angle2)
+                        thisHue += 2.0f*M_PI;
+
+assert(angle2 <= angle1);
+                    float tempDist = angle1 - angle2;
+                    float hueFraction = (thisHue - angle2);
+assert(hueFraction >= 0.0);
+                    if (fabsf(tempDist) < 1e-6)
+                        hueFraction = 0.0f;
+                    else
+                        hueFraction /= tempDist;
+assert(hueFraction <= 1.0);
+assert(hueFraction >= 0.0);
+                    
+                    if (hueFraction < 0.0f)
+                        hueFraction = 0.0f;
+                    if (hueFraction > 1.0f)
+                        hueFraction = 1.0f;
+                    
+                    // interpolate spline points in LAB
+                    Point sample1 = planeSpline[ mixIndex ];
+                    Point sample2 = planeSpline[ mixIndex1 ];
+                    result.a = LERP( hueFraction, sample2.a, sample1.a );
+                    result.b = LERP( hueFraction, sample2.b, sample1.b );
+                    
+                    // use ratio of distances from neutral and outer point as chroma estimate
+                    Point mixedAB;
+                    mixedAB.a = LERP( hueFraction, planeSpline[mixIndex1].a, planeSpline[mixIndex].a );
+                    mixedAB.b = LERP( hueFraction, planeSpline[mixIndex1].b, planeSpline[mixIndex].b );
+                    float closestDist = hypotf( mixedAB.a - neutral.A, mixedAB.b - neutral.B );
+                    float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
+
+                    float tchroma = (closestDist > 1e-10) ? (thisDist / closestDist) : 0.0;
+                    if (tchroma > 1.0)  // clamp colors outside of gamut
+                        tchroma = 1.0;
+                    
+                    // scale full saturation result to neutral
+                    result.a = LERP( tchroma, neutral.A, result.a );
+                    result.b = LERP( tchroma, neutral.B, result.b );
+#endif
                 }
                 
                 // save the values

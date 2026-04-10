@@ -1,0 +1,52 @@
+{
+    "defaultCopyright": "Copyright (c) Chris Cox 2026",
+    "gridPoints": 65,
+    "tableDepth": 8,
+    "tableSizeLimit": 1048576,
+    "createTIFFTables": true,
+    "debugEnable": true,
+    "Comment": "Test with exaggerated synthetic colors, for debugging",
+
+    "colorSets": [
+        {
+            "description": "Insane 4 colors",
+            "filename": "Test-Insane",
+            "paperColor": {
+                "L": 98.0,
+                "a": 0,
+                "b": 0
+            },
+            "darkColor": {
+                "L": 2,
+                "a": 0,
+                "b": 0
+            },
+            "primariesList": [
+                {
+                    "Name": "Magenta",
+                    "L": 61,
+                    "a": 113,
+                    "b": 0
+                },
+                {
+                    "Name": "Green",
+                    "L": 71,
+                    "a": -113,
+                    "b": 0
+                },
+                {
+                    "Name": "Yellow",
+                    "L": 91,
+                    "a": 0,
+                    "b": 113
+                },
+                {
+                    "Name": "Blue",
+                    "L": 51,
+                    "a": 0,
+                    "b": -114
+                }
+            ]
+        }
+    ]
+}
