@@ -20,9 +20,14 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
+TODO - write XML profile data, once I have V4 working?
+TODO - write JSON profile data, once I have V4 working?
+
+
+
 
 TODO - would be nice to add measured overprint colors
-        PART DONE
+        SOLIDS DONE
         Maybe prebuild a faster lookup system by ink fractions that can handle any fractions?
             hash((int)(100*fraction1)) and chain?  Still expensive.
             sum of fractions (scaled to int) for bucket, then sub lookup if match?
@@ -31,10 +36,6 @@ TODO - would be nice to add measured overprint colors
 
         build predictable lookup for full inks, then fractional extrapolation for partials?
             currently looks up only fulls, then multiply for partials
-
-
-TODO - write XML profile data, once I have V4 working?
-TODO - write JSON profile data, once I have V4 working?
 
 
 TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.) when building splines
@@ -1606,20 +1607,21 @@ void createB2A_table( const inkColorSet &inkSet, int depth, int gridPoints, prof
                 // find closest point in our line/point list
                 Point thisSpot( Afloat, Bfloat );
 
-                // use closest point outside or for 1 or 2 inks
-                size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
-                //Point closestPoint = planePoints[ closestIndex ];
-                inkMixPair resultMix = mixPoints[ closestIndex ];
+                if (inkCount <= 2) {
+                    // use closest point outside or for 1 or 2 inks
+                    size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
+                    //Point closestPoint = planePoints[ closestIndex ];
+                    inkMixPair resultMix = mixPoints[ closestIndex ];
 
-                std::fill( inkWeights.begin(), inkWeights.end(), 0 );
-                inkWeights[ resultMix.inkIndex1 ] += resultMix.ink1Fraction;
-                inkWeights[ resultMix.inkIndex2 ] += resultMix.ink2Fraction;
-                // now we have full saturation ink mix for this location
+                    std::fill( inkWeights.begin(), inkWeights.end(), 0 );
+                    inkWeights[ resultMix.inkIndex1 ] += resultMix.ink1Fraction;
+                    inkWeights[ resultMix.inkIndex2 ] += resultMix.ink2Fraction;
+                    // now we have full saturation ink mix for this location
+                    
+                    // in practice, we have some values > 1.0 that need to be scaled back
+                    inkWeights = SaturateInkWeights( inkWeights, inkCount );
+                }
                 
-                // in practice, we have some values > 1.0 that need to be scaled back
-                inkWeights = SaturateInkWeights( inkWeights, inkCount );
-                
-
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
                     //bool inside = pointInPoly( planePoints, thisSpot );
@@ -1893,10 +1895,14 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, int gridPoin
 
                 // find closest point in our line/point list
                 Point thisSpot( Afloat, Bfloat );
+                
+                Point result;
 
+                if (inkCount <= 2) {
                 // use closest point outside or for 1 or 2 inks
-                size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
-                Point result = planePoints[ closestIndex ];
+                    size_t closestIndex = FindClosestPointInList( planePoints, thisSpot );
+                    result = planePoints[ closestIndex ];
+                }
                 
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
