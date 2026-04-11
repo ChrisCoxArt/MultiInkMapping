@@ -705,23 +705,62 @@ void write_header( const profileDataInner &data, FILE *output )
 /******************************************************************************/
 /******************************************************************************/
 
-// currently limited in several ways, but a starting point for doing what I need
-// without pulling in the entire iccDEV library
-int writeICCProfile( const std::string &filename, profileData &profileInfo  )
+int writeICCProfileXML( const std::string &filename, profileDataInner &thisProfileData  )
 {
-    // copy data into our internal record structure
-    profileDataInner thisProfileData( profileInfo );
-
     thisProfileData.tagInfo.reserve(8);
     
     // create output file
-    std::string outputFileName = filename;
+    std::string outputFileName = filename + ".xml";
+    FILE *output = fopen( outputFileName.c_str(), "w" );
+    if (output == NULL) {
+        fprintf(stderr,"Could not create profile %s\n", outputFileName.c_str());
+        return -1;
+    }
+
+// TODO - write me!
+
+    // done with the output file
+    fclose( output );
+ 
+    return 0;
+}
+
+/******************************************************************************/
+
+int writeICCProfileJSON( const std::string &filename, profileDataInner &thisProfileData  )
+{
+    thisProfileData.tagInfo.reserve(8);
+    
+    // create output file
+    std::string outputFileName = filename + ".json";
+    FILE *output = fopen( outputFileName.c_str(), "w" );
+    if (output == NULL) {
+        fprintf(stderr,"Could not create profile %s\n", outputFileName.c_str());
+        return -1;
+    }
+
+// TODO - write me!
+
+    // done with the output file
+    fclose( output );
+ 
+    return 0;
+}
+
+/******************************************************************************/
+
+int writeICCProfileBinary( const std::string &filename, profileDataInner &thisProfileData  )
+{
+    thisProfileData.tagInfo.reserve(8);
+    
+    // create output file
+    std::string outputFileName = filename + ".icc";
     FILE *output = fopen( outputFileName.c_str(), "wb" );
     if (output == NULL) {
         fprintf(stderr,"Could not create profile %s\n", outputFileName.c_str());
         return -1;
     }
-    
+
     write_header( thisProfileData, output );
     create_tags( thisProfileData );
     write_tag_table( thisProfileData, output );
@@ -732,9 +771,32 @@ int writeICCProfile( const std::string &filename, profileData &profileInfo  )
     fseek( output, 0, SEEK_SET );
     totalSize = SwabLong( totalSize );
     fwrite( &totalSize, 4, 1, output );
-    
+
     // done with the output file
     fclose( output );
+ 
+    return 0;
+}
+
+/******************************************************************************/
+
+// currently limited in several ways, but a starting point for doing what I need
+// without pulling in the entire iccDEV library
+int writeICCProfile( const std::string &filename, profileData &profileInfo  )
+{
+    // copy data into our internal record structure
+    profileDataInner thisProfileData( profileInfo );
+    
+    int result = 0;
+
+    if ( (thisProfileData.profileType & kProfileBinary) != 0)
+        result += writeICCProfileBinary( filename, thisProfileData );
+    
+    if ( (thisProfileData.profileType & kProfileXML) != 0)
+        result += writeICCProfileXML( filename, thisProfileData );
+    
+    if ( (thisProfileData.profileType & kProfileJSON) != 0)
+        result += writeICCProfileJSON( filename, thisProfileData );
  
     // release our tag data
     for ( auto &i : thisProfileData.tagInfo )
@@ -742,7 +804,7 @@ int writeICCProfile( const std::string &filename, profileData &profileInfo  )
     
     thisProfileData.tagInfo.clear();
  
-    return 0;
+    return result;
 }
 
 /******************************************************************************/

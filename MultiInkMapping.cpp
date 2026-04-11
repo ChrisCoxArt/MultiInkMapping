@@ -2112,7 +2112,7 @@ assert(hueFraction >= 0.0);
     myTable.tableData = std::move(outBuffer);
     myProfile.LUTtables.emplace_back(myTable);
 
-    writeICCProfile( filename+"_abstract.icc", myProfile );
+    writeICCProfile( filename+"_abstract", myProfile );
     
     // buffers are freed automatically
 }
@@ -2184,7 +2184,7 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     myProfile.colorantTables.emplace_back(clrTable);
 
 
-    writeICCProfile( filename+"_output.icc", myProfile );
+    writeICCProfile( filename+"_output", myProfile );
     
     
     // buffers are freed automatically

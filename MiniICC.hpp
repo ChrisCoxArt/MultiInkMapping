@@ -100,6 +100,16 @@ typedef enum : uint32_t  {
     icSigUnknown = 0,
 } profile_sig;
 
+
+// actually bitfields so we can write more than one type
+typedef enum : uint32_t  {
+    kProfileBinary =    0x01,
+    kProfileXML =       0x02,
+    kProfileJSON =      0x04,
+    // BinaryV5 ????
+    // compressed?  (not sure that's well tested yet)
+} profileTypeField;
+
 /********************************************************************************/
 
 // all pointers are passed in, not owned
@@ -143,7 +153,8 @@ struct colorantTableFormat {
 struct profileData {
 
     profileData() : preferredCMM(icSigIccDEV), platform(icSigMacintosh),
-                manufacturer(icSigNone), creator(icSigccox) {}
+                manufacturer(icSigNone), creator(icSigccox),
+                profileType(kProfileBinary) {}
 
     std::string     description;        // required
     std::string     copyright;          // required
@@ -157,6 +168,8 @@ struct profileData {
     color_space     pcsSpace;           // required
 
     std::string     optionalNoteText;   // optional, can be empty
+    
+    profileTypeField  profileType;      // optional, binary/XML/JSON bitfield
 
     std::vector<tableFormat> LUTtables;
 
