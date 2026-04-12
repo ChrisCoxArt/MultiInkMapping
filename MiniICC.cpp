@@ -898,8 +898,8 @@ void write_header_xml( const profileDataInner &data, FILE *output )
     fprintf(output, "<Header>\n");
     fprintf(output, "<ProfileVersion>4.20</ProfileVersion>\n");     // 4.2.0 fixed for now
     
-    auto versionString = OSTypeToString( data.profileClass );
-    fprintf(output, "<ProfileDeviceClass>%4s</ProfileDeviceClass>\n", versionString.c_str() );
+    auto classString = OSTypeToString( data.profileClass );
+    fprintf(output, "<ProfileDeviceClass>%4s</ProfileDeviceClass>\n", classString.c_str() );
 
     auto colorspaceString = OSTypeToString( data.colorSpace );
     fprintf(output, "<DataColourSpace>%4s</DataColourSpace>\n", colorspaceString.c_str() );
@@ -1032,6 +1032,408 @@ void write_tags_xml( const profileDataInner &data, FILE *output )
     fprintf(output, "</Tags>\n");
 }
 
+/********************************************************************************/
+
+static
+void add_colorantTable_json( const profileDataInner &data, FILE *output, uint32_t signature,
+                        const std::vector< namedICCLABFloat > &colorants )
+{
+    fprintf(output, "{ \"colorantTableTag\": {\n");
+    fprintf(output, "\"data\": {\n");
+    fprintf(output, "\"type\": \"colorantTableType\",\n");
+    fprintf(output, "\"colorantTable\": [\n");
+    
+    for ( uint32_t i = 0; i < colorants.size(); ++i ) {
+
+// ALERT, BUG, TODO -- currently using 16 bit values not float
+#if 1
+        uint16_t tempL = floatL_to_fileL65535(colorants[i].L);
+        uint16_t tempA = floatAB_to_fileAB65535(colorants[i].a);
+        uint16_t tempB = floatAB_to_fileAB65535(colorants[i].b);
+        fprintf(output, "\t{ \"name\": \"%s\", \"pcs\": [ %u, %u, %u ] }",
+            colorants[i].name.c_str(),
+            tempL, tempA, tempB );
+#else
+        fprintf(output, "\t{ \"name\": \"%s\", \"pcs\": [ %f, %f, %f ] }",
+            colorants[i].name.c_str(),
+            colorants[i].L, colorants[i].a, colorants[i].b );
+#endif
+
+        if (i < (colorants.size()-1))
+            fprintf(output, ",\n");
+        else
+            fprintf(output, "\n");
+    }
+    
+    fprintf(output, "] }\n"); // end array, end data
+    fprintf(output, "} },\n");   // end colorant table
+}
+
+/********************************************************************************/
+
+// currently written to use the same number of input and output channels
+// assumes identity matrix and 1D LUTs
+static
+void add_lut8_json( const profileDataInner &data, FILE *output, uint32_t signature,
+                    int inChannels, int outChannels, int gridPoints, uint8_t* clut )
+{
+    const int colLimit = 200;
+
+    assert( inChannels >= 1 && inChannels <= 15 );
+    assert( outChannels >= 1 && outChannels <= 15 );
+    
+    auto sigString = tag2XML( signature );
+    fprintf(output, "{ \"%s\": {\n", sigString.c_str() );
+    fprintf(output, "\"data\": {\n");
+
+    fprintf(output, "\"inputChannels\": %d,\n", inChannels );
+    fprintf(output, "\"outputChannels\": %d,\n", outChannels );
+    fprintf(output, "\"type\": \"lut8Type\",\n" );
+    
+
+    fprintf(output, "\"aCurves\": [\n" );
+    for (int i = 0; i < outChannels; ++i) {
+        fprintf(output, "{ \"curveType\": \"table\", \"precision\": 1, \"type\": \"Curve\",\n");
+        
+// ALERT, BUG, TODO -- have to write out all values
+        fprintf(output,"\"table\": [ ");
+        for (int j = 0; j < 256; ++j) {
+            fprintf(output,"%d", j );
+            if (j < (256-1))
+                fprintf(output,", ");
+        }
+        fprintf(output," ] }");
+        
+        if (i < (outChannels-1))
+            fprintf(output,",\n");
+        else
+            fprintf(output,"\n");
+    }
+    fprintf(output, "],\n" );
+    
+    
+    
+    fprintf(output, "\"bCurves\": [\n" );
+    for (int i = 0; i < inChannels; ++i) {
+        fprintf(output, "{ \"curveType\": \"table\", \"precision\": 1, \"type\": \"Curve\",\n");
+        
+// ALERT, BUG, TODO -- have to write out all values
+        fprintf(output,"\"table\": [ ");
+        for (int j = 0; j < 256; ++j) {
+            fprintf(output,"%d", j );
+            if (j < (256-1))
+                fprintf(output,", ");
+        }
+        fprintf(output," ] }");
+        
+        if (i < (inChannels-1))
+            fprintf(output,",\n");
+        else
+            fprintf(output,"\n");
+    }
+    fprintf(output, "],\n" );
+
+
+    fprintf(output, "\"clut\": {\n");
+    fprintf(output, "\"precision\": 1,\n" );
+    
+    fprintf(output, "\"gridPoints\": [ " );
+    for (int i = 0; i < inChannels; ++i) {
+        fprintf(output, "%d", gridPoints );
+        if (i < (inChannels-1))
+            fprintf(output,", ");
+    }
+    fprintf(output, " ],\n" );
+    
+    fprintf(output, "\"data\": [\n");
+    
+    uint32_t clutSize = calcClutSize( inChannels, 1, gridPoints );
+    
+    fprintf(output,"  ");
+    for (int k = 0, col = 0; k < clutSize; ++k) {
+        for (int c = 0; c < outChannels; ++c) {
+            uint8_t value = clut[ k*outChannels + c ];
+            fprintf(output,"%3u, ", value );
+        }
+        
+        // line break!
+        col += outChannels * 5;
+        if (k < (clutSize-1) && col > colLimit) {
+            fprintf(output,"\n  ");
+            col = 0;
+        }
+    }
+    // back up to get rid of the last ", "
+    fseek( output, -2, SEEK_CUR );
+
+    fprintf(output, "\n]\n}\n}\n"); // end data array, end clut, and data block
+    fprintf(output, "} },\n");   // end table, end tag
+}
+
+/********************************************************************************/
+
+// currently written to use the same number of input and output channels
+// assumes identity matrix and 1D LUTs
+static
+void add_lut16_json( const profileDataInner &data, FILE *output, uint32_t signature,
+                    int inChannels, int outChannels, int gridPoints, uint16_t* clut )
+{
+    const int colLimit = 200;
+
+    assert( inChannels >= 1 && inChannels <= 15 );
+    assert( outChannels >= 1 && outChannels <= 15 );
+    
+    auto sigString = tag2XML( signature );
+    fprintf(output, "{ \"%s\": {\n", sigString.c_str() );
+    fprintf(output, "\"data\": {\n");
+
+    fprintf(output, "\"inputChannels\": %d,\n", inChannels );
+    fprintf(output, "\"outputChannels\": %d,\n", outChannels );
+    fprintf(output, "\"type\": \"lut16Type\",\n" );
+    
+
+    fprintf(output, "\"aCurves\": [\n" );
+    for (int i = 0; i < outChannels; ++i) {
+        fprintf(output, "{ \"curveType\": \"table\", \"precision\": 1, \"type\": \"Curve\",\n");
+        
+// ALERT, BUG, TODO -- have to write out all values
+        fprintf(output,"\"table\": [ ");
+        for (int j = 0; j < 256; ++j) {
+            fprintf(output,"%d", j );
+            if (j < (256-1))
+                fprintf(output,", ");
+        }
+        fprintf(output," ] }");
+        
+        if (i < (outChannels-1))
+            fprintf(output,",\n");
+        else
+            fprintf(output,"\n");
+    }
+    fprintf(output, "],\n" );
+    
+    
+    
+    fprintf(output, "\"bCurves\": [\n" );
+    for (int i = 0; i < inChannels; ++i) {
+        fprintf(output, "{ \"curveType\": \"table\", \"precision\": 1, \"type\": \"Curve\",\n");
+        
+// ALERT, BUG, TODO -- have to write out all values
+        fprintf(output,"\"table\": [ ");
+        for (int j = 0; j < 256; ++j) {
+            fprintf(output,"%d", j );
+            if (j < (256-1))
+                fprintf(output,", ");
+        }
+        fprintf(output," ] }");
+        
+        if (i < (inChannels-1))
+            fprintf(output,",\n");
+        else
+            fprintf(output,"\n");
+    }
+    fprintf(output, "],\n" );
+
+
+    fprintf(output, "\"clut\": {\n");
+    fprintf(output, "\"precision\": 1,\n" );
+    
+    fprintf(output, "\"gridPoints\": [ " );
+    for (int i = 0; i < inChannels; ++i) {
+        fprintf(output, "%d", gridPoints );
+        if (i < (inChannels-1))
+            fprintf(output,", ");
+    }
+    fprintf(output, " ],\n" );
+    
+    fprintf(output, "\"data\": [\n");
+    
+    uint32_t clutSize = calcClutSize( inChannels, 1, gridPoints );
+    
+    fprintf(output,"  ");
+    for (int k = 0, col = 0; k < clutSize; ++k) {
+        for (int c = 0; c < outChannels; ++c) {
+            uint16_t value = clut[ k*outChannels + c ];
+            fprintf(output,"%5u, ", value );
+        }
+        
+        // line break!
+        col += outChannels * 7;
+        if (k < (clutSize-1) && col > colLimit) {
+            fprintf(output,"\n  ");
+            col = 0;
+        }
+    }
+    // back up to get rid of the last ", "
+    fseek( output, -2, SEEK_CUR );
+
+    fprintf(output, "\n]\n}\n}\n"); // end data array, end clut, and data block
+    fprintf(output, "} },\n");   // end table, end tag
+
+}
+
+/********************************************************************************/
+
+static
+void write_header_json( const profileDataInner &data, FILE *output )
+{
+    fprintf(output, "{\n");
+    fprintf(output, "\"IccProfile\": {\n");
+    fprintf(output, "\"Header\": {\n");
+    fprintf(output, "\"ProfileVersion\": \"4.20\",\n");     // 4.2.0 fixed for now
+    
+    auto classString = OSTypeToString( data.profileClass );
+    fprintf(output, "\"ProfileDeviceClass\": \"%4s\",\n", classString.c_str() );
+
+    auto colorspaceString = OSTypeToString( data.colorSpace );
+    fprintf(output, "\"DataColourSpace\": \"%4s\",\n", colorspaceString.c_str() );
+    
+    auto pcsString = OSTypeToString( data.pcsSpace );
+    fprintf(output, "\"PCS\": \"%4s\",\n", pcsString.c_str() );
+    
+    auto platformString = OSTypeToString( data.platform );
+    fprintf(output, "\"PrimaryPlatform\": \"%4s\",\n", platformString.c_str() );
+    
+    auto cmmString = OSTypeToString( data.preferredCMM );
+    fprintf(output, "\"PreferredCMMType\": \"%4s\",\n", cmmString.c_str() );
+    
+    auto manufacturerString = OSTypeToString( data.manufacturer );
+    fprintf(output, "\"DeviceManufacturer\": \"%4s\",\n", manufacturerString.c_str() );
+    
+    auto creatorString = OSTypeToString( data.creator );
+    fprintf(output, "\"ProfileCreator\": \"%4s\",\n", creatorString.c_str() );
+
+    fprintf(output, "\"CMMFlags\": { \"EmbeddedInFile\": \"false\", \"UseWithEmbeddedDataOnly\": \"false\" },\n");
+    fprintf(output, "\"DeviceAttributes\": { \"ReflectiveOrTransparency\": \"reflective\", \"GlossyOrMatte\": \"glossy\", \"MediaPolarity\": \"positive\", \"MediaColour\": \"colour\" },\n");     // can this be left out?
+
+    fprintf(output, "\"RenderingIntent\": \"Relative Colorimetric\",\n");
+    fprintf(output, "\"PCSIlluminant\": [ 0.964202880859, 1.00, 0.824905395508 ],\n");    // D50 fixed value, based on V4 binary values
+
+    time_t now;
+    (void)time( &now );
+    auto timeFormat = getTimeString(now);
+    fprintf(output, "\"CreationDateTime\": \"%s\"\n", timeFormat.c_str() );
+    
+    fprintf(output, "},\n"); // end header
+
+}
+
+/********************************************************************************/
+
+static
+void write_footer_json( const profileDataInner &data, FILE *output )
+{
+    fprintf(output, "}\n"); // end profile
+    fprintf(output, "}\n"); // end file
+}
+
+/********************************************************************************/
+
+static void write_mluc_json( FILE *output, const std::string &desc )
+{
+    fprintf(output, "\"data\": {\n");
+    fprintf(output, "\"type\": \"multiLocalizedUnicodeType\",\n");
+    fprintf(output, "\"localizedStrings\": [\n");
+        // could have a loop here
+        fprintf(output,"{ \"country\": \"us\", \"language\": \"en\", \"text\": \"%s\" }\n", desc.c_str());
+    fprintf(output, "] }\n"); // end list of strings, end data
+}
+
+/********************************************************************************/
+
+static
+void write_tags_json( const profileDataInner &data, FILE *output )
+{
+    fprintf(output, "\"Tags\": [\n");
+    
+    fprintf(output, "{ \"profileDescriptionTag\": {\n");
+    write_mluc_json( output, data.description );
+    fprintf(output, "} },\n");    // end description
+
+    fprintf(output, "{ \"copyrightTag\": {\n");
+    write_mluc_json( output, data.copyright );
+    fprintf(output, "} },\n");    // end copyright
+
+    if (data.optionalNoteText.length() != 0)
+        fprintf(output, "{ \"note\": { \"data\": \"%s\" } },\n", data.optionalNoteText.c_str() );
+
+
+    if ( data.profileClass == kClassAbstract ) {
+        
+        assert( data.colorSpace == kSpaceLAB || data.colorSpace == kSpaceXYZ );
+        assert( data.pcsSpace == kSpaceLAB || data.pcsSpace == kSpaceXYZ );
+        assert( data.colorSpace == data.pcsSpace );
+        
+        // A2B0 only
+    }
+    else if ( data.profileClass == kClassDeviceLink ) {
+        
+        assert( data.colorSpace == kSpaceRGB || data.colorSpace == kSpaceCMYK );
+        assert( data.pcsSpace == kSpaceRGB || data.pcsSpace == kSpaceCMYK );
+        // colorspace = FIRST profile in sequence
+        // pcs = colorspace of LAST profile in sequence
+        
+        // try leaving the sequence out - because we don't really have a sequence
+        //    profileSequenceDesc        'pseq'    v2 6.3.4.1, 6.5.12,    V4? 9.2.32, 10.16
+        // NOTE - so far fake/empty profilesequence tags break one thing or another
+        
+        // A2B0 only
+        
+        // V4 ColorantTable 9.2.14  if xCLR
+        // V4 colorantTableOutTag  9.2.14.1 if xCLR
+    }
+    else if ( data.profileClass == kClassOutput ) {
+        // A2B0,A2B1,A2B2
+        // B2A0,B2A1,B2A2
+        // gamut
+        
+        // V4 ColorantTable 9.2.14, 10.4 definition
+        
+        // V4 single channel shall have a grayTRC tag  9.2.19 ????
+    }
+    else if ( data.profileClass == kClassSpace ) {
+        // A2B0
+        // B2A0
+    }
+    else {
+        fprintf(stderr,"Other profile types not implemented yet\n");
+        return;
+    }
+
+
+    // add colorant tables
+    for ( auto &clrTable : data.colorantTables )
+        add_colorantTable_json( data, output, clrTable.tableSig, clrTable.colorants );
+
+    // add tables
+    for ( auto &table : data.LUTtables ) {
+        if (table.pointsBackTo != icSigUnknown) {
+            // special case pointing back to a previous table
+            auto sig = tag2XML( table.tableSig );
+            auto backTo = tag2XML( table.pointsBackTo );
+            fprintf(output, "{ \"%s\": { \"sameAs\": \"%s\" } },\n", sig.c_str(), backTo.c_str());
+            continue;
+        }
+
+        if (table.tableDepth == 8)
+            add_lut8_json( data, output, table.tableSig, table.tableDimensions, table.tableChannels,
+                        table.tableGridPoints, table.tableData.get() );
+        else if (table.tableDepth == 16)
+            add_lut16_json( data, output, table.tableSig, table.tableDimensions, table.tableChannels,
+                        table.tableGridPoints, (uint16_t *)table.tableData.get() );
+    }
+
+
+    fprintf(output, "{ \"mediaWhitePointTag\": {\n");
+    fprintf(output, "\"data\": {\n");
+    fprintf(output, "\"type\": \"XYZArrayType\",\n");
+    fprintf(output, "\"XYZ\": [ [ 0.964202880859, 1.00, 0.824905395508 ] ]\n");
+    fprintf(output, "}\n"); //end data
+    fprintf(output, "} }\n");    // end whitepoint, no more tags, so no comma
+    
+    fprintf(output, "]\n"); // nothing after this, so no comma
+}
+
 /******************************************************************************/
 /******************************************************************************/
 
@@ -1071,7 +1473,9 @@ int writeICCProfileJSON( const std::string &filename, profileDataInner &thisProf
         return -1;
     }
 
-// TODO - write me!
+    write_header_json( thisProfileData, output );
+    write_tags_json( thisProfileData, output );
+    write_footer_json( thisProfileData, output );
 
     // done with the output file
     fclose( output );
