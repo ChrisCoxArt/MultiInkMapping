@@ -1,0 +1,175 @@
+{
+    "defaultCopyright": "Copyright (c) Chris Cox 2026",
+    "gridPoints": 21,
+    "tableDepth": 8,
+    "tableSizeLimit": 1048576,
+    "Comment": "Alcohol Markers on White Cardstock",
+
+    "colorSets": [
+        {
+            "description": "Lavender and Yellow Markers",
+            "filename": "WhiteCard-Lavender-Yellow",
+            "paperColor": {
+                "L": 95.5,
+                "a": -0.4,
+                "b": 6.3
+            },
+            "primariesList": [
+                {
+                    "Name": "Lavender83",
+                    "L": 67.2,
+                    "a": 26.2,
+                    "b": -27.6
+                },
+                {
+                    "Name": "Yellow44",
+                    "L": 88.7,
+                    "a": 5.9,
+                    "b": 69.8
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 67.6,
+                    "a": 13.7,
+                    "b": 34.6,
+                    "inkNames": [
+                        "Lavender83", "Yellow44"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Lavender and Orange Markers",
+            "filename": "WhiteCard-Lavender-Orange",
+            "paperColor": {
+                "L": 95.5,
+                "a": -0.4,
+                "b": 6.3
+            },
+            "primariesList": [
+                {
+                    "Name": "Lavender83",
+                    "L": 67.2,
+                    "a": 26.2,
+                    "b": -27.6
+                },
+                {
+                    "Name": "Orange22",
+                    "L": 65.1,
+                    "a": 53.2,
+                    "b": 34.2
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 55.4,
+                    "a": 42.1,
+                    "b": 17.4,
+                    "inkNames": [
+                        "Lavender83", "Orange22"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Cyan and Lavender Markers",
+            "filename": "WhiteCard-Cyan-Lavender",
+            "paperColor": {
+                "L": 95.5,
+                "a": -0.4,
+                "b": 6.3
+            },
+            "primariesList": [
+                {
+                    "Name": "Lavender83",
+                    "L": 67.2,
+                    "a": 26.2,
+                    "b": -27.6
+                },
+                {
+                    "Name": "Cyan64",
+                    "L": 51.3,
+                    "a": -24.2,
+                    "b": -31.4
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 49.1,
+                    "a": -11.5,
+                    "b": -35.0,
+                    "inkNames": [
+                        "Lavender83", "Cyan64"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Violet and Green Markers",
+            "filename": "WhiteCard-Violet-Green",
+            "paperColor": {
+                "L": 95.5,
+                "a": -0.4,
+                "b": 6.3
+            },
+            "primariesList": [
+                {
+                    "Name": "Violet73",
+                    "L": 40.0,
+                    "a": 38.2,
+                    "b": -38.2
+                },
+                {
+                    "Name": "Green55",
+                    "L": 63.7,
+                    "a": -46.8,
+                    "b": 11.5
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 34.0,
+                    "a": 11.1,
+                    "b": -17.3,
+                    "inkNames": [
+                        "Violet73", "Green55"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Cyan and Yellow Markers",
+            "filename": "WhiteCard-Cyan-Yellow",
+            "paperColor": {
+                "L": 95.5,
+                "a": -0.4,
+                "b": 6.3
+            },
+            "primariesList": [
+                {
+                    "Name": "Yellow44",
+                    "L": 88.7,
+                    "a": 5.9,
+                    "b": 69.8
+                },
+                {
+                    "Name": "Cyan64",
+                    "L": 51.3,
+                    "a": -24.2,
+                    "b": -31.4
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 54.2,
+                    "a": -40.0,
+                    "b": 16.5,
+                    "inkNames": [
+                        "Yellow44", "Cyan64"
+                    ]
+                }
+            ]
+        }
+    ]
+}
