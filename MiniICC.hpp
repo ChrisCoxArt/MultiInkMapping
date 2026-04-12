@@ -121,7 +121,7 @@ struct tableFormat {
     profile_sig     pointsBackTo;   // so we have A2B1 and A2B2 refer back to A2B0
     
     int             tableDepth;
-    int             tableGridPoints;
+    size_t          tableGridPoints;
     int             tableDimensions;
     int             tableChannels;
     std::shared_ptr<uint8_t> tableData;

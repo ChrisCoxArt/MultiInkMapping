@@ -82,6 +82,7 @@ void ReadSize( const json &input, const char *key, size_t &result )
 
 /******************************************************************************/
 
+#if 0
 static
 void ReadFloat( const json &input, const char *key, float &result )
 {
@@ -99,6 +100,7 @@ void ReadFloat( const json &input, const char *key, float &result )
             result = dataFound.value();
         }
 }
+#endif
 
 /******************************************************************************/
 
@@ -445,7 +447,7 @@ filename_list parse_arguments( int argc, char *argv[] )
         }
         else if ( (strcasecmp( argv[c], "-limit" ) == 0 || strcasecmp( argv[c], "-l" ) == 0 )
             && c < (argc-1) ) {
-            size_t temp = atoll( argv[c+1] );
+            size_t temp = (size_t)atoll( argv[c+1] );
             globalSettings.gTableSizeLimit = temp;
             ++c;
         }

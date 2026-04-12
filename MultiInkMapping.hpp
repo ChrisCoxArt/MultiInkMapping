@@ -267,14 +267,14 @@ xyzColor& operator-=( xyzColor &a, const xyzColor &b)
 
 // interpolate between 0 and 100.0
 inline
-float constexpr grid_to_L( int grid_value, int gridPoints )
+float constexpr grid_to_L( size_t grid_value, size_t gridPoints )
 {
     return (100.0f * (float)grid_value) / (float)(gridPoints - 1);
 }
 
 // ccox - FIX ME - cheap version for now -- refine if needed
 inline
-float constexpr grid_to_AB( int grid_value, int gridPoints )
+float constexpr grid_to_AB( size_t grid_value, size_t gridPoints )
 {
     float middle = 0.5f * gridPoints;
     return (127.0f * ((float)grid_value - middle)) / middle;
