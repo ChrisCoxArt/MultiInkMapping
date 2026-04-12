@@ -110,7 +110,7 @@ uint32_t constexpr SwabLong( uint32_t x )
 
 // MultiLocalizedUniCode
 static
-void add_mluc_tag( profileDataInner &data, uint32_t signature, const std::string &desc )
+void add_mluc_binary( profileDataInner &data, uint32_t signature, const std::string &desc )
 {
     const uint16_t iso_english = (uint16_t)((uint16_t)'e' << 8) | (uint16_t)'n';
     const uint16_t iso_unitedstates = (uint16_t)((uint16_t)'u' << 8) | (uint16_t)'s';
@@ -149,7 +149,7 @@ void add_mluc_tag( profileDataInner &data, uint32_t signature, const std::string
 #if 0
 // Version 2 profiles
 static
-void add_description_tag( profileDataInner &data, uint32_t signature, const std::string &desc )
+void add_description_binary( profileDataInner &data, uint32_t signature, const std::string &desc )
 {
     // figure out the size we need
     // strings are ASCII, NULL terminated
@@ -173,7 +173,7 @@ void add_description_tag( profileDataInner &data, uint32_t signature, const std:
 /********************************************************************************/
 
 static
-void add_text_tag( profileDataInner &data, uint32_t signature, const std::string &text )
+void add_text_binary( profileDataInner &data, uint32_t signature, const std::string &text )
 {
     // figure out the size we need
     // strings are ASCII, NULL terminated
@@ -195,7 +195,7 @@ void add_text_tag( profileDataInner &data, uint32_t signature, const std::string
 /********************************************************************************/
 
 static
-void add_xyz_tag( profileDataInner &data, uint32_t signature, int32_t X, int32_t Y, int32_t Z )
+void add_xyz_binary( profileDataInner &data, uint32_t signature, int32_t X, int32_t Y, int32_t Z )
 {
     // figure out the size we need
     uint32_t myDataSize = 8 + 12;
@@ -216,7 +216,7 @@ void add_xyz_tag( profileDataInner &data, uint32_t signature, int32_t X, int32_t
 /********************************************************************************/
 
 static
-void add_colorantTable_tag( profileDataInner &data, uint32_t signature, const std::vector< namedICCLABFloat > &colorants )
+void add_colorantTable_binary( profileDataInner &data, uint32_t signature, const std::vector< namedICCLABFloat > &colorants )
 {
     // figure out the size we need
     uint32_t inkCount = (uint32_t)colorants.size();
@@ -284,7 +284,7 @@ uint32_t calcClutSize( int inChannels, int outChannels, int gridPoints )
 // currently written to use the same number of input and output channels
 // assumes identity matrix and 1D LUTs
 static
-void add_lut16_tag( profileDataInner &data, uint32_t signature, int inChannels, int outChannels, int gridPoints, uint16_t* clut )
+void add_lut16_binary( profileDataInner &data, uint32_t signature, int inChannels, int outChannels, int gridPoints, uint16_t* clut )
 {
     const int lut_entries = 2;
     
@@ -366,7 +366,7 @@ void add_lut16_tag( profileDataInner &data, uint32_t signature, int inChannels, 
 // currently written to use the same number of input and output channels
 // assumes identity matrix and 1D LUTs
 static
-void add_lut8_tag( profileDataInner &data, uint32_t signature, int inChannels, int outChannels, int gridPoints, uint8_t* clut )
+void add_lut8_binary( profileDataInner &data, uint32_t signature, int inChannels, int outChannels, int gridPoints, uint8_t* clut )
 {
     assert( inChannels >= 1 && inChannels <= 15 );
     assert( outChannels >= 1 && outChannels <= 15 );
@@ -494,19 +494,19 @@ void write_tags_binary( profileDataInner &data, FILE *output )
 /********************************************************************************/
 
 static
-void create_tags( profileDataInner &data )
+void create_tags_binary( profileDataInner &data )
 {
 
     // V2 and up always required: description, copyright, mediawhitepoint
     // V4 chromaticAdaptation  9.2.11 ????  Only required if adapted, which we won't be
-    add_mluc_tag( data, icSigProfileDescriptionTag, data.description );
-    add_mluc_tag( data, icSigCopyrightTag, data.copyright );
+    add_mluc_binary( data, icSigProfileDescriptionTag, data.description );
+    add_mluc_binary( data, icSigCopyrightTag, data.copyright );
  
     if (data.optionalNoteText.length() != 0)
-        add_text_tag( data, icSigNote, data.optionalNoteText );
+        add_text_binary( data, icSigNote, data.optionalNoteText );
     
     // white point
-    add_xyz_tag( data, icSigMediaWhitePointTag, 0x0000F6D6, 0x00010000, 0x0000D32D );    // D50
+    add_xyz_binary( data, icSigMediaWhitePointTag, 0x0000F6D6, 0x00010000, 0x0000D32D );    // D50
     
     // change the rest based on type of profile
     if ( data.profileClass == kClassAbstract ) {
@@ -553,7 +553,7 @@ void create_tags( profileDataInner &data )
     
     // add colorant tables
     for ( auto &clrTable : data.colorantTables )
-        add_colorantTable_tag( data, clrTable.tableSig, clrTable.colorants );
+        add_colorantTable_binary( data, clrTable.tableSig, clrTable.colorants );
 
     // add tables
     for ( auto &table : data.LUTtables ) {
@@ -564,10 +564,10 @@ void create_tags( profileDataInner &data )
         }
     
         if (table.tableDepth == 8)
-            add_lut8_tag( data, table.tableSig, table.tableDimensions, table.tableChannels,
+            add_lut8_binary( data, table.tableSig, table.tableDimensions, table.tableChannels,
                         table.tableGridPoints, table.tableData.get() );
         else if (table.tableDepth == 16)
-            add_lut16_tag( data, table.tableSig, table.tableDimensions, table.tableChannels,
+            add_lut16_binary( data, table.tableSig, table.tableDimensions, table.tableChannels,
                         table.tableGridPoints, (uint16_t *)table.tableData.get() );
     }
 
@@ -709,6 +709,7 @@ void write_header_binary( const profileDataInner &data, FILE *output )
 /******************************************************************************/
 /******************************************************************************/
 
+static
 std::string OSTypeToString( uint32_t value )
 {
     // break it apart, because byte order is important
@@ -723,6 +724,7 @@ std::string OSTypeToString( uint32_t value )
 
 /********************************************************************************/
 
+static
 std::string getTimeString(time_t &timeData)
 {
     char timeString[] = "yyyy-mm-ddThh:mm:ssZ";
@@ -733,6 +735,7 @@ std::string getTimeString(time_t &timeData)
 /********************************************************************************/
 
 // because XML uses special names for some tagtypes
+static
 std::string tag2XML( uint32_t tagName )
 {
     std::map<uint32_t,std::string> tagNameLookup = {
@@ -1498,7 +1501,7 @@ int writeICCProfileBinary( const std::string &filename, profileDataInner &thisPr
     }
 
     write_header_binary( thisProfileData, output );
-    create_tags( thisProfileData );
+    create_tags_binary( thisProfileData );
     write_tags_binary( thisProfileData, output );
     
     // get the final file size and update size field at beginning of the file

@@ -26,6 +26,7 @@ using json = nlohmann::json;
 
 /******************************************************************************/
 
+static
 void ReadString( const json &input, const char *key, std::string &result )
 {
     auto dataFound = input.find(key);
@@ -43,6 +44,7 @@ void ReadString( const json &input, const char *key, std::string &result )
 
 /*********************************************************************/
 
+static
 void ReadInt( const json &input, const char *key, int &result )
 {
     auto dataFound = input.find(key);
@@ -61,6 +63,7 @@ void ReadInt( const json &input, const char *key, int &result )
 
 /*********************************************************************/
 
+static
 void ReadSize( const json &input, const char *key, size_t &result )
 {
     auto dataFound = input.find(key);
@@ -79,6 +82,7 @@ void ReadSize( const json &input, const char *key, size_t &result )
 
 /******************************************************************************/
 
+static
 void ReadFloat( const json &input, const char *key, float &result )
 {
     auto dataFound = input.find(key);
@@ -98,6 +102,7 @@ void ReadFloat( const json &input, const char *key, float &result )
 
 /******************************************************************************/
 
+static
 void ReadBool( const json &input, const char *key, bool &result )
 {
     auto dataFound = input.find(key);
@@ -398,7 +403,8 @@ void process_json_filelist( const filename_list &filenames )
 /******************************************************************************/
 /******************************************************************************/
 
-static void print_usage(char *argv[])
+static
+void print_usage(char *argv[])
 {
     printf("Usage: %s <args> input.json\n", argv[0] );
     
@@ -406,8 +412,11 @@ static void print_usage(char *argv[])
     printf("\t-grid G         number of grid points (default %d)\n", globalSettings.gDataGridPoints );
     printf("\t-limit L        upper limit on A2B table size (default %zu)\n", globalSettings.gTableSizeLimit );
     printf("\t-copyright C    copyright string for profiles (default \"%s\")\n", globalSettings.gDefaultCopyright.c_str() );
-    printf("\t-debug          enable debugging output\n" );
     printf("\t-tiff           also output tables as TIFF files\n" );
+    printf("\t-json           also write JSON ICC profiles (default false)\n" );
+    printf("\t-xml            also write XML ICC profiles (default false)\n" );
+    // binary is enabled by default, but can be overridden in json files - does it need a command line option?
+    printf("\t-debug          enable additional debugging output\n" );
 
     printf("\t-version        Prints this message and exits immediately\n" );
     printf("Version %s, Compiled %s %s\n", kVersionString, __DATE__, __TIME__ );
@@ -445,6 +454,12 @@ filename_list parse_arguments( int argc, char *argv[] )
             std::string temp = argv[c+1];
             globalSettings.gDefaultCopyright = temp;
             ++c;
+        }
+        else if ( (strcasecmp( argv[c], "-xml" ) == 0 || strcasecmp( argv[c], "-x" ) == 0 ) ) {
+            globalSettings.gProfileTypes |= kProfileXML;
+        }
+        else if ( (strcasecmp( argv[c], "-json" ) == 0 || strcasecmp( argv[c], "-j" ) == 0 ) ) {
+            globalSettings.gProfileTypes |= kProfileJSON;
         }
         else if ( strcasecmp( argv[c], "-debug" ) == 0 ) {
             globalSettings.gDebugMode = true;

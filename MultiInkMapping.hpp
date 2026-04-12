@@ -24,7 +24,7 @@
 
 /******************************************************************************/
 
-const char kVersionString[] = "0.8a";
+const char kVersionString[] = "0.9b";
 
 /******************************************************************************/
 
@@ -120,14 +120,15 @@ const xyzColor identityXYZ( 100.0, 100.0, 100.0 );
 /******************************************************************************/
 
 inline
-float LERP( const float t, const float x1, const float x2 )
+float constexpr LERP( const float t, const float x1, const float x2 )
 {
     return x1 + t*(x2-x1);
 }
  
 /********************************************************************************/
 
-inline xyzColor operator*( const float &scale, const xyzColor &b)
+inline
+xyzColor operator*( const float &scale, const xyzColor &b)
 {
     xyzColor result;
     result.X = scale * b.X;
@@ -138,7 +139,8 @@ inline xyzColor operator*( const float &scale, const xyzColor &b)
  
 /********************************************************************************/
 
-inline xyzColor& operator*=( xyzColor &a, float s)
+inline
+xyzColor& operator*=( xyzColor &a, float s)
 {
     a.X *= s;
     a.Y *= s;
@@ -148,7 +150,8 @@ inline xyzColor& operator*=( xyzColor &a, float s)
 
 /********************************************************************************/
 
-inline xyzColor operator*( const xyzColor &a, const xyzColor &b)
+inline
+xyzColor operator*( const xyzColor &a, const xyzColor &b)
 {
     xyzColor result;
 #if 1
@@ -165,7 +168,8 @@ inline xyzColor operator*( const xyzColor &a, const xyzColor &b)
  
 /********************************************************************************/
 
-inline xyzColor& operator*=( xyzColor &a, const xyzColor &b)
+inline
+xyzColor& operator*=( xyzColor &a, const xyzColor &b)
 {
 #if 1
     a.X = a.X * b.X * (1.0f / 100.0f);
@@ -181,7 +185,8 @@ inline xyzColor& operator*=( xyzColor &a, const xyzColor &b)
  
 /********************************************************************************/
 
-inline xyzColor operator/( const xyzColor &a, const xyzColor &b)
+inline
+xyzColor operator/( const xyzColor &a, const xyzColor &b)
 {
     xyzColor result;
     result.X = 100.0f * a.X / b.X;
@@ -192,7 +197,8 @@ inline xyzColor operator/( const xyzColor &a, const xyzColor &b)
  
 /********************************************************************************/
 
-inline xyzColor& operator/=( xyzColor &a, const xyzColor &b)
+inline
+xyzColor& operator/=( xyzColor &a, const xyzColor &b)
 {
     a.X = 100.0f * a.X / b.X;
     a.Y = 100.0f * a.Y / b.Y;
@@ -202,7 +208,8 @@ inline xyzColor& operator/=( xyzColor &a, const xyzColor &b)
  
 /********************************************************************************/
 
-inline xyzColor& operator/=( xyzColor &a, const float s)
+inline
+xyzColor& operator/=( xyzColor &a, const float s)
 {
     a.X /= s;
     a.Y /= s;
@@ -212,7 +219,8 @@ inline xyzColor& operator/=( xyzColor &a, const float s)
 
 /********************************************************************************/
 
-inline xyzColor operator+( const xyzColor &a, const xyzColor &b)
+inline
+xyzColor operator+( const xyzColor &a, const xyzColor &b)
 {
     xyzColor result;
     result.X = a.X + b.X;
@@ -223,7 +231,8 @@ inline xyzColor operator+( const xyzColor &a, const xyzColor &b)
  
 /********************************************************************************/
 
-inline xyzColor& operator+=( xyzColor &a, const xyzColor &b)
+inline
+xyzColor& operator+=( xyzColor &a, const xyzColor &b)
 {
     a.X += b.X;
     a.Y += b.Y;
@@ -233,7 +242,8 @@ inline xyzColor& operator+=( xyzColor &a, const xyzColor &b)
  
 /********************************************************************************/
 
-inline xyzColor operator-( const xyzColor &a, const xyzColor &b)
+inline
+xyzColor operator-( const xyzColor &a, const xyzColor &b)
 {
     xyzColor result;
     result.X = a.X - b.X;
@@ -244,7 +254,8 @@ inline xyzColor operator-( const xyzColor &a, const xyzColor &b)
  
 /********************************************************************************/
 
-inline xyzColor& operator-=( xyzColor &a, const xyzColor &b)
+inline
+xyzColor& operator-=( xyzColor &a, const xyzColor &b)
 {
     a.X -= b.X;
     a.Y -= b.Y;
@@ -256,14 +267,14 @@ inline xyzColor& operator-=( xyzColor &a, const xyzColor &b)
 
 // interpolate between 0 and 100.0
 inline
-float grid_to_L( int grid_value, int gridPoints )
+float constexpr grid_to_L( int grid_value, int gridPoints )
 {
     return (100.0f * (float)grid_value) / (float)(gridPoints - 1);
 }
 
 // ccox - FIX ME - cheap version for now -- refine if needed
 inline
-float grid_to_AB( int grid_value, int gridPoints )
+float constexpr grid_to_AB( int grid_value, int gridPoints )
 {
     float middle = 0.5f * gridPoints;
     return (127.0f * ((float)grid_value - middle)) / middle;
@@ -273,7 +284,7 @@ float grid_to_AB( int grid_value, int gridPoints )
 
 // convert 0..100 representation to file representation
 inline
-int floatL_to_fileL8( float L )
+int constexpr floatL_to_fileL8( float L )
 {
     if (L <= 0.0f) return 0;
     if (L >= 100.0f) return 255;
@@ -281,7 +292,7 @@ int floatL_to_fileL8( float L )
 }
 
 inline
-int floatAB_to_fileAB8( float A )
+int constexpr floatAB_to_fileAB8( float A )
 {
     if (A > 127.0f) return 255;
     if (A < -128.0f) return 0;
@@ -289,7 +300,7 @@ int floatAB_to_fileAB8( float A )
 }
 
 inline
-uint8_t float_to_file255( float A )
+uint8_t constexpr float_to_file255( float A )
 {
     if (A > 1.0f) return 255;
     if (A < 0.0f) return 0;
@@ -297,7 +308,7 @@ uint8_t float_to_file255( float A )
 }
 
 inline
-uint16_t float_to_file65535( float A )
+uint16_t constexpr float_to_file65535( float A )
 {
     if (A > 1.0f) return 65535;
     if (A < 0.0f) return 0;
@@ -309,7 +320,7 @@ uint16_t float_to_file65535( float A )
 // convert 0..100 representation to file representation
 // ICC version 2 profile encoding for LAB 16 bit  --- not usable in TIFF
 inline
-int floatL_to_fileL16( float L )
+int constexpr floatL_to_fileL16( float L )
 {
     if (L <= 0.0f) return 0;
     if (L >= 100.0f) return 65280;
@@ -317,7 +328,7 @@ int floatL_to_fileL16( float L )
 }
 
 inline
-int floatAB_to_fileAB16( float A )
+int constexpr floatAB_to_fileAB16( float A )
 {
     if (A > 127.0f) return 65280;
     if (A < -128.0f) return 0;

@@ -67,8 +67,7 @@ void putLongLong( int64_t val, FILE *out )
 static
 void shiftTIFFLAB( uint8_t *in, size_t count )
 {
-    for ( size_t i = 0; i < count; ++i )
-        {
+    for ( size_t i = 0; i < count; ++i ) {
         size_t index = 3*i;
         uint8_t l = in[index+0];
         int a = in[index+1];
@@ -76,7 +75,7 @@ void shiftTIFFLAB( uint8_t *in, size_t count )
         in[index+0] = l; // just copy
         in[index+1] = uint8_t(a - 128);
         in[index+2] = uint8_t(b - 128);
-        }
+    }
 }
 
 /******************************************************************************/
@@ -85,8 +84,7 @@ void shiftTIFFLAB( uint8_t *in, size_t count )
 static
 void shiftTIFFLAB( uint16_t *in, size_t count )
 {
-    for ( size_t i = 0; i < count; ++i )
-        {
+    for ( size_t i = 0; i < count; ++i ) {
         size_t index = 3*i;
         uint16_t l = in[index+0];
         int a = in[index+1];
@@ -95,7 +93,7 @@ void shiftTIFFLAB( uint16_t *in, size_t count )
         in[index+0] = l; // just copy
         in[index+1] = uint16_t(a - 0x8000);
         in[index+2] = uint16_t(b - 0x8000);
-        }
+    }
 }
 
 /******************************************************************************/

@@ -14,13 +14,17 @@
 #include <string>
 #include "MultiInkMapping.hpp"
 
+/******************************************************************************/
 
 typedef std::vector<std::string> filename_list;
+
+/******************************************************************************/
 
 extern filename_list parse_arguments( int argc, char *argv[] );
 extern void pinSettings( settings_spec &p );
 extern void defaultSettings( settings_spec &p );
 extern void process_json_filelist( const filename_list &filenames );
 
+/******************************************************************************/
 
 #endif /* Options_hpp */

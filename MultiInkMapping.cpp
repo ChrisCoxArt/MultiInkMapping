@@ -19,10 +19,6 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
-TODO - write JSON profile data, once I have V4 working?
-
-
-
 
 TODO - would be nice to add measured overprint colors
         SOLIDS DONE
@@ -86,7 +82,6 @@ TODO - What about tints and shades?  need percentages of mixes, plus measurement
 static
 void VerifyDecreasingL( const color_list &list )
 {
-// NOTE - this is just a debugging aid
 #if !NDEBUG
     size_t count = list.size();
     for (size_t i = 1; i < count; ++i) {
@@ -878,7 +873,7 @@ float Smooth3( float a, float b, float c)
 
 // prev, current, next
 inline
-void Smooth3( std::vector<float> &a, const std::vector<float> &b, const std::vector<float> &c, int channels)
+void constexpr Smooth3( std::vector<float> &a, const std::vector<float> &b, const std::vector<float> &c, int channels)
 {
     for (int i = 0; i < channels; ++i)
         a[i] = Smooth3(a[i],b[i],c[i]);
@@ -886,7 +881,7 @@ void Smooth3( std::vector<float> &a, const std::vector<float> &b, const std::vec
 
 // prev, current, next
 inline
-void Smooth3( float *a, float *b, float *c, int channels)
+void constexpr Smooth3( float *a, float *b, float *c, int channels)
 {
     for (int i = 0; i < channels; ++i)
         a[i] = Smooth3(a[i],b[i],c[i]);

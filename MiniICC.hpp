@@ -180,7 +180,7 @@ struct profileData {
 // convert 0..100 representation to file representation
 // ICC version 4 colorant table, not the mlut encodings
 inline
-int floatL_to_fileL65535( float L )
+int constexpr floatL_to_fileL65535( float L )
 {
     if (L <= 0.0f) return 0;
     if (L >= 100.0f) return 65535;
@@ -188,7 +188,7 @@ int floatL_to_fileL65535( float L )
 }
 
 inline
-int floatAB_to_fileAB65535( float A )
+int constexpr floatAB_to_fileAB65535( float A )
 {
     if (A > 127.0f) return 65535;
     if (A < -128.0f) return 0;
