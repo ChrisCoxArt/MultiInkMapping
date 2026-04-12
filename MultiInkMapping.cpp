@@ -1,6 +1,7 @@
 /*
 Multi Ink Mapping
-Copyright (c) 2026 Chris Cox
+  MIT License, Copyright (C) Chris Cox 2026
+
 
 
 Is it accurate? Nope.
@@ -18,9 +19,6 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
-
-
-TODO - write XML profile data, once I have V4 working?
 TODO - write JSON profile data, once I have V4 working?
 
 

@@ -1,8 +1,8 @@
 //
 //  MiniICC.hpp
 //  MultiInkMapping
+//  MIT License, Copyright (C) Chris Cox 2026
 //
-//  Copyright (c) 2026 Chris Cox
 //  Created by Chris Cox on March 4, 2026.
 //
 

@@ -1,6 +1,7 @@
 //
 //  MultiInkMapping.hpp
 //  MultiInkMapping
+//  MIT License, Copyright (C) Chris Cox 2026
 //
 //  Created by Chris Cox on 3/18/26.
 //

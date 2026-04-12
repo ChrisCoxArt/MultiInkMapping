@@ -1,6 +1,7 @@
 //
 //  Options.hpp
 //  MultiInkMapping
+//  MIT License, Copyright (C) Chris Cox 2026
 //
 //  Created by Chris Cox on 3/19/26.
 //

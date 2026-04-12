@@ -1,10 +1,10 @@
 //
 //  MiniICC.cpp
 //  MultiInkMapping
+//  MIT License, Copyright (C) Chris Cox 2026
 //
 //  Writes a subset of ICC Profiles - but does what I need it to.
 //
-//  Copyright (c) 2026 Chris Cox
 //  Created by Chris Cox on March 4, 2026.
 //
 

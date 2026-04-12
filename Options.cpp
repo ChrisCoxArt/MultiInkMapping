@@ -1,6 +1,7 @@
 //
 //  Options.cpp
 //  MultiInkMapping
+//  MIT License, Copyright (C) Chris Cox 2026
 //
 //  Created by Chris Cox on 3/19/26.
 //
@@ -235,6 +236,15 @@ void to_json( json &j, const settings_spec &p )
               { "defaultCopyright", p.gDefaultCopyright },
               { "colorSets", p.colorSets },
             };
+    
+    if (p.gProfileTypes & kProfileBinary)
+        j["ICCBinary"] = true;
+    
+    if (p.gProfileTypes & kProfileXML)
+        j["ICCXML"] = true;
+    
+    if (p.gProfileTypes & kProfileJSON)
+        j["ICCjson"] = true;
 }
 
 /******************************************************************************/
@@ -250,7 +260,7 @@ void defaultSettings( settings_spec &p )
     p.gCreateOutput = true;
     p.gCreateAbstract = true;
     p.gTIFFTables = false;
-    p.gProfileTypes = kProfileBinary | kProfileXML;
+    p.gProfileTypes = kProfileBinary;
     p.colorSets.clear();
 }
 
@@ -268,6 +278,32 @@ void from_json( const json &j, settings_spec &p )
     ReadBool( j, "createAbstractProfiles", p.gCreateAbstract );
     ReadBool( j, "createTIFFTables", p.gTIFFTables );
     ReadString( j, "defaultCopyright", p.gDefaultCopyright );
+    
+    // set, or clear, optional filetypes
+    if (j.count("ICCBinary") > 0) {
+        bool temp = false;
+        ReadBool( j, "ICCBinary", temp );
+        if (temp)
+            p.gProfileTypes |= kProfileBinary;
+        else
+            p.gProfileTypes &= ~kProfileBinary;
+    }
+    if (j.count("ICCXML") > 0) {
+        bool temp = false;
+        ReadBool( j, "ICCXML", temp );
+        if (temp)
+            p.gProfileTypes |= kProfileXML;
+        else
+            p.gProfileTypes &= ~kProfileXML;
+    }
+    if (j.count("ICCjson") > 0) {
+        bool temp = false;
+        ReadBool( j, "ICCjson", temp );
+        if (temp)
+            p.gProfileTypes |= kProfileJSON;
+        else
+            p.gProfileTypes &= ~kProfileJSON;
+    }
 
     p.colorSets = j["colorSets"];
 }
@@ -278,7 +314,7 @@ void from_json( const json &j, settings_spec &p )
 // make the settings safe & sane
 void pinSettings( settings_spec &p )
 {
-    // assume max size table will A2B with 3 channel PCS output
+    // assume max size table with A2B with 3 channel PCS output
     const size_t maxTable = ( 1ULL << 31 ) / 3; // upper limit is really the 2 Gig ICC Profile limit
 
     if (p.gDataDepth > 16)
