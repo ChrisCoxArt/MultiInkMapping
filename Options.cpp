@@ -239,11 +239,26 @@ void to_json( json &j, const settings_spec &p )
 
 /******************************************************************************/
 
+void defaultSettings( settings_spec &p )
+{
+    // Set defaults
+    p.gDataDepth = 8;
+    p.gDataGridPoints = 21;
+    p.gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
+    p.gDefaultCopyright = "Copyright (c) Chris Cox 2026";
+    p.gDebugMode = false;
+    p.gCreateOutput = true;
+    p.gCreateAbstract = true;
+    p.gTIFFTables = false;
+    p.gProfileTypes = kProfileBinary | kProfileXML;
+    p.colorSets.clear();
+}
+
+/******************************************************************************/
+
 void from_json( const json &j, settings_spec &p )
 {
-    // copy existing settings as default values
-    p = globalSettings;
-    p.colorSets.clear();
+    defaultSettings(p);
     
     ReadInt( j, "tableDepth", p.gDataDepth );
     ReadInt( j, "gridPoints", p.gDataGridPoints );
@@ -291,22 +306,6 @@ void pinSettings( settings_spec &p )
 
 /******************************************************************************/
 
-void defaultSettings( settings_spec &p )
-{
-    // Set defaults
-    p.gDataDepth = 8;
-    p.gDataGridPoints = 21;
-    p.gTableSizeLimit = 1024*1024; // 1 Meg points, 3 Meg or 6 Meg bytes depending on depth
-    p.gDefaultCopyright = "Copyright (c) Chris Cox 2026";
-    p.gDebugMode = false;
-    p.gCreateOutput = true;
-    p.gCreateAbstract = true;
-    p.gTIFFTables = false;
-
-}
-
-/******************************************************************************/
-
 void process_json_filelist( const filename_list &filenames )
 {
     for ( const auto &name : filenames ) {
@@ -318,8 +317,6 @@ void process_json_filelist( const filename_list &filenames )
             std::cerr << "Could not open JSON file " << name << "\n";
             continue;
         }
-        
-        globalSettings.colorSets.clear();
         
         try {
             json settings = json::parse(in);

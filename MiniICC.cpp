@@ -18,6 +18,7 @@
 #include <cmath>
 #include <memory>
 #include <bit>
+#include <map>
 #include "MiniICC.hpp"
 
 /********************************************************************************/
@@ -215,7 +216,7 @@ void add_xyz_tag( profileDataInner &data, uint32_t signature, int32_t X, int32_t
 /********************************************************************************/
 
 static
-void add_colorantTable_tag( profileDataInner &data, uint32_t signature, const std::vector< namedICCLAB16 > &colorants )
+void add_colorantTable_tag( profileDataInner &data, uint32_t signature, const std::vector< namedICCLABFloat > &colorants )
 {
     // figure out the size we need
     uint32_t inkCount = (uint32_t)colorants.size();
@@ -234,9 +235,12 @@ void add_colorantTable_tag( profileDataInner &data, uint32_t signature, const st
     
     for ( uint32_t i = 0; i < inkCount; ++i ) {
         strncpy( stringPtr, colorants[i].name.c_str(), 31 );
-        labPtr[0] = SwabShort(colorants[i].L);
-        labPtr[1] = SwabShort(colorants[i].a);
-        labPtr[2] = SwabShort(colorants[i].b);
+        uint16_t tempL = floatL_to_fileL65535(colorants[i].L);
+        uint16_t tempA = floatAB_to_fileAB65535(colorants[i].a);
+        uint16_t tempB = floatAB_to_fileAB65535(colorants[i].b);
+        labPtr[0] = SwabShort(tempL);
+        labPtr[1] = SwabShort(tempA);
+        labPtr[2] = SwabShort(tempB);
         stringPtr += 38;
         labPtr += 38/2;
     }
@@ -426,7 +430,7 @@ void add_lut8_tag( profileDataInner &data, uint32_t signature, int inChannels, i
 /********************************************************************************/
 
 static
-void write_tag_table( profileDataInner &data, FILE *output )
+void write_tags_binary( profileDataInner &data, FILE *output )
 {
     uint32_t currentOffset = 128;    // just after the header
     
@@ -572,7 +576,7 @@ void create_tags( profileDataInner &data )
 /********************************************************************************/
 
 static
-void write_header( const profileDataInner &data, FILE *output )
+void write_header_binary( const profileDataInner &data, FILE *output )
 {
     uint32_t temp = 0;
     
@@ -586,7 +590,7 @@ void write_header( const profileDataInner &data, FILE *output )
     fwrite( &temp, 4, 1, output );
     
     // 4 byte profile version number
-    uint32_t profile_version = 0x04200000;        // 4.2.0
+    uint32_t profile_version = 0x04200000;        // 4.2.0 fixed for now
     temp = SwabLong( profile_version );
     fwrite( &temp, 4, 1, output );
     
@@ -705,6 +709,332 @@ void write_header( const profileDataInner &data, FILE *output )
 /******************************************************************************/
 /******************************************************************************/
 
+std::string OSTypeToString( uint32_t value )
+{
+    // break it apart, because byte order is important
+    char byte0 = ((value >> 24) & 0xFF);
+    char byte1 = ((value >> 16) & 0xFF);
+    char byte2 = ((value >>  8) & 0xFF);
+    char byte3 = ((value >>  0) & 0xFF);
+    
+    char byteArray[] = { byte0, byte1, byte2, byte3, 0 };
+    return std::string(byteArray);
+}
+
+/********************************************************************************/
+
+std::string getTimeString(time_t &timeData)
+{
+    char timeString[] = "yyyy-mm-ddThh:mm:ssZ";
+    std::strftime( timeString, std::size(timeString), "%FT%TZ", std::gmtime(&timeData));
+    return timeString;
+}
+
+/********************************************************************************/
+
+// because XML uses special names for some tagtypes
+std::string tag2XML( uint32_t tagName )
+{
+    std::map<uint32_t,std::string> tagNameLookup = {
+        { icSigAToB0Tag, "AToB0Tag" },
+        { icSigAToB1Tag, "AToB1Tag" },
+        { icSigAToB2Tag, "AToB2Tag" },
+        { icSigAToB3Tag, "AToB3Tag" },
+        
+        { icSigBToA0Tag, "BToA0Tag" },
+        { icSigBToA1Tag, "BToA1Tag" },
+        { icSigBToA2Tag, "BToA2Tag" },
+        { icSigBToA3Tag, "BToA3Tag" },
+        
+        { icSigGamutTag, "gamutTag" },
+    };
+    
+    auto iter = tagNameLookup.find( tagName );
+    if ( iter == tagNameLookup.end() ) {
+        fprintf(stderr,"ERROR - Unknown tag name translation %s\n", OSTypeToString(tagName).c_str() );
+        return std::string("unknown");
+    }
+    
+    return iter->second;
+}
+
+/********************************************************************************/
+
+static
+void add_colorantTable_xml( const profileDataInner &data, FILE *output, uint32_t signature,
+                        const std::vector< namedICCLABFloat > &colorants )
+{
+    fprintf(output, "<colorantTableTag> <colorantTableType>\n\t<ColorantTable>\n");
+    
+    for ( uint32_t i = 0; i < colorants.size(); ++i ) {
+        fprintf(output,"\t  <Colorant Name=\"%s\" Channel1=\"%f\" Channel2=\"%f\" Channel3=\"%f\"/>\n",
+            colorants[i].name.c_str(),
+            colorants[i].L, colorants[i].a, colorants[i].b );
+    }
+    
+    fprintf(output, "\t</ColorantTable>\n</colorantTableType> </colorantTableTag>\n");
+}
+
+/********************************************************************************/
+
+// currently written to use the same number of input and output channels
+// assumes identity matrix and 1D LUTs
+static
+void add_lut8_xml( const profileDataInner &data, FILE *output, uint32_t signature,
+                    int inChannels, int outChannels, int gridPoints, uint8_t* clut )
+{
+    const int colLimit = 200;
+
+    assert( inChannels >= 1 && inChannels <= 15 );
+    assert( outChannels >= 1 && outChannels <= 15 );
+    
+    auto sigString = tag2XML( signature );
+    fprintf(output, "<%s> <lut8Type>\n", sigString.c_str() );
+    fprintf(output, "  <Channels InputChannels=\"%d\" OutputChannels=\"%d\"/>\n",
+                inChannels, outChannels );
+    
+    //bool isInput = (signature >> 24) == 'A';
+
+    fprintf(output, "  <BCurves>\n");
+    for (int i = 0; i < inChannels; ++i)
+        fprintf(output, "    <Curve IdentitySize=\"256\"/>\n");
+    fprintf(output, "  </BCurves>\n" );
+
+    fprintf(output, "  <ACurves>\n" );
+    for (int i = 0; i < outChannels; ++i)
+        fprintf(output, "    <Curve IdentitySize=\"256\"/>\n");
+    fprintf(output, "  </ACurves>\n" );
+
+    fprintf(output, "  <CLUT GridGranularity=\"%d\">\n", gridPoints );
+    fprintf(output, "    <TableData>\n");
+    
+    uint32_t clutSize = calcClutSize( inChannels, 1, gridPoints );
+    
+    fprintf(output,"    ");
+    for (int k = 0, col = 0; k < clutSize; ++k) {
+        for (int c = 0; c < outChannels; ++c) {
+            uint8_t value = clut[ k*outChannels + c ];
+            fprintf(output,"%3u ", value );
+        }
+        
+        // line break!
+        col += outChannels * 4;
+        if (col > colLimit) {
+            fprintf(output,"\n    ");
+            col = 0;
+        }
+    }
+
+    fprintf(output, "\n    </TableData>\n");
+    fprintf(output, "  </CLUT>\n");
+    
+    fprintf(output, "</lut8Type> </%s>\n", sigString.c_str() );
+}
+
+/********************************************************************************/
+
+// currently written to use the same number of input and output channels
+// assumes identity matrix and 1D LUTs
+static
+void add_lut16_xml( const profileDataInner &data, FILE *output, uint32_t signature,
+                    int inChannels, int outChannels, int gridPoints, uint16_t* clut )
+{
+    const int colLimit = 200;
+
+    assert( inChannels >= 1 && inChannels <= 15 );
+    assert( outChannels >= 1 && outChannels <= 15 );
+    
+    auto sigString = tag2XML( signature );
+    fprintf(output, "<%s> <lut16Type>\n", sigString.c_str() );
+    fprintf(output, "  <Channels InputChannels=\"%d\" OutputChannels=\"%d\"/>\n",
+                inChannels, outChannels );
+    
+    //bool isInput = (signature >> 24) == 'A';
+
+    fprintf(output, "  <BCurves>\n");
+    for (int i = 0; i < inChannels; ++i)
+        fprintf(output, "    <Curve IdentitySize=\"256\"/>\n");
+    fprintf(output, "  </BCurves>\n" );
+
+    fprintf(output, "  <ACurves>\n" );
+    for (int i = 0; i < outChannels; ++i)
+        fprintf(output, "    <Curve IdentitySize=\"256\"/>\n");
+    fprintf(output, "  </ACurves>\n" );
+
+    fprintf(output, "  <CLUT GridGranularity=\"%d\">\n", gridPoints );
+    fprintf(output, "    <TableData>\n");
+    
+    uint32_t clutSize = calcClutSize( inChannels, 1, gridPoints );
+    
+    fprintf(output,"    ");
+    for (int k = 0, col = 0; k < clutSize; ++k) {
+        for (int c = 0; c < outChannels; ++c) {
+            uint16_t value = clut[ k*outChannels + c ];
+            fprintf(output,"%5u ", value );
+        }
+        
+        // line break!
+        col += outChannels * 6;
+        if (col > colLimit) {
+            fprintf(output,"\n    ");
+            col = 0;
+        }
+    }
+
+    fprintf(output, "\n    </TableData>\n");
+    fprintf(output, "  </CLUT>\n");
+    
+    fprintf(output, "</lut16Type> </%s>\n", sigString.c_str() );
+
+}
+
+/********************************************************************************/
+
+static
+void write_header_xml( const profileDataInner &data, FILE *output )
+{
+    fprintf(output, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    fprintf(output, "<IccProfile>\n");
+    fprintf(output, "<Header>\n");
+    fprintf(output, "<ProfileVersion>4.20</ProfileVersion>\n");     // 4.2.0 fixed for now
+    
+    auto versionString = OSTypeToString( data.profileClass );
+    fprintf(output, "<ProfileDeviceClass>%4s</ProfileDeviceClass>\n", versionString.c_str() );
+
+    auto colorspaceString = OSTypeToString( data.colorSpace );
+    fprintf(output, "<DataColourSpace>%4s</DataColourSpace>\n", colorspaceString.c_str() );
+    
+    auto pcsString = OSTypeToString( data.pcsSpace );
+    fprintf(output, "<PCS>%4s</PCS>\n", pcsString.c_str() );
+    
+    auto platformString = OSTypeToString( data.platform );
+    fprintf(output, "<PrimaryPlatform>%4s</PrimaryPlatform>\n", platformString.c_str() );
+    
+    auto cmmString = OSTypeToString( data.preferredCMM );
+    fprintf(output, "<PreferredCMMType>%4s</PreferredCMMType>\n", cmmString.c_str() );
+    
+    auto manufacturerString = OSTypeToString( data.manufacturer );
+    fprintf(output, "<DeviceManufacturer>%4s</DeviceManufacturer>\n", manufacturerString.c_str() );
+    
+    auto creatorString = OSTypeToString( data.creator );
+    fprintf(output, "<ProfileCreator>%4s</ProfileCreator>\n", creatorString.c_str() );
+
+    fprintf(output, "<ProfileFlags EmbeddedInFile=\"false\" UseWithEmbeddedDataOnly=\"false\"/>\n");
+    fprintf(output, "<DeviceAttributes ReflectiveOrTransparency=\"reflective\" GlossyOrMatte=\"glossy\" MediaPolarity=\"positive\" MediaColour=\"colour\"/>\n");     // can this be left out?
+
+    fprintf(output, "<RenderingIntent>Relative Colorimetric</RenderingIntent>\n");
+    fprintf(output, "<PCSIlluminant> <XYZNumber X=\"0.964202880859\" Y=\"1.00\" Z=\"0.824905395508\"/> </PCSIlluminant>\n");    // D50 fixed value, based on V4 binary values
+
+    time_t now;
+    (void)time( &now );
+    auto timeFormat = getTimeString(now);
+    fprintf(output, "<CreationDateTime>%s</CreationDateTime>\n", timeFormat.c_str() );
+    
+    fprintf(output, "</Header>\n");
+}
+
+/********************************************************************************/
+
+static
+void write_footer_xml( const profileDataInner &data, FILE *output )
+{
+    fprintf(output, "</IccProfile>\n");
+}
+
+/********************************************************************************/
+
+static
+void write_tags_xml( const profileDataInner &data, FILE *output )
+{
+    fprintf(output, "<Tags>\n");
+    
+    fprintf(output, "<profileDescriptionTag> <multiLocalizedUnicodeType>\n");
+    fprintf(output, "<LocalizedText LanguageCountry=\"enus\"><![CDATA[%s]]></LocalizedText>\n", data.description.c_str() );
+    fprintf(output, "</multiLocalizedUnicodeType> </profileDescriptionTag>\n");
+
+    fprintf(output, "<copyrightTag> <multiLocalizedUnicodeType>\n");
+    fprintf(output, "<LocalizedText LanguageCountry=\"enus\"><![CDATA[%s]]></LocalizedText>\n", data.copyright.c_str() );
+    fprintf(output, "</multiLocalizedUnicodeType> </copyrightTag>\n");
+
+    if (data.optionalNoteText.length() != 0)
+        fprintf(output, "<note><![CDATA[%s]]></note>\n", data.optionalNoteText.c_str() );
+
+    fprintf(output, "<mediaWhitePointTag> <XYZArrayType>\n");
+    fprintf(output, "<XYZNumber X=\"0.964202880859\" Y=\"1.00\" Z=\"0.824905395508\"/>\n"); // D50 fixed value, based on V4 binary values
+    fprintf(output, "</XYZArrayType> </mediaWhitePointTag>\n");
+
+    if ( data.profileClass == kClassAbstract ) {
+        
+        assert( data.colorSpace == kSpaceLAB || data.colorSpace == kSpaceXYZ );
+        assert( data.pcsSpace == kSpaceLAB || data.pcsSpace == kSpaceXYZ );
+        assert( data.colorSpace == data.pcsSpace );
+        
+        // A2B0 only
+    }
+    else if ( data.profileClass == kClassDeviceLink ) {
+        
+        assert( data.colorSpace == kSpaceRGB || data.colorSpace == kSpaceCMYK );
+        assert( data.pcsSpace == kSpaceRGB || data.pcsSpace == kSpaceCMYK );
+        // colorspace = FIRST profile in sequence
+        // pcs = colorspace of LAST profile in sequence
+        
+        // try leaving the sequence out - because we don't really have a sequence
+        //    profileSequenceDesc        'pseq'    v2 6.3.4.1, 6.5.12,    V4? 9.2.32, 10.16
+        // NOTE - so far fake/empty profilesequence tags break one thing or another
+        
+        // A2B0 only
+        
+        // V4 ColorantTable 9.2.14  if xCLR
+        // V4 colorantTableOutTag  9.2.14.1 if xCLR
+    }
+    else if ( data.profileClass == kClassOutput ) {
+        // A2B0,A2B1,A2B2
+        // B2A0,B2A1,B2A2
+        // gamut
+        
+        // V4 ColorantTable 9.2.14, 10.4 definition
+        
+        // V4 single channel shall have a grayTRC tag  9.2.19 ????
+    }
+    else if ( data.profileClass == kClassSpace ) {
+        // A2B0
+        // B2A0
+    }
+    else {
+        fprintf(stderr,"Other profile types not implemented yet\n");
+        return;
+    }
+
+
+    // add colorant tables
+    for ( auto &clrTable : data.colorantTables )
+        add_colorantTable_xml( data, output, clrTable.tableSig, clrTable.colorants );
+
+    // add tables
+    for ( auto &table : data.LUTtables ) {
+        if (table.pointsBackTo != icSigUnknown) {
+            // special case pointing back to a previous table
+            auto sig = tag2XML( table.tableSig );
+            auto backTo = tag2XML( table.pointsBackTo );
+            fprintf(output, " <%s SameAs=\"%s\"/>\n", sig.c_str(), backTo.c_str());
+            continue;
+        }
+
+        if (table.tableDepth == 8)
+            add_lut8_xml( data, output, table.tableSig, table.tableDimensions, table.tableChannels,
+                        table.tableGridPoints, table.tableData.get() );
+        else if (table.tableDepth == 16)
+            add_lut16_xml( data, output, table.tableSig, table.tableDimensions, table.tableChannels,
+                        table.tableGridPoints, (uint16_t *)table.tableData.get() );
+    }
+
+    
+    fprintf(output, "</Tags>\n");
+}
+
+/******************************************************************************/
+/******************************************************************************/
+
 int writeICCProfileXML( const std::string &filename, profileDataInner &thisProfileData  )
 {
     thisProfileData.tagInfo.reserve(8);
@@ -717,8 +1047,10 @@ int writeICCProfileXML( const std::string &filename, profileDataInner &thisProfi
         return -1;
     }
 
-// TODO - write me!
-
+    write_header_xml( thisProfileData, output );
+    write_tags_xml( thisProfileData, output );
+    write_footer_xml( thisProfileData, output );
+    
     // done with the output file
     fclose( output );
  
@@ -761,9 +1093,9 @@ int writeICCProfileBinary( const std::string &filename, profileDataInner &thisPr
         return -1;
     }
 
-    write_header( thisProfileData, output );
+    write_header_binary( thisProfileData, output );
     create_tags( thisProfileData );
-    write_tag_table( thisProfileData, output );
+    write_tags_binary( thisProfileData, output );
     
     // get the final file size and update size field at beginning of the file
     uint32_t totalSize = (int32_t)ftell( output );
@@ -789,13 +1121,13 @@ int writeICCProfile( const std::string &filename, profileData &profileInfo  )
     
     int result = 0;
 
-    if ( (thisProfileData.profileType & kProfileBinary) != 0)
+    if ( (thisProfileData.profileFormats & kProfileBinary) != 0)
         result += writeICCProfileBinary( filename, thisProfileData );
     
-    if ( (thisProfileData.profileType & kProfileXML) != 0)
+    if ( (thisProfileData.profileFormats & kProfileXML) != 0)
         result += writeICCProfileXML( filename, thisProfileData );
     
-    if ( (thisProfileData.profileType & kProfileJSON) != 0)
+    if ( (thisProfileData.profileFormats & kProfileJSON) != 0)
         result += writeICCProfileJSON( filename, thisProfileData );
  
     // release our tag data

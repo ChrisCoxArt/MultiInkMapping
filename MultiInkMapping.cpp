@@ -2102,6 +2102,7 @@ assert(hueFraction >= 0.0);
     myProfile.platform = icSigMacintosh;
     myProfile.manufacturer = icSigNone;
     myProfile.creator = icSigccox;
+    myProfile.profileFormats = globalSettings.gProfileTypes;
 
     tableFormat myTable;
     myTable.tableSig = icSigAToB0Tag;
@@ -2139,6 +2140,7 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     myProfile.platform = icSigMacintosh;
     myProfile.manufacturer = icSigNone;
     myProfile.creator = icSigccox;
+    myProfile.profileFormats = globalSettings.gProfileTypes;
 
     // make A2B0 (ink to LAB) - determines grid size internally
     createA2B_table( inkSet, depth, myProfile, tableSizeLimit );
@@ -2174,11 +2176,11 @@ void create_output_profile( const inkColorSet &inkSet, int depth, int gridPoints
     clrTable.tableSig = icSigColorantTableTag;
     clrTable.colorants.resize(inkCount);
     for (int i = 0; i < inkCount; ++i) {
-        namedICCLAB16 temp;
+        namedICCLABFloat temp;
         temp.name = inkSet.primaries[i].name;
-        temp.L = floatL_to_fileL65535(inkSet.primaries[i].color.L);
-        temp.a = floatAB_to_fileAB65535(inkSet.primaries[i].color.A);
-        temp.b = floatAB_to_fileAB65535(inkSet.primaries[i].color.B);
+        temp.L = inkSet.primaries[i].color.L;
+        temp.a = inkSet.primaries[i].color.A;
+        temp.b = inkSet.primaries[i].color.B;
         clrTable.colorants[i] = temp;
     }
     myProfile.colorantTables.emplace_back(clrTable);

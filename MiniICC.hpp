@@ -92,7 +92,6 @@ typedef enum : uint32_t  {
     icSigMacintosh                   = 0x4150504C,  /* 'APPL' */
     icSigMicrosoft                   = 0x4D534654,  /* 'MSFT' */
 
-    icSigCCox                        = 0x43436F78,  /* 'CCox' */
     icSigccox                        = 0x63636F78,  /* 'ccox' */
     icSigNone                        = 0x6E6F6E65,  /* 'none' */
     icSigNote                        = 0x6E6F7465,  /* 'note' */
@@ -130,11 +129,11 @@ struct tableFormat {
 
 /********************************************************************************/
 
-struct namedICCLAB16 {
+struct namedICCLABFloat {
     std::string name;
-    uint16_t L;
-    uint16_t a;
-    uint16_t b;
+    float L;
+    float a;
+    float b;
 };
 
 // all pointers are passed in, not owned
@@ -144,7 +143,7 @@ struct colorantTableFormat {
 
     profile_sig tableSig;
     
-    std::vector< namedICCLAB16 > colorants;
+    std::vector< namedICCLABFloat > colorants;
 };
 
 /********************************************************************************/
@@ -154,7 +153,7 @@ struct profileData {
 
     profileData() : preferredCMM(icSigIccDEV), platform(icSigMacintosh),
                 manufacturer(icSigNone), creator(icSigccox),
-                profileType(kProfileBinary) {}
+                profileFormats(kProfileBinary) {}
 
     std::string     description;        // required
     std::string     copyright;          // required
@@ -169,13 +168,32 @@ struct profileData {
 
     std::string     optionalNoteText;   // optional, can be empty
     
-    profileTypeField  profileType;      // optional, binary/XML/JSON bitfield
+    uint32_t  profileFormats;      // optional, binary/XML/JSON bitfield
 
     std::vector<tableFormat> LUTtables;
 
     std::vector<colorantTableFormat> colorantTables;
 };
 
+/********************************************************************************/
+
+// convert 0..100 representation to file representation
+// ICC version 4 colorant table, not the mlut encodings
+inline
+int floatL_to_fileL65535( float L )
+{
+    if (L <= 0.0f) return 0;
+    if (L >= 100.0f) return 65535;
+    return (int)( (65535.0f / 100.0f) * L + 0.5 );
+}
+
+inline
+int floatAB_to_fileAB65535( float A )
+{
+    if (A > 127.0f) return 65535;
+    if (A < -128.0f) return 0;
+    return (int)( (A + 128.0f)*257.0f );
+}
 
 /********************************************************************************/
 

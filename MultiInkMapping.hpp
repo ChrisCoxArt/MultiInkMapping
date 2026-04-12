@@ -325,26 +325,6 @@ int floatAB_to_fileAB16( float A )
 
 /********************************************************************************/
 
-// convert 0..100 representation to file representation
-// ICC version 4 colorant table, not the mlut encodings
-inline
-int floatL_to_fileL65535( float L )
-{
-    if (L <= 0.0f) return 0;
-    if (L >= 100.0f) return 65535;
-    return (int)( (65535.0f / 100.0f) * L + 0.5 );
-}
-
-inline
-int floatAB_to_fileAB65535( float A )
-{
-    if (A > 127.0f) return 65535;
-    if (A < -128.0f) return 0;
-    return (int)( (A + 128.0f)*257.0f );
-}
-
-/********************************************************************************/
-
 const std::vector<color_space> profileSpaceLookup =
 {
     kSpace1CLR, // index zero
@@ -397,6 +377,7 @@ struct settings_spec {
     bool gCreateAbstract;
     bool gTIFFTables;
     std::string gDefaultCopyright;
+    uint32_t gProfileTypes;
     
     std::vector<inkColorSet> colorSets;
 };
