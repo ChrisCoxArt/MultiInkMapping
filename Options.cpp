@@ -411,10 +411,10 @@ void print_usage(char *argv[])
     printf("Usage: %s <args> input.json\n", argv[0] );
     
     printf("\t-depth B        bit depth of output data [8 or 16] (default %d)\n", globalSettings.gDataDepth );
-    printf("\t-grid G         number of grid points (default %d)\n", globalSettings.gDataGridPoints );
+    printf("\t-grid G         number of grid points per channel (default %d)\n", globalSettings.gDataGridPoints );
     printf("\t-limit L        upper limit on A2B table size (default %zu)\n", globalSettings.gTableSizeLimit );
     printf("\t-copyright C    copyright string for profiles (default \"%s\")\n", globalSettings.gDefaultCopyright.c_str() );
-    printf("\t-tiff           also output tables as TIFF files\n" );
+    printf("\t-tiff           also output tables as TIFF files (default false)\n" );
     printf("\t-json           also write JSON ICC profiles (default false)\n" );
     printf("\t-xml            also write XML ICC profiles (default false)\n" );
     // binary is enabled by default, but can be overridden in json files - does it need a command line option?

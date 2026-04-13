@@ -1241,7 +1241,7 @@ void add_lut16_json( const profileDataInner &data, FILE *output, uint32_t signat
 
 
     fprintf(output, "\"clut\": {\n");
-    fprintf(output, "\"precision\": 1,\n" );
+    fprintf(output, "\"precision\": 2,\n" );
     
     fprintf(output, "\"gridPoints\": [ " );
     for (int i = 0; i < inChannels; ++i) {
