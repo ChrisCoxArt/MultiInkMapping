@@ -6,13 +6,15 @@ Created by Chris Cox around March 2, 2026.
 
 
 
+Simulate inks (1-15) painted or printed on paper - for custom printing, profile, and 3DLUT generation.
+
 Is it accurate? Nope.
     Accuracy would need a lot more measurements, and math, and might not look as good.
 
 Does it look reasonable? Yes.
     And that's all I need from it.
 
-This assumes primaries are somewhat saturated, not too neutral, and define a convex hull.
+This assumes that the primaries are somewhat saturated, and define a convex hull.
 Primaries will be sorted by hue to make sure they are in order to make a convex hull.
 This further assumes that the primaries are really transparent, so ink order does not matter. (this is NOT realistic)
 
