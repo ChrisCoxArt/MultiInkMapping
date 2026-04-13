@@ -24,6 +24,7 @@
 
 /********************************************************************************/
 
+// tag takes ownership of pointers, freed after profile is written
 struct ICCTag {
     ICCTag() { data = NULL; pointsBackTo = 0; }
     ICCTag( uint32_t sig, uint32_t ds, uint8_t *dd ) :
@@ -162,9 +163,9 @@ void add_description_binary( profileDataInner &data, uint32_t signature, const s
     memset( myData, 0, myDataSize );
 
     // fill in the data
-    *((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( 'desc' );    // type signature
+    *((uint32_t *)(myData +  0)) = (uint32_t)SwabLong( icSigProfileDescriptionTag );    // type signature
     *((uint32_t *)(myData +  4)) = 0;                                // reserved
-    *((uint32_t *)(myData +  8)) = SwabLong( stringLength );        // reserved
+    *((uint32_t *)(myData +  8)) = SwabLong( stringLength );
     memcpy( myData + 12, desc.c_str(), stringLength );
     
     data.tagInfo.emplace_back( ICCTag( signature, myDataSize, myData ) );
@@ -282,7 +283,6 @@ uint32_t calcClutSize( uint32_t inChannels, uint32_t outChannels, uint32_t gridP
 
 /********************************************************************************/
 
-// currently written to use the same number of input and output channels
 // assumes identity matrix and 1D LUTs
 static
 void add_lut16_binary( profileDataInner &data, uint32_t signature,
@@ -366,7 +366,6 @@ void add_lut16_binary( profileDataInner &data, uint32_t signature,
 
 /********************************************************************************/
 
-// currently written to use the same number of input and output channels
 // assumes identity matrix and 1D LUTs
 static
 void add_lut8_binary( profileDataInner &data, uint32_t signature,
@@ -624,7 +623,7 @@ void write_header_binary( const profileDataInner &data, FILE *output )
     */
     time_t now;
     (void)time( &now );
-    struct tm *timeData = gmtime( &now );
+    struct tm *timeData = gmtime( &now );       // returns pointer to internal data, do not free
     uint16_t year = (uint16_t)(timeData->tm_year + 1900);
     uint16_t month = (uint16_t)(timeData->tm_mon + 1);
     uint16_t day = (uint16_t)timeData->tm_mday;
@@ -735,6 +734,7 @@ static
 std::string getTimeString(time_t &timeData)
 {
     char timeString[] = "yyyy-mm-ddThh:mm:ssZ";
+    // gmtime returns a pointer to internal data, do not free
     std::strftime( timeString, std::size(timeString), "%FT%TZ", std::gmtime(&timeData));
     return timeString;
 }
@@ -787,19 +787,23 @@ void add_colorantTable_xml( const profileDataInner &data, FILE *output, uint32_t
 
 /********************************************************************************/
 
-// currently written to use the same number of input and output channels
 // assumes identity matrix and 1D LUTs
 static
-void add_lut8_xml( const profileDataInner &data, FILE *output, uint32_t signature,
+void add_lut_xml( const profileDataInner &data, FILE *output, int depth, uint32_t signature,
                     uint32_t inChannels, uint32_t outChannels, uint32_t gridPoints, uint8_t* clut )
 {
     const int colLimit = 200;
 
+    assert( depth == 8 || depth == 16 );
     assert( inChannels >= 1 && inChannels <= 15 );
     assert( outChannels >= 1 && outChannels <= 15 );
     
     auto sigString = tag2XML( signature );
-    fprintf(output, "<%s> <lut8Type>\n", sigString.c_str() );
+    if (depth == 8)
+        fprintf(output, "<%s> <lut8Type>\n", sigString.c_str() );
+    else
+        fprintf(output, "<%s> <lut16Type>\n", sigString.c_str() );
+    
     fprintf(output, "  <Channels InputChannels=\"%d\" OutputChannels=\"%d\"/>\n",
                 inChannels, outChannels );
     
@@ -821,81 +825,46 @@ void add_lut8_xml( const profileDataInner &data, FILE *output, uint32_t signatur
     uint32_t clutSize = calcClutSize( inChannels, 1, gridPoints );
     
     fprintf(output,"    ");
-    for (uint32_t k = 0, col = 0; k < clutSize; ++k) {
-        for (uint32_t c = 0; c < (uint32_t)outChannels; ++c) {
-            uint8_t value = clut[ k*(uint32_t)outChannels + c ];
-            fprintf(output,"%3u ", value );
+    
+    if (depth == 8) {
+        for (uint32_t k = 0, col = 0; k < clutSize; ++k) {          // refactor
+            for (uint32_t c = 0; c < (uint32_t)outChannels; ++c) {
+                uint8_t value = clut[ k*(uint32_t)outChannels + c ];
+                fprintf(output,"%3u ", value );
+            }
+            
+            // line break!
+            col += (uint32_t)outChannels * 4;
+            if (col > colLimit) {
+                fprintf(output,"\n    ");
+                col = 0;
+            }
         }
-        
-        // line break!
-        col += (uint32_t)outChannels * 4;
-        if (col > colLimit) {
-            fprintf(output,"\n    ");
-            col = 0;
+    }
+    else {
+        uint16_t *clut16 = (uint16_t *)clut;
+        for (uint32_t k = 0, col = 0; k < clutSize; ++k) {
+            for (uint32_t c = 0; c < (uint32_t)outChannels; ++c) {
+                uint16_t value = clut16[ k*(uint32_t)outChannels + c ];
+                fprintf(output,"%5u ", value );
+            }
+            
+            // line break!
+            col += (uint32_t)outChannels * 6;
+            if (col > colLimit) {
+                fprintf(output,"\n    ");
+                col = 0;
+            }
         }
     }
 
     fprintf(output, "\n    </TableData>\n");
     fprintf(output, "  </CLUT>\n");
     
-    fprintf(output, "</lut8Type> </%s>\n", sigString.c_str() );
-}
-
-/********************************************************************************/
-
-// currently written to use the same number of input and output channels
-// assumes identity matrix and 1D LUTs
-static
-void add_lut16_xml( const profileDataInner &data, FILE *output, uint32_t signature,
-                    uint32_t inChannels, uint32_t outChannels, uint32_t gridPoints, uint16_t* clut )
-{
-    const int colLimit = 200;
-
-    assert( inChannels >= 1 && inChannels <= 15 );
-    assert( outChannels >= 1 && outChannels <= 15 );
-    
-    auto sigString = tag2XML( signature );
-    fprintf(output, "<%s> <lut16Type>\n", sigString.c_str() );
-    fprintf(output, "  <Channels InputChannels=\"%d\" OutputChannels=\"%d\"/>\n",
-                inChannels, outChannels );
-    
-    //bool isInput = (signature >> 24) == 'A';
-
-    fprintf(output, "  <BCurves>\n");
-    for (uint32_t i = 0; i < inChannels; ++i)
-        fprintf(output, "    <Curve IdentitySize=\"256\"/>\n");
-    fprintf(output, "  </BCurves>\n" );
-
-    fprintf(output, "  <ACurves>\n" );
-    for (uint32_t i = 0; i < outChannels; ++i)
-        fprintf(output, "    <Curve IdentitySize=\"256\"/>\n");
-    fprintf(output, "  </ACurves>\n" );
-
-    fprintf(output, "  <CLUT GridGranularity=\"%d\">\n", gridPoints );
-    fprintf(output, "    <TableData>\n");
-    
-    uint32_t clutSize = calcClutSize( inChannels, 1, gridPoints );
-    
-    fprintf(output,"    ");
-    for (uint32_t k = 0, col = 0; k < clutSize; ++k) {
-        for (uint32_t c = 0; c < (uint32_t)outChannels; ++c) {
-            uint16_t value = clut[ k*(uint32_t)outChannels + c ];
-            fprintf(output,"%5u ", value );
-        }
-        
-        // line break!
-        col += (uint32_t)outChannels * 6;
-        if (col > colLimit) {
-            fprintf(output,"\n    ");
-            col = 0;
-        }
-    }
-
-    fprintf(output, "\n    </TableData>\n");
-    fprintf(output, "  </CLUT>\n");
-    
-    fprintf(output, "</lut16Type> </%s>\n", sigString.c_str() );
-
+    if (depth == 8)
+        fprintf(output, "</lut8Type> </%s>\n", sigString.c_str() );
+    else
+        fprintf(output, "</lut16Type> </%s>\n", sigString.c_str() );
 }
 
 /********************************************************************************/
@@ -1030,14 +999,9 @@ void write_tags_xml( const profileDataInner &data, FILE *output )
             continue;
         }
 
-        if (table.tableDepth == 8)
-            add_lut8_xml( data, output, table.tableSig,
-                        (uint32_t)table.tableDimensions, (uint32_t)table.tableChannels,
-                        (uint32_t)table.tableGridPoints, table.tableData.get() );
-        else if (table.tableDepth == 16)
-            add_lut16_xml( data, output, table.tableSig,
-                        (uint32_t)table.tableDimensions, (uint32_t)table.tableChannels,
-                        (uint32_t)table.tableGridPoints, (uint16_t *)table.tableData.get() );
+        add_lut_xml( data, output, table.tableDepth, table.tableSig,
+                    (uint32_t)table.tableDimensions, (uint32_t)table.tableChannels,
+                    (uint32_t)table.tableGridPoints, table.tableData.get() );
     }
 
     
@@ -1059,7 +1023,7 @@ void add_colorantTable_json( const profileDataInner &data, FILE *output, uint32_
     for ( uint32_t i = 0; i < colorants.size(); ++i ) {
 
 #if 0
-// FIXED -- currently using 16 bit values not float
+// FIXED -- was using 16 bit values not float
 // fixed with iccDEV#813
         uint16_t tempL = (uint16_t)floatL_to_fileL65535(colorants[i].L);
         uint16_t tempA = (uint16_t)floatAB_to_fileAB65535(colorants[i].a);
@@ -1126,7 +1090,6 @@ void writeIdentityCurves_json( FILE *output, uint32_t count )
 
 /********************************************************************************/
 
-// currently written to use the same number of input and output channels
 // assumes identity matrix and 1D LUTs
 static
 void add_lut_json( const profileDataInner &data, FILE *output, int depth, uint32_t signature,
@@ -1361,15 +1324,15 @@ void write_tags_json( const profileDataInner &data, FILE *output )
                     (uint32_t)table.tableGridPoints, table.tableData.get() );
     }
 
-
+    // write this last, so we have a tag that doesn't need an ending comma
     fprintf(output, "{ \"mediaWhitePointTag\": {\n");
     fprintf(output, "\"data\": {\n");
     fprintf(output, "\"type\": \"XYZArrayType\",\n");
-    fprintf(output, "\"XYZ\": [ [ 0.964202880859, 1.00, 0.824905395508 ] ]\n");
+    fprintf(output, "\"XYZ\": [ [ 0.964202880859, 1.00, 0.824905395508 ] ]\n");     // D50
     fprintf(output, "}\n"); //end data
     fprintf(output, "} }\n");    // end whitepoint, no more tags, so no comma
     
-    fprintf(output, "]\n"); // nothing after this, so no comma
+    fprintf(output, "]\n"); // end of tag list, so no comma
 }
 
 /******************************************************************************/
@@ -1383,7 +1346,7 @@ int writeICCProfileXML( const std::string &filename, profileDataInner &thisProfi
     std::string outputFileName = filename + ".xml";
     FILE *output = fopen( outputFileName.c_str(), "w" );
     if (output == NULL) {
-        fprintf(stderr,"Could not create profile %s\n", outputFileName.c_str());
+        fprintf(stderr,"Could not create XML profile %s\n", outputFileName.c_str());
         return -1;
     }
 
@@ -1407,7 +1370,7 @@ int writeICCProfileJSON( const std::string &filename, profileDataInner &thisProf
     std::string outputFileName = filename + ".json";
     FILE *output = fopen( outputFileName.c_str(), "w" );
     if (output == NULL) {
-        fprintf(stderr,"Could not create profile %s\n", outputFileName.c_str());
+        fprintf(stderr,"Could not create JSON profile %s\n", outputFileName.c_str());
         return -1;
     }
 
@@ -1431,7 +1394,7 @@ int writeICCProfileBinary( const std::string &filename, profileDataInner &thisPr
     std::string outputFileName = filename + ".icc";
     FILE *output = fopen( outputFileName.c_str(), "wb" );
     if (output == NULL) {
-        fprintf(stderr,"Could not create profile %s\n", outputFileName.c_str());
+        fprintf(stderr,"Could not create binary profile %s\n", outputFileName.c_str());
         return -1;
     }
 
