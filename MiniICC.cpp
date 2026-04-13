@@ -439,7 +439,7 @@ void write_tags_binary( profileDataInner &data, FILE *output )
     uint32_t currentOffset = 128;    // just after the header
     
     // account for the size of thet tag table
-    currentOffset += 4 + (12 * data.tagInfo.size());
+    currentOffset += 4 + (uint32_t)(12 * data.tagInfo.size());
     
     // and align to a 4 byte boundary
     currentOffset = Align4(currentOffset);

@@ -14,9 +14,10 @@
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <string>
 #include <vector>
-#include <cmath>
 #include <memory>
 #include <map>
 #include <algorithm>

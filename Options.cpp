@@ -11,6 +11,7 @@
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <cmath>
@@ -23,6 +24,13 @@
 #include "json.hpp"
 
 using json = nlohmann::json;
+
+
+// work around bogus Windows headers and missing functions
+#ifdef _WIN32
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#endif
 
 /******************************************************************************/
 

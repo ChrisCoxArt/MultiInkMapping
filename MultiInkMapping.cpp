@@ -70,9 +70,10 @@ TODO - What about tints and shades?  need percentages of mixes, plus measurement
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <string>
 #include <vector>
-#include <cmath>
 #include <memory>
 #include <map>
 #include <algorithm>
@@ -583,7 +584,7 @@ void SearchSpline( const color_list &spline, float Ltarget, float &A, float &B )
     float Ltest = SplineInterp( t, spline[(size_t)sample0].L, spline[(size_t)sample1].L, spline[(size_t)sample2].L, spline[(size_t)sample3].L );
     
     // quick and dirty binary search
-    while ( fabs( Ltest - Ltarget ) > Ltolerance) {
+    while ( fabsf( Ltest - Ltarget ) > Ltolerance) {
         if (Ltest < Ltarget) {
             // between top and current
             Tbottom = t;
@@ -1293,7 +1294,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
         size_t tiles = (size_t)gridCount / ((size_t)gridPoints*(size_t)gridPoints);
         if (tiles < 1) tiles = 1;
         
-        size_t tilesWide = (size_t)sqrtf(tiles);
+        size_t tilesWide = (size_t)sqrtf((float)tiles);
         size_t tilesHigh = (tiles + (tilesWide-1)) / tilesWide;
         
         size_t tiffWidth = tilesWide * (size_t)gridPoints;
@@ -1419,9 +1420,9 @@ void AdjustInkMixForL( const inkColorSet &inkSet, float Ltarget, const std::vect
     labColor tempLAB = XYZ2LAB( tempXYZ );
     float Lstart = tempLAB.L;
     float Lcurrent = Lstart;
-    float t = (Lstart < Ltarget) ? 0.0 : 1.0;
-    float tTop = 1.0;
-    float tBottom = 0.0;
+    float t = (Lstart < Ltarget) ? 0.0f : 1.0f;
+    float tTop = 1.0f;
+    float tBottom = 0.0f;
 
 #if CACHE
     static float cacheLTarget = -50;
@@ -1440,7 +1441,7 @@ void AdjustInkMixForL( const inkColorSet &inkSet, float Ltarget, const std::vect
 #endif
 
     // binary search to find values, and bail with best effort if we can't reach them
-    while (fabs(Lcurrent - Ltarget) > tolerance) {
+    while (fabsf(Lcurrent - Ltarget) > tolerance) {
         
         if (Lcurrent < Ltarget)
             tBottom = t;
@@ -1713,9 +1714,9 @@ assert(hueFraction >= 0.0);
                         float closestDist = hypotf( mixedAB.a - neutral.A, mixedAB.b - neutral.B );
                         float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
 
-                        float tchroma = (closestDist > 1e-10) ? (thisDist / closestDist) : 0.0;
-                        if (tchroma > 1.0)  // clamp colors outside of gamut
-                            tchroma = 1.0;
+                        float tchroma = (closestDist > 1e-10f) ? (thisDist / closestDist) : 0.0f;
+                        if (tchroma > 1.0f)  // clamp colors outside of gamut
+                            tchroma = 1.0f;
 assert( tchroma >= 0.0 );
 
 // this doesn't seem to have an effect here
@@ -1990,9 +1991,9 @@ assert(hueFraction >= 0.0);
                     float closestDist = hypotf( mixedAB.a - neutral.A, mixedAB.b - neutral.B );
                     float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
 
-                    float tchroma = (closestDist > 1e-10) ? (thisDist / closestDist) : 0.0;
-                    if (tchroma > 1.0)  // clamp colors outside of gamut
-                        tchroma = 1.0;
+                    float tchroma = (closestDist > 1e-10f) ? (thisDist / closestDist) : 0.0f;
+                    if (tchroma > 1.0f)  // clamp colors outside of gamut
+                        tchroma = 1.0f;
                     
                     // scale full saturation result to neutral
                     result.a = LERP( tchroma, neutral.A, result.a );
