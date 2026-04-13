@@ -253,7 +253,7 @@ void add_colorantTable_binary( profileDataInner &data, uint32_t signature, const
 
 // (gridPoints^input_channels) * output_channels
 static
-uint32_t calcClutSize( int inChannels, int outChannels, uint32_t gridPoints )
+uint32_t calcClutSize( uint32_t inChannels, uint32_t outChannels, uint32_t gridPoints )
 {
     uint32_t clutSize = gridPoints;
     
@@ -272,12 +272,12 @@ uint32_t calcClutSize( int inChannels, int outChannels, uint32_t gridPoints )
         break;
     default:
         clutSize = gridPoints;
-        for (int i = 1; i < inChannels; ++i)
+        for (uint32_t i = 1; i < inChannels; ++i)
             clutSize *= gridPoints;
         break;
     }
     
-    return clutSize * (uint32_t)outChannels;
+    return clutSize * outChannels;
 }
 
 /********************************************************************************/
@@ -286,7 +286,8 @@ uint32_t calcClutSize( int inChannels, int outChannels, uint32_t gridPoints )
 // assumes identity matrix and 1D LUTs
 static
 void add_lut16_binary( profileDataInner &data, uint32_t signature,
-            int inChannels, int outChannels, uint32_t gridPoints, uint16_t* clut )
+            uint32_t inChannels, uint32_t outChannels,
+            uint32_t gridPoints, uint16_t* clut )
 {
     const uint32_t lut_entries = 2;
     
@@ -329,7 +330,7 @@ void add_lut16_binary( profileDataInner &data, uint32_t signature,
     assert( lut_entries == 2 );
     
     // input_channels
-    for (int j = 0; j < inChannels; ++j) {
+    for (uint32_t j = 0; j < inChannels; ++j) {
         // simple 2 point LUT
         *((uint16_t *)(myData + current + j*4 + 0)) = 0;
         *((uint16_t *)(myData + current + j*4 + 2)) = (uint16_t) SwabShort( 65535 );
@@ -350,7 +351,7 @@ void add_lut16_binary( profileDataInner &data, uint32_t signature,
     
     // identity output tables
     // output_channels
-    for (int j = 0; j < outChannels; ++j) {
+    for (uint32_t j = 0; j < outChannels; ++j) {
         // simple 2 point LUT
         *((uint16_t *)(myData + current + j*4 + 0)) = 0;
         *((uint16_t *)(myData + current + j*4 + 2)) = (uint16_t) SwabShort( 65535 );
@@ -368,7 +369,9 @@ void add_lut16_binary( profileDataInner &data, uint32_t signature,
 // currently written to use the same number of input and output channels
 // assumes identity matrix and 1D LUTs
 static
-void add_lut8_binary( profileDataInner &data, uint32_t signature, int inChannels, int outChannels, uint32_t gridPoints, uint8_t* clut )
+void add_lut8_binary( profileDataInner &data, uint32_t signature,
+                        uint32_t inChannels, uint32_t outChannels,
+                        uint32_t gridPoints, uint8_t* clut )
 {
     assert( inChannels >= 1 && inChannels <= 15 );
     assert( outChannels >= 1 && outChannels <= 15 );
@@ -418,7 +421,7 @@ void add_lut8_binary( profileDataInner &data, uint32_t signature, int inChannels
     
     // identity output tables
     // output_channels
-    for (uint32_t j = 0; j < (uint32_t)outChannels; ++j)
+    for (uint32_t j = 0; j < outChannels; ++j)
         for (uint32_t i = 0; i < 256; ++i)
             myData[ current + j*256 + i ] = (uint8_t) i;
     
@@ -566,10 +569,12 @@ void create_tags_binary( profileDataInner &data )
         }
     
         if (table.tableDepth == 8)
-            add_lut8_binary( data, table.tableSig, table.tableDimensions, table.tableChannels,
+            add_lut8_binary( data, table.tableSig,
+                        (uint32_t)table.tableDimensions, (uint32_t)table.tableChannels,
                         (uint32_t)table.tableGridPoints, table.tableData.get() );
         else if (table.tableDepth == 16)
-            add_lut16_binary( data, table.tableSig, table.tableDimensions, table.tableChannels,
+            add_lut16_binary( data, table.tableSig,
+                        (uint32_t)table.tableDimensions, (uint32_t)table.tableChannels,
                         (uint32_t)table.tableGridPoints, (uint16_t *)table.tableData.get() );
     }
 
@@ -786,7 +791,7 @@ void add_colorantTable_xml( const profileDataInner &data, FILE *output, uint32_t
 // assumes identity matrix and 1D LUTs
 static
 void add_lut8_xml( const profileDataInner &data, FILE *output, uint32_t signature,
-                    int inChannels, int outChannels, uint32_t gridPoints, uint8_t* clut )
+                    uint32_t inChannels, uint32_t outChannels, uint32_t gridPoints, uint8_t* clut )
 {
     const int colLimit = 200;
 
@@ -801,19 +806,19 @@ void add_lut8_xml( const profileDataInner &data, FILE *output, uint32_t signatur
     //bool isInput = (signature >> 24) == 'A';
 
     fprintf(output, "  <BCurves>\n");
-    for (int i = 0; i < inChannels; ++i)
+    for (uint32_t i = 0; i < inChannels; ++i)
         fprintf(output, "    <Curve IdentitySize=\"256\"/>\n");
     fprintf(output, "  </BCurves>\n" );
 
     fprintf(output, "  <ACurves>\n" );
-    for (int i = 0; i < outChannels; ++i)
+    for (uint32_t i = 0; i < outChannels; ++i)
         fprintf(output, "    <Curve IdentitySize=\"256\"/>\n");
     fprintf(output, "  </ACurves>\n" );
 
     fprintf(output, "  <CLUT GridGranularity=\"%d\">\n", gridPoints );
     fprintf(output, "    <TableData>\n");
     
-    uint32_t clutSize = calcClutSize( inChannels, 1, (uint32_t)gridPoints );
+    uint32_t clutSize = calcClutSize( inChannels, 1, gridPoints );
     
     fprintf(output,"    ");
     for (uint32_t k = 0, col = 0; k < clutSize; ++k) {
@@ -842,7 +847,7 @@ void add_lut8_xml( const profileDataInner &data, FILE *output, uint32_t signatur
 // assumes identity matrix and 1D LUTs
 static
 void add_lut16_xml( const profileDataInner &data, FILE *output, uint32_t signature,
-                    int inChannels, int outChannels, uint32_t gridPoints, uint16_t* clut )
+                    uint32_t inChannels, uint32_t outChannels, uint32_t gridPoints, uint16_t* clut )
 {
     const int colLimit = 200;
 
@@ -857,12 +862,12 @@ void add_lut16_xml( const profileDataInner &data, FILE *output, uint32_t signatu
     //bool isInput = (signature >> 24) == 'A';
 
     fprintf(output, "  <BCurves>\n");
-    for (int i = 0; i < inChannels; ++i)
+    for (uint32_t i = 0; i < inChannels; ++i)
         fprintf(output, "    <Curve IdentitySize=\"256\"/>\n");
     fprintf(output, "  </BCurves>\n" );
 
     fprintf(output, "  <ACurves>\n" );
-    for (int i = 0; i < outChannels; ++i)
+    for (uint32_t i = 0; i < outChannels; ++i)
         fprintf(output, "    <Curve IdentitySize=\"256\"/>\n");
     fprintf(output, "  </ACurves>\n" );
 
@@ -1026,10 +1031,12 @@ void write_tags_xml( const profileDataInner &data, FILE *output )
         }
 
         if (table.tableDepth == 8)
-            add_lut8_xml( data, output, table.tableSig, table.tableDimensions, table.tableChannels,
+            add_lut8_xml( data, output, table.tableSig,
+                        (uint32_t)table.tableDimensions, (uint32_t)table.tableChannels,
                         (uint32_t)table.tableGridPoints, table.tableData.get() );
         else if (table.tableDepth == 16)
-            add_lut16_xml( data, output, table.tableSig, table.tableDimensions, table.tableChannels,
+            add_lut16_xml( data, output, table.tableSig,
+                        (uint32_t)table.tableDimensions, (uint32_t)table.tableChannels,
                         (uint32_t)table.tableGridPoints, (uint16_t *)table.tableData.get() );
     }
 
@@ -1046,12 +1053,14 @@ void add_colorantTable_json( const profileDataInner &data, FILE *output, uint32_
     fprintf(output, "{ \"colorantTableTag\": {\n");
     fprintf(output, "\"data\": {\n");
     fprintf(output, "\"type\": \"colorantTableType\",\n");
+    fprintf(output, "\"pcsEncoding\": \"Lab\",\n");
     fprintf(output, "\"colorantTable\": [\n");
     
     for ( uint32_t i = 0; i < colorants.size(); ++i ) {
 
-// ALERT, BUG, TODO -- currently using 16 bit values not float
-#if 1
+#if 0
+// FIXED -- currently using 16 bit values not float
+// fixed with iccDEV#813
         uint16_t tempL = (uint16_t)floatL_to_fileL65535(colorants[i].L);
         uint16_t tempA = (uint16_t)floatAB_to_fileAB65535(colorants[i].a);
         uint16_t tempB = (uint16_t)floatAB_to_fileAB65535(colorants[i].b);
@@ -1076,31 +1085,15 @@ void add_colorantTable_json( const profileDataInner &data, FILE *output, uint32_
 
 /********************************************************************************/
 
-// currently written to use the same number of input and output channels
-// assumes identity matrix and 1D LUTs
-static
-void add_lut8_json( const profileDataInner &data, FILE *output, uint32_t signature,
-                    int inChannels, int outChannels, uint32_t gridPoints, uint8_t* clut )
+void writeIdentityCurves_json( FILE *output, uint32_t count )
 {
-    const int colLimit = 200;
+    assert( count >= 1 );
 
-    assert( inChannels >= 1 && inChannels <= 15 );
-    assert( outChannels >= 1 && outChannels <= 15 );
-    
-    auto sigString = tag2XML( signature );
-    fprintf(output, "{ \"%s\": {\n", sigString.c_str() );
-    fprintf(output, "\"data\": {\n");
-
-    fprintf(output, "\"inputChannels\": %d,\n", inChannels );
-    fprintf(output, "\"outputChannels\": %d,\n", outChannels );
-    fprintf(output, "\"type\": \"lut8Type\",\n" );
-    
-
-    fprintf(output, "\"aCurves\": [\n" );
-    for (int i = 0; i < outChannels; ++i) {
+#if 0
+    for (uint32_t i = 0; i < count; ++i) {
         fprintf(output, "{ \"curveType\": \"table\", \"precision\": 1, \"type\": \"Curve\",\n");
         
-// ALERT, BUG, TODO -- have to write out all values
+// FIXED -- have to write out all values
         fprintf(output,"\"table\": [ ");
         for (int j = 0; j < 256; ++j) {
             fprintf(output,"%d", j );
@@ -1109,70 +1102,26 @@ void add_lut8_json( const profileDataInner &data, FILE *output, uint32_t signatu
         }
         fprintf(output," ] }");
         
-        if (i < (outChannels-1))
+        if (i < (count-1))
             fprintf(output,",\n");
         else
             fprintf(output,"\n");
     }
-    fprintf(output, "],\n" );
-    
-    
-    
-    fprintf(output, "\"bCurves\": [\n" );
-    for (int i = 0; i < inChannels; ++i) {
-        fprintf(output, "{ \"curveType\": \"table\", \"precision\": 1, \"type\": \"Curve\",\n");
+#else
+// fixed in iccDEV#813
+// NOPE "data": { "type": "curveType", "curveType": "identity", "size": 256 }
+// "data": { "type": "Curve", "curveType": "identity", "size": 256 }
+
+    for (uint32_t i = 0; i < count; ++i) {
+        fprintf(output, "{ \"type\": \"Curve\", \"curveType\": \"identity\", \"size\": 256 }");
         
-// ALERT, BUG, TODO -- have to write out all values
-        fprintf(output,"\"table\": [ ");
-        for (int j = 0; j < 256; ++j) {
-            fprintf(output,"%d", j );
-            if (j < (256-1))
-                fprintf(output,", ");
-        }
-        fprintf(output," ] }");
-        
-        if (i < (inChannels-1))
+        if (i < (count-1))
             fprintf(output,",\n");
         else
             fprintf(output,"\n");
     }
-    fprintf(output, "],\n" );
 
-
-    fprintf(output, "\"clut\": {\n");
-    fprintf(output, "\"precision\": 1,\n" );
-    
-    fprintf(output, "\"gridPoints\": [ " );
-    for (int i = 0; i < inChannels; ++i) {
-        fprintf(output, "%d", gridPoints );
-        if (i < (inChannels-1))
-            fprintf(output,", ");
-    }
-    fprintf(output, " ],\n" );
-    
-    fprintf(output, "\"data\": [\n");
-    
-    uint32_t clutSize = calcClutSize( inChannels, 1, gridPoints );
-    
-    fprintf(output,"  ");
-    for (uint32_t k = 0, col = 0; k < clutSize; ++k) {
-        for (uint32_t c = 0; c < (uint32_t)outChannels; ++c) {
-            uint8_t value = clut[ k*(uint32_t)outChannels + c ];
-            fprintf(output,"%3u, ", value );
-        }
-        
-        // line break!
-        col += (uint32_t)outChannels * 5;
-        if (k < (clutSize-1) && col > colLimit) {
-            fprintf(output,"\n  ");
-            col = 0;
-        }
-    }
-    // back up to get rid of the last ", "
-    fseek( output, -2, SEEK_CUR );
-
-    fprintf(output, "\n]\n}\n}\n"); // end data array, end clut, and data block
-    fprintf(output, "} },\n");   // end table, end tag
+#endif
 }
 
 /********************************************************************************/
@@ -1180,11 +1129,12 @@ void add_lut8_json( const profileDataInner &data, FILE *output, uint32_t signatu
 // currently written to use the same number of input and output channels
 // assumes identity matrix and 1D LUTs
 static
-void add_lut16_json( const profileDataInner &data, FILE *output, uint32_t signature,
-                    int inChannels, int outChannels, uint32_t gridPoints, uint16_t* clut )
+void add_lut_json( const profileDataInner &data, FILE *output, int depth, uint32_t signature,
+                    uint32_t inChannels, uint32_t outChannels, uint32_t gridPoints, uint8_t* clut )
 {
     const int colLimit = 200;
 
+    assert( depth == 8 || depth == 16 );
     assert( inChannels >= 1 && inChannels <= 15 );
     assert( outChannels >= 1 && outChannels <= 15 );
     
@@ -1192,59 +1142,26 @@ void add_lut16_json( const profileDataInner &data, FILE *output, uint32_t signat
     fprintf(output, "{ \"%s\": {\n", sigString.c_str() );
     fprintf(output, "\"data\": {\n");
 
-    fprintf(output, "\"inputChannels\": %d,\n", inChannels );
-    fprintf(output, "\"outputChannels\": %d,\n", outChannels );
-    fprintf(output, "\"type\": \"lut16Type\",\n" );
+    fprintf(output, "\"inputChannels\": %u,\n", inChannels );
+    fprintf(output, "\"outputChannels\": %u,\n", outChannels );
+    if (depth == 8)
+        fprintf(output, "\"type\": \"lut7Type\",\n" );
+    else
+        fprintf(output, "\"type\": \"lut16Type\",\n" );
     
-
     fprintf(output, "\"aCurves\": [\n" );
-    for (int i = 0; i < outChannels; ++i) {
-        fprintf(output, "{ \"curveType\": \"table\", \"precision\": 1, \"type\": \"Curve\",\n");
-        
-// ALERT, BUG, TODO -- have to write out all values
-        fprintf(output,"\"table\": [ ");
-        for (int j = 0; j < 256; ++j) {
-            fprintf(output,"%d", j );
-            if (j < (256-1))
-                fprintf(output,", ");
-        }
-        fprintf(output," ] }");
-        
-        if (i < (outChannels-1))
-            fprintf(output,",\n");
-        else
-            fprintf(output,"\n");
-    }
+    writeIdentityCurves_json( output, outChannels );
     fprintf(output, "],\n" );
-    
-    
     
     fprintf(output, "\"bCurves\": [\n" );
-    for (int i = 0; i < inChannels; ++i) {
-        fprintf(output, "{ \"curveType\": \"table\", \"precision\": 1, \"type\": \"Curve\",\n");
-        
-// ALERT, BUG, TODO -- have to write out all values
-        fprintf(output,"\"table\": [ ");
-        for (int j = 0; j < 256; ++j) {
-            fprintf(output,"%d", j );
-            if (j < (256-1))
-                fprintf(output,", ");
-        }
-        fprintf(output," ] }");
-        
-        if (i < (inChannels-1))
-            fprintf(output,",\n");
-        else
-            fprintf(output,"\n");
-    }
+    writeIdentityCurves_json( output, inChannels );
     fprintf(output, "],\n" );
 
-
     fprintf(output, "\"clut\": {\n");
-    fprintf(output, "\"precision\": 2,\n" );
+    fprintf(output, "\"precision\": %d,\n", depth/8 );
     
     fprintf(output, "\"gridPoints\": [ " );
-    for (int i = 0; i < inChannels; ++i) {
+    for (uint32_t i = 0; i < inChannels; ++i) {
         fprintf(output, "%d", gridPoints );
         if (i < (inChannels-1))
             fprintf(output,", ");
@@ -1256,19 +1173,38 @@ void add_lut16_json( const profileDataInner &data, FILE *output, uint32_t signat
     uint32_t clutSize = calcClutSize( inChannels, 1, gridPoints );
     
     fprintf(output,"  ");
-    for (uint32_t k = 0, col = 0; k < clutSize; ++k) {
-        for (uint32_t c = 0; c < (uint32_t)outChannels; ++c) {
-            uint16_t value = clut[ k*(uint32_t)outChannels + c ];
-            fprintf(output,"%5u, ", value );
-        }
-        
-        // line break!
-        col += (uint32_t)outChannels * 7;
-        if (k < (clutSize-1) && col > colLimit) {
-            fprintf(output,"\n  ");
-            col = 0;
+    if (depth == 8) {
+        for (uint32_t k = 0, col = 0; k < clutSize; ++k) {
+            for (uint32_t c = 0; c < (uint32_t)outChannels; ++c) {
+                uint8_t value = clut[ k*(uint32_t)outChannels + c ];
+                fprintf(output,"%3u, ", value );
+            }
+            
+            // line break!
+            col += (uint32_t)outChannels * 5;
+            if (k < (clutSize-1) && col > colLimit) {
+                fprintf(output,"\n  ");
+                col = 0;
+            }
         }
     }
+    else {
+        uint16_t *clut16 = (uint16_t *)clut;
+        for (uint32_t k = 0, col = 0; k < clutSize; ++k) {
+            for (uint32_t c = 0; c < (uint32_t)outChannels; ++c) {
+                uint16_t value = clut16[ k*(uint32_t)outChannels + c ];
+                fprintf(output,"%5u, ", value );
+            }
+            
+            // line break!
+            col += (uint32_t)outChannels * 7;
+            if (k < (clutSize-1) && col > colLimit) {
+                fprintf(output,"\n  ");
+                col = 0;
+            }
+        }
+    }
+    
     // back up to get rid of the last ", "
     fseek( output, -2, SEEK_CUR );
 
@@ -1420,12 +1356,9 @@ void write_tags_json( const profileDataInner &data, FILE *output )
             continue;
         }
 
-        if (table.tableDepth == 8)
-            add_lut8_json( data, output, table.tableSig, table.tableDimensions, table.tableChannels,
-                        (uint32_t)table.tableGridPoints, table.tableData.get() );
-        else if (table.tableDepth == 16)
-            add_lut16_json( data, output, table.tableSig, table.tableDimensions, table.tableChannels,
-                        (uint32_t)table.tableGridPoints, (uint16_t *)table.tableData.get() );
+        add_lut_json( data, output, table.tableDepth, table.tableSig,
+                    (uint32_t)table.tableDimensions, (uint32_t)table.tableChannels,
+                    (uint32_t)table.tableGridPoints, table.tableData.get() );
     }
 
 
