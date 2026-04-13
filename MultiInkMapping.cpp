@@ -65,12 +65,12 @@ TODO - What about tints and shades?  need percentages of mixes, plus measurement
 
 */
 
+#define _USE_MATH_DEFINES
 #include <cstdio>
 #include <cstdint>
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
-#define _USE_MATH_DEFINES
 #include <cmath>
 #include <string>
 #include <vector>
@@ -81,6 +81,12 @@ TODO - What about tints and shades?  need percentages of mixes, plus measurement
 #include "Options.hpp"
 #include "MiniTIFF.hpp"
 #include "MiniICC.hpp"
+
+
+// MSVC headers blow chunks
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327950288
+#endif
 
 /********************************************************************************/
 
