@@ -2,6 +2,8 @@
 Multi Ink Mapping
   MIT License, Copyright (C) Chris Cox 2026
 
+Created by Chris Cox around March 2, 2026.
+
 
 
 Is it accurate? Nope.

@@ -99,6 +99,7 @@ typedef enum : uint32_t  {
     icSigUnknown = 0,
 } profile_sig;
 
+/********************************************************************************/
 
 // actually bitfields so we can write more than one type
 typedef enum : uint32_t  {
@@ -111,7 +112,7 @@ typedef enum : uint32_t  {
 
 /********************************************************************************/
 
-// all pointers are passed in, not owned
+// tableData is really owned by this struct, despite being shared
 struct tableFormat {
 
     tableFormat() : pointsBackTo(icSigUnknown),
@@ -121,9 +122,9 @@ struct tableFormat {
     profile_sig     pointsBackTo;   // so we have A2B1 and A2B2 refer back to A2B0
     
     int             tableDepth;
-    size_t          tableGridPoints;
-    int             tableDimensions;
-    int             tableChannels;
+    size_t          tableGridPoints;    // currently the same for all channels
+    int             tableDimensions;    // input channels
+    int             tableChannels;      // output channels
     std::shared_ptr<uint8_t> tableData;
 };
 
@@ -131,12 +132,11 @@ struct tableFormat {
 
 struct namedICCLABFloat {
     std::string name;
-    float L;
-    float a;
+    float L;    // 0..100.0 encoding
+    float a;    // +-128.0 encoding
     float b;
 };
 
-// all pointers are passed in, not owned
 struct colorantTableFormat {
 
     colorantTableFormat() : tableSig(icSigUnknown) {}
@@ -187,6 +187,7 @@ int constexpr floatL_to_fileL65535( float L )
     return (int)( (65535.0f / 100.0f) * L + 0.5 );
 }
 
+// if this is confusing, read the ICC spec. (it isn't clear, but it is defined)
 inline
 int constexpr floatAB_to_fileAB65535( float A )
 {

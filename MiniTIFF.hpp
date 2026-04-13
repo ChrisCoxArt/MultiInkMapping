@@ -51,7 +51,7 @@ enum {
     TIFF_PLANARCONFIG = 284,        // required for > 1 channel, 1 = interleaved, 2 = not interleaved
     TIFF_RESOLUTIONUNIT = 296,      // required, 1=no unit, 2 = inch, 3 = cm
     
-    TIFF_PREDICTOR = 317,           // 1 = none, 2 = horizontal difference
+    TIFF_PREDICTOR = 317,           // 1 = none, 2 = horizontal difference, 3 = floating point
     TIFF_COLORMAP = 320,            // indexed color only
     TIFF_SAMPLE_FORMAT = 339,       // 1 = unsigned, 2 = signed, 3 = float, 4 = undefined
 };

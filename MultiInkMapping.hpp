@@ -3,7 +3,7 @@
 //  MultiInkMapping
 //  MIT License, Copyright (C) Chris Cox 2026
 //
-//  Created by Chris Cox on 3/18/26.
+//  Created by Chris Cox on March 18, 2026.
 //
 
 #ifndef MultiInkMapping_h
@@ -29,8 +29,8 @@ const char kVersionString[] = "0.9b";
 /******************************************************************************/
 
 struct labColor {
-    float L;
-    float A;
+    float L;    // 0...100
+    float A;    // +-128.0
     float B;
     
 public:
@@ -52,7 +52,7 @@ public:
 /******************************************************************************/
 
 struct xyzColor {
-    float X;
+    float X;    // 0..100
     float Y;
     float Z;
     
@@ -64,7 +64,7 @@ public:
 /******************************************************************************/
 
 struct Point {
-    float a;
+    float a;    // from Lab for a particular L plane
     float b;
 
 public:
@@ -93,8 +93,8 @@ struct inkMixPair {
 /******************************************************************************/
 
 struct overPrintSwatch {
-    labColor color;                         // from XML
-    std::vector< std::string > inkNames;    // from XML
+    labColor color;                         // from JSON
+    std::vector< std::string > inkNames;    // from JSON
 
 public:
     uint32_t inkBitmap;                     // filled in by matching names
@@ -318,7 +318,7 @@ uint16_t constexpr float_to_file65535( float A )
 /********************************************************************************/
 
 // convert 0..100 representation to file representation
-// ICC version 2 profile encoding for LAB 16 bit  --- not usable in TIFF
+// ICC version 2/4 profile encoding for LAB 16 bit  --- not usable in TIFF
 inline
 int constexpr floatL_to_fileL16( float L )
 {

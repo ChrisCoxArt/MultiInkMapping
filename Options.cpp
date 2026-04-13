@@ -3,7 +3,7 @@
 //  MultiInkMapping
 //  MIT License, Copyright (C) Chris Cox 2026
 //
-//  Created by Chris Cox on 3/19/26.
+//  Created by Chris Cox on March 19, 2026.
 //
 
 #include <cstdio>
