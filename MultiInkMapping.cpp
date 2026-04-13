@@ -29,7 +29,7 @@ TODO - would be nice to add measured overprint colors
                 but still suffers from "find closest" versus "exact" problems
 
         build predictable lookup for full inks, then fractional extrapolation for partials?
-            currently looks up only fulls, then multiply for partials
+            currently looks up only fulls, then multiply for partials - which fails sometimes (hard edge where they meet)
 
 
 TODO - allow additional combinations of inks (n+2, n+3, tertiary, etc.) when building splines
@@ -1925,7 +1925,6 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, size_t gridP
                         index1 = 0;
                     }
                     
-
 assert( index != index1 );
 assert( index >= 0 );
 assert( index1 >= 0 );
@@ -2225,12 +2224,12 @@ int create_utility_maps( inkColorSet &inkSet )
         }
         
         // check for NaN and Inf, just in case
-        if (isnan(L) || isnan(A) || isnan(B)) {
+        if (std::isnan(L) || std::isnan(A) || std::isnan(B)) {
             fprintf(stderr,"ERROR - What color is NaN in overprint %zu in set %s?\n",
                         index, inkSet.name.c_str() );
             return 1;
         }
-        if (isinf(L) || isinf(A) || isinf(B)) {
+        if (std::isinf(L) || std::isinf(A) || std::isinf(B)) {
             fprintf(stderr,"ERROR - What color is Infinity in overprint %zu in set %s?\n",
                         index, inkSet.name.c_str() );
             return 1;
@@ -2347,13 +2346,13 @@ void processInkSetList(void)
             }
             
             // check for NaN and Inf, just in case
-            if (isnan(L) || isnan(A) || isnan(B)) {
+            if (std::isnan(L) || std::isnan(A) || std::isnan(B)) {
                 fprintf(stderr,"ERROR - What color is NaN %s in set %s?\n",
                             ink.name.c_str(), inkSet.name.c_str() );
                 fail = true;
                 break;
             }
-            if (isinf(L) || isinf(A) || isinf(B)) {
+            if (std::isinf(L) || std::isinf(A) || std::isinf(B)) {
                 fprintf(stderr,"ERROR - What color is Infinity %s in set %s?\n",
                             ink.name.c_str(), inkSet.name.c_str() );
                 fail = true;

@@ -13,6 +13,7 @@
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
+#include <ctime>
 #include <string>
 #include <vector>
 #include <cmath>

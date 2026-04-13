@@ -1,7 +1,7 @@
 # Multi Ink Mapping
 # Created March 17, 2026
 
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.10)
 project( MultiInkMapping CXX)
 
 set( CMAKE_CXX_STANDARD 20)
