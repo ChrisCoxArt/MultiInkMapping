@@ -43,3 +43,5 @@
 # Xcode build stuff
 build/
 .DS_Store
+*.xcodeproj
+
