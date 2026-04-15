@@ -6,6 +6,8 @@ Simulate inks (1-15) painted or printed on paper - for custom printing, profile,
 Input is a JSON file with color definitions (names and LAB values) and output settings.<P>
 Output is a bunch of ICC profiles (binary, XML, or JSON) and optional TIFF files.
 
+![GamutMapDiagram](https://github.com/user-attachments/assets/e8e97c1b-3e78-43e1-9afe-2bccb5cf8d73)
+
 -----
 
 * Is it accurate? Nope.  
