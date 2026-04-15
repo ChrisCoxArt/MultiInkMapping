@@ -283,8 +283,8 @@ void defaultSettings( settings_spec &p )
 
 void from_json( const json &j, settings_spec &p )
 {
-    defaultSettings(p);
-    
+    p = globalSettings;
+
     ReadInt( j, "tableDepth", p.gDataDepth );
     ReadInt( j, "gridPoints", p.gDataGridPoints );
     ReadSize( j, "tableSizeLimit", p.gTableSizeLimit );
