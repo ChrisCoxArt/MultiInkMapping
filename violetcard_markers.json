@@ -3,36 +3,36 @@
     "gridPoints": 21,
     "tableDepth": 8,
     "tableSizeLimit": 1048576,
-    "Comment": "Alcohol Markers on Pink Cardstock",
+    "Comment": "Alcohol Markers on Violet Cardstock",
 
     "colorSets": [
         {
-            "description": "Pink Cardstock Lavender and Yellow Markers",
-            "filename": "PinkCard-Lavender-Yellow",
+            "description": "Violet Cardstock Lavender and Yellow Markers",
+            "filename": "VioletCard-Lavender-Yellow",
             "paperColor": {
-                "L": 77.8,
-                "a": 33.3,
-                "b": 7.1
+                "L": 70.7,
+                "a": 9.7,
+                "b": -16.9
             },
             "primariesList": [
                 {
                     "Name": "Lavender83",
-                    "L": 56.4,
-                    "a": 38.1,
-                    "b": -17.8
+                    "L": 55.4,
+                    "a": 26.0,
+                    "b": -31.7
                 },
                 {
                     "Name": "Yellow44",
-                    "L": 73.6,
-                    "a": 34.0,
-                    "b": 59.9
+                    "L": 64.8,
+                    "a": 2.4,
+                    "b": 36.0
                 }
             ],
             "overprints" : [
                 {
-                    "L": 55.4,
-                    "a": 28.2,
-                    "b": 26.8,
+                    "L": 52.5,
+                    "a": 12.0,
+                    "b": 17.6,
                     "inkNames": [
                         "Lavender83", "Yellow44"
                     ]
@@ -40,32 +40,32 @@
             ]
         },
         {
-            "description": "Pink Cardstock Lavender and Orange Markers",
-            "filename": "PinkCard-Lavender-Orange",
+            "description": "Violet Cardstock Lavender and Orange Markers",
+            "filename": "VioletCard-Lavender-Orange",
             "paperColor": {
-                "L": 77.8,
-                "a": 33.3,
-                "b": 7.1
+                "L": 70.7,
+                "a": 9.7,
+                "b": -16.9
             },
             "primariesList": [
                 {
                     "Name": "Lavender83",
-                    "L": 56.4,
-                    "a": 38.1,
-                    "b": -17.8
+                    "L": 55.4,
+                    "a": 26.0,
+                    "b": -31.7
                 },
                 {
                     "Name": "Orange22",
-                    "L": 58.9,
-                    "a": 59.7,
-                    "b": 38.2
+                    "L": 50.1,
+                    "a": 40.4,
+                    "b": 19.0
                 }
             ],
             "overprints" : [
                 {
-                    "L": 50.1,
-                    "a": 47.8,
-                    "b": 20.9,
+                    "L": 45.8,
+                    "a": 33.9,
+                    "b": 7.7,
                     "inkNames": [
                         "Lavender83", "Orange22"
                     ]
@@ -73,32 +73,32 @@
             ]
         },
         {
-            "description": "Pink Cardstock Cyan and Lavender Markers",
-            "filename": "PinkCard-Cyan-Lavender",
+            "description": "Violet Cardstock Cyan and Lavender Markers",
+            "filename": "VioletCard-Cyan-Lavender",
             "paperColor": {
-                "L": 77.8,
-                "a": 33.3,
-                "b": 7.1
+                "L": 70.7,
+                "a": 9.7,
+                "b": -16.9
             },
             "primariesList": [
                 {
                     "Name": "Lavender83",
-                    "L": 56.4,
-                    "a": 38.1,
-                    "b": -17.8
+                    "L": 55.4,
+                    "a": 26.0,
+                    "b": -31.7
                 },
                 {
                     "Name": "Cyan64",
-                    "L": 37.7,
-                    "a": -9.8,
-                    "b": -26.5
+                    "L": 40.5,
+                    "a": -13.8,
+                    "b": -30.3
                 }
             ],
             "overprints" : [
                 {
-                    "L": 36.0,
-                    "a": -2.8,
-                    "b": -29.9,
+                    "L": 38.8,
+                    "a": -4.2,
+                    "b": -34.4,
                     "inkNames": [
                         "Lavender83", "Cyan64"
                     ]
@@ -106,32 +106,32 @@
             ]
         },
         {
-            "description": "Pink Cardstock Violet and Green Markers",
-            "filename": "PinkCard-Violet-Green",
+            "description": "Violet Cardstock Violet and Green Markers",
+            "filename": "VioletCard-Violet-Green",
             "paperColor": {
-                "L": 77.8,
-                "a": 33.3,
-                "b": 7.1
+                "L": 70.7,
+                "a": 9.7,
+                "b": -16.9
             },
             "primariesList": [
                 {
                     "Name": "Violet73",
-                    "L": 35.0,
-                    "a": 35.0,
-                    "b": -29.4
+                    "L": 35.1,
+                    "a": 34.4,
+                    "b": -35.2
                 },
                 {
                     "Name": "Green55",
-                    "L": 47.1,
-                    "a": -24.6,
-                    "b": 4.9
+                    "L": 49.8,
+                    "a": -32.3,
+                    "b": 1.0
                 }
             ],
             "overprints" : [
                 {
-                    "L": 39.5,
-                    "a": 12.4,
-                    "b": -17.5,
+                    "L": 31.3,
+                    "a": 10.3,
+                    "b": -17.7,
                     "inkNames": [
                         "Violet73", "Green55"
                     ]
@@ -139,32 +139,32 @@
             ]
         },
         {
-            "description": "Pink Cardstock Cyan and Yellow Markers",
-            "filename": "PinkCard-Cyan-Yellow",
+            "description": "Violet Cardstock Cyan and Yellow Markers",
+            "filename": "VioletCard-Cyan-Yellow",
             "paperColor": {
-                "L": 77.8,
-                "a": 33.3,
-                "b": 7.1
+                "L": 70.7,
+                "a": 9.7,
+                "b": -16.9
             },
             "primariesList": [
                 {
                     "Name": "Yellow44",
-                    "L": 73.6,
-                    "a": 34.0,
-                    "b": 59.9
+                    "L": 64.8,
+                    "a": 2.4,
+                    "b": 36.0
                 },
                 {
                     "Name": "Cyan64",
-                    "L": 37.7,
-                    "a": -9.8,
-                    "b": -26.5
+                    "L": 40.5,
+                    "a": -13.8,
+                    "b": -30.3
                 }
             ],
             "overprints" : [
                 {
-                    "L": 35.5,
-                    "a": -23.4,
-                    "b": 6.0,
+                    "L": 41.9,
+                    "a": -29.8,
+                    "b": 5.6,
                     "inkNames": [
                         "Yellow44", "Cyan64"
                     ]
@@ -172,32 +172,32 @@
             ]
         },
         {
-            "description": "Pink Cardstock Blue and Magenta Markers",
-            "filename": "PinkCard-Blue-Magenta",
+            "description": "Violet Cardstock Blue and Magenta Markers",
+            "filename": "VioletCard-Blue-Magenta",
             "paperColor": {
-                "L": 77.8,
-                "a": 33.3,
-                "b": 7.1
+                "L": 70.7,
+                "a": 9.7,
+                "b": -16.9
             },
             "primariesList": [
                 {
                     "Name": "Blue72",
-                    "L": 31.2,
-                    "a": 20.0,
-                    "b": -44.2
+                    "L": 31.5,
+                    "a": 21.3,
+                    "b": -48.9
                 },
                 {
                     "Name": "Magenta88",
-                    "L": 61.4,
-                    "a": 65.0,
-                    "b": 16.1
+                    "L": 51.8,
+                    "a": 45.4,
+                    "b": -8.7
                 }
             ],
             "overprints" : [
                 {
-                    "L": 29.4,
-                    "a": 14.7,
-                    "b": -31.8,
+                    "L": 29.6,
+                    "a": 16.1,
+                    "b": -35.3,
                     "inkNames": [
                         "Blue72", "Magenta88"
                     ]
@@ -205,25 +205,25 @@
             ]
         },
         {
-            "description": "Pink Cardstock Cyan and Red Markers",
-            "filename": "PinkCard-Cyan-Red",
+            "description": "Violet Cardstock Cyan and Red Markers",
+            "filename": "VioletCard-Cyan-Red",
             "paperColor": {
-                "L": 77.8,
-                "a": 33.3,
-                "b": 7.1
+                "L": 70.7,
+                "a": 9.7,
+                "b": -16.9
             },
             "primariesList": [
                 {
                     "Name": "Cyan64",
-                    "L": 37.7,
-                    "a": -9.8,
-                    "b": -26.5
+                    "L": 40.5,
+                    "a": -13.8,
+                    "b": -30.3
                 },
                 {
                     "Name": "Red10",
-                    "L": 48.2,
-                    "a": 59.8,
-                    "b": 28.2
+                    "L": 43.7,
+                    "a": 45.3,
+                    "b": 16.5
                 }
             ],
             "overprints" : [
@@ -238,25 +238,25 @@
             ]
         },
         {
-            "description": "Pink Cardstock Cyan and Orange Markers",
-            "filename": "PinkCard-Cyan-Orange",
+            "description": "Violet Cardstock Cyan and Orange Markers",
+            "filename": "VioletCard-Cyan-Orange",
             "paperColor": {
-                "L": 77.8,
-                "a": 33.3,
-                "b": 7.1
+                "L": 70.7,
+                "a": 9.7,
+                "b": -16.9
             },
             "primariesList": [
                 {
                     "Name": "Cyan64",
-                    "L": 37.7,
-                    "a": -9.8,
-                    "b": -26.5
+                    "L": 40.5,
+                    "a": -13.8,
+                    "b": -30.3
                 },
                 {
                     "Name": "Orange22",
-                    "L": 58.9,
-                    "a": 59.7,
-                    "b": 38.2
+                    "L": 50.1,
+                    "a": 40.4,
+                    "b": 19.0
                 }
             ],
             "overprints" : [
@@ -271,32 +271,32 @@
             ]
         },
         {
-            "description": "Pink Cardstock Blue and Red Markers",
-            "filename": "PinkCard-Blue-Red",
+            "description": "Violet Cardstock Blue and Red Markers",
+            "filename": "VioletCard-Blue-Red",
             "paperColor": {
-                "L": 77.8,
-                "a": 33.3,
-                "b": 7.1
+                "L": 70.7,
+                "a": 9.7,
+                "b": -16.9
             },
             "primariesList": [
                 {
                     "Name": "Blue72",
-                    "L": 31.2,
-                    "a": 20.0,
-                    "b": -44.2
+                    "L": 31.5,
+                    "a": 21.3,
+                    "b": -48.9
                 },
                 {
                     "Name": "Red10",
-                    "L": 48.2,
-                    "a": 59.8,
-                    "b": 28.2
+                    "L": 43.7,
+                    "a": 45.3,
+                    "b": 16.5
                 }
             ],
             "overprints" : [
                 {
-                    "L": 27.6,
-                    "a": 6.3,
-                    "b": -5.5,
+                    "L": 27.9,
+                    "a": 5.7,
+                    "b": -9.6,
                     "inkNames": [
                         "Blue72", "Red10"
                     ]
@@ -304,67 +304,67 @@
             ]
         },
         {
-            "description": "Pink Cardstock Cyan, Magenta, and Yellow Markers",
-            "filename": "PinkCard-Cyan-Magenta-Yellow",
+            "description": "Violet Cardstock Cyan, Magenta, and Yellow Markers",
+            "filename": "VioletCard-Cyan-Magenta-Yellow",
             "paperColor": {
-                "L": 77.8,
-                "a": 33.3,
-                "b": 7.1
+                "L": 70.7,
+                "a": 9.7,
+                "b": -16.9
             },
             "darkColor": {
                 "L": 9.0,
-                "a": -1.8,
-                "b": -0.4
+                "a": -2.0,
+                "b": -1.9
             },
             "primariesList": [
                 {
                     "Name": "Cyan64",
-                    "L": 37.7,
-                    "a": -9.8,
-                    "b": -26.5
+                    "L": 40.5,
+                    "a": -13.8,
+                    "b": -30.3
                 },
                 {
                     "Name": "Magenta88",
-                    "L": 61.4,
-                    "a": 65.0,
-                    "b": 16.1
+                    "L": 51.8,
+                    "a": 45.4,
+                    "b": -8.7
                 },
                 {
                     "Name": "Yellow44",
-                    "L": 73.6,
-                    "a": 34.0,
-                    "b": 59.9
+                    "L": 64.8,
+                    "a": 2.4,
+                    "b": 36.0
                 }
             ],
             "overprints" : [
                 {
-                    "L": 33.2,
-                    "a": 4.0,
-                    "b": -24.0,
+                    "L": 34.1,
+                    "a": 3.1,
+                    "b": -26.7,
                     "inkNames": [
                         "Cyan64", "Magenta88"
                     ]
                 },
                 {
-                    "L": 40.5,
-                    "a": -23.4,
-                    "b": 6.0,
+                    "L": 41.9,
+                    "a": -29.8,
+                    "b": 5.6,
                     "inkNames": [
                         "Cyan64", "Yellow44"
                     ]
                 },
                 {
-                    "L": 61.6,
-                    "a": 60.0,
-                    "b": 44.6,
+                    "L": 52.6,
+                    "a": 36.1,
+                    "b": 21.9,
                     "inkNames": [
                         "Magenta88", "Yellow44"
                     ]
                 },
                 {
-                    "L": 35.4,
-                    "a": -6.9,
-                    "b": -1.8,
+                    "L": 35.9,
+                    "a": -8.2,
+                    "b": -7.6,
                     "inkNames": [
                         "Cyan64", "Magenta88", "Yellow44"
                     ]

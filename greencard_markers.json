@@ -1,0 +1,375 @@
+{
+    "defaultCopyright": "Copyright (c) Chris Cox 2026",
+    "gridPoints": 21,
+    "tableDepth": 8,
+    "tableSizeLimit": 1048576,
+    "Comment": "Alcohol Markers on Green Cardstock",
+
+    "colorSets": [
+        {
+            "description": "Green Cardstock Lavender and Yellow Markers",
+            "filename": "GreenCard-Lavender-Yellow",
+            "paperColor": {
+                "L": 84.9,
+                "a": -23.5,
+                "b": 29.9
+            },
+            "primariesList": [
+                {
+                    "Name": "Lavender83",
+                    "L": 58.1,
+                    "a": 7.1,
+                    "b": -1.4
+                },
+                {
+                    "Name": "Yellow44",
+                    "L": 78.2,
+                    "a": -16.0,
+                    "b": 58.3
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 58.3,
+                    "a": 0.8,
+                    "b": 29.4,
+                    "inkNames": [
+                        "Lavender83", "Yellow44"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Green Cardstock Lavender and Orange Markers",
+            "filename": "GreenCard-Lavender-Orange",
+            "paperColor": {
+                "L": 84.9,
+                "a": -23.5,
+                "b": 29.9
+            },
+            "primariesList": [
+                {
+                    "Name": "Lavender83",
+                    "L": 58.1,
+                    "a": 7.1,
+                    "b": -1.4
+                },
+                {
+                    "Name": "Orange22",
+                    "L": 54.8,
+                    "a": 38.6,
+                    "b": 28.5
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 46.8,
+                    "a": 30.7,
+                    "b": 16.1,
+                    "inkNames": [
+                        "Lavender83", "Orange22"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Green Cardstock Cyan and Lavender Markers",
+            "filename": "GreenCard-Cyan-Lavender",
+            "paperColor": {
+                "L": 84.9,
+                "a": -23.5,
+                "b": 29.9
+            },
+            "primariesList": [
+                {
+                    "Name": "Lavender83",
+                    "L": 58.1,
+                    "a": 7.1,
+                    "b": -1.4
+                },
+                {
+                    "Name": "Cyan64",
+                    "L": 43.4,
+                    "a": -30.8,
+                    "b": -13.1
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 41.9,
+                    "a": -21.6,
+                    "b": -15.9,
+                    "inkNames": [
+                        "Lavender83", "Cyan64"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Green Cardstock Violet and Green Markers",
+            "filename": "GreenCard-Violet-Green",
+            "paperColor": {
+                "L": 84.9,
+                "a": -23.5,
+                "b": 29.9
+            },
+            "primariesList": [
+                {
+                    "Name": "Violet73",
+                    "L": 34.4,
+                    "a": 24.8,
+                    "b": -20.2
+                },
+                {
+                    "Name": "Green55",
+                    "L": 56.5,
+                    "a": -49.9,
+                    "b": 16.4
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 31.1,
+                    "a": 3.5,
+                    "b": -8.6,
+                    "inkNames": [
+                        "Violet73", "Green55"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Green Cardstock Cyan and Yellow Markers",
+            "filename": "GreenCard-Cyan-Yellow",
+            "paperColor": {
+                "L": 84.9,
+                "a": -23.5,
+                "b": 29.9
+            },
+            "primariesList": [
+                {
+                    "Name": "Yellow44",
+                    "L": 78.2,
+                    "a": -16.0,
+                    "b": 58.3
+                },
+                {
+                    "Name": "Cyan64",
+                    "L": 43.4,
+                    "a": -30.8,
+                    "b": -13.1
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 45.1,
+                    "a": -39.8,
+                    "b": 11.4,
+                    "inkNames": [
+                        "Yellow44", "Cyan64"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Green Cardstock Blue and Magenta Markers",
+            "filename": "GreenCard-Blue-Magenta",
+            "paperColor": {
+                "L": 84.9,
+                "a": -23.5,
+                "b": 29.9
+            },
+            "primariesList": [
+                {
+                    "Name": "Blue72",
+                    "L": 31.5,
+                    "a": 8.2,
+                    "b": -31.8
+                },
+                {
+                    "Name": "Magenta88",
+                    "L": 56.3,
+                    "a": 41.2,
+                    "b": 11.0
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 30.1,
+                    "a": 7.3,
+                    "b": -24.0,
+                    "inkNames": [
+                        "Blue72", "Magenta88"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Green Cardstock Cyan and Red Markers",
+            "filename": "GreenCard-Cyan-Red",
+            "paperColor": {
+                "L": 84.9,
+                "a": -23.5,
+                "b": 29.9
+            },
+            "primariesList": [
+                {
+                    "Name": "Cyan64",
+                    "L": 43.4,
+                    "a": -30.8,
+                    "b": -13.1
+                },
+                {
+                    "Name": "Red10",
+                    "L": 43.9,
+                    "a": 44.3,
+                    "b": 22.1
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 30.6,
+                    "a": 1.0,
+                    "b": -1.4,
+                    "inkNames": [
+                        "Cyan64", "Red10"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Green Cardstock Cyan and Orange Markers",
+            "filename": "GreenCard-Cyan-Orange",
+            "paperColor": {
+                "L": 84.9,
+                "a": -23.5,
+                "b": 29.9
+            },
+            "primariesList": [
+                {
+                    "Name": "Cyan64",
+                    "L": 43.4,
+                    "a": -30.8,
+                    "b": -13.1
+                },
+                {
+                    "Name": "Orange22",
+                    "L": 54.8,
+                    "a": 38.6,
+                    "b": 28.5
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 35.7,
+                    "a": -9.1,
+                    "b": -2.9,
+                    "inkNames": [
+                        "Cyan64", "Orange22"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Green Cardstock Blue and Red Markers",
+            "filename": "GreenCard-Blue-Red",
+            "paperColor": {
+                "L": 84.9,
+                "a": -23.5,
+                "b": 29.9
+            },
+            "primariesList": [
+                {
+                    "Name": "Blue72",
+                    "L": 31.5,
+                    "a": 8.2,
+                    "b": -31.8
+                },
+                {
+                    "Name": "Red10",
+                    "L": 43.9,
+                    "a": 44.3,
+                    "b": 22.1
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 29.8,
+                    "a": 5.4,
+                    "b": -17.5,
+                    "inkNames": [
+                        "Blue72", "Red10"
+                    ]
+                }
+            ]
+        },
+        {
+            "description": "Green Cardstock Cyan, Magenta, and Yellow Markers",
+            "filename": "GreenCard-Cyan-Magenta-Yellow",
+            "paperColor": {
+                "L": 84.9,
+                "a": -23.5,
+                "b": 29.9
+            },
+            "darkColor": {
+                "L": 9.0,
+                "a": -3.2,
+                "b": 0.1
+            },
+            "primariesList": [
+                {
+                    "Name": "Cyan64",
+                    "L": 43.4,
+                    "a": -30.8,
+                    "b": -13.1
+                },
+                {
+                    "Name": "Magenta88",
+                    "L": 56.3,
+                    "a": 41.2,
+                    "b": 11.0
+                },
+                {
+                    "Name": "Yellow44",
+                    "L": 78.2,
+                    "a": -16.0,
+                    "b": 58.3
+                }
+            ],
+            "overprints" : [
+                {
+                    "L": 35.7,
+                    "a": -5,
+                    "b": -16.4,
+                    "inkNames": [
+                        "Cyan64", "Magenta88"
+                    ]
+                },
+                {
+                    "L": 45.1,
+                    "a": -39.9,
+                    "b": 11.4,
+                    "inkNames": [
+                        "Cyan64", "Yellow44"
+                    ]
+                },
+                {
+                    "L": 56.9,
+                    "a": 35.4,
+                    "b": 35.2,
+                    "inkNames": [
+                        "Magenta88", "Yellow44"
+                    ]
+                },
+                {
+                    "L": 39.1,
+                    "a": -12.7,
+                    "b": 0.4,
+                    "inkNames": [
+                        "Cyan64", "Magenta88", "Yellow44"
+                    ]
+                }
+            ]
+        }
+    ]
+}

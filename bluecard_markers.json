@@ -7,7 +7,7 @@
 
     "colorSets": [
         {
-            "description": "Lavender and Yellow Markers",
+            "description": "Blue Cardstock Lavender and Yellow Markers",
             "filename": "BlueCard-Lavender-Yellow",
             "paperColor": {
                 "L": 83.5,
@@ -40,7 +40,7 @@
             ]
         },
         {
-            "description": "Lavender and Orange Markers",
+            "description": "Blue Cardstock Lavender and Orange Markers",
             "filename": "BlueCard-Lavender-Orange",
             "paperColor": {
                 "L": 83.5,
@@ -73,7 +73,7 @@
             ]
         },
         {
-            "description": "Cyan and Lavender Markers",
+            "description": "Blue Cardstock Cyan and Lavender Markers",
             "filename": "BlueCard-Cyan-Lavender",
             "paperColor": {
                 "L": 83.5,
@@ -106,7 +106,7 @@
             ]
         },
         {
-            "description": "Violet and Green Markers",
+            "description": "Blue Cardstock Violet and Green Markers",
             "filename": "BlueCard-Violet-Green",
             "paperColor": {
                 "L": 83.5,
@@ -139,7 +139,7 @@
             ]
         },
         {
-            "description": "Cyan and Yellow Markers",
+            "description": "Blue Cardstock Cyan and Yellow Markers",
             "filename": "BlueCard-Cyan-Yellow",
             "paperColor": {
                 "L": 83.5,
@@ -172,7 +172,7 @@
             ]
         },
         {
-            "description": "Blue and Magenta Markers",
+            "description": "Blue Cardstock Blue and Magenta Markers",
             "filename": "BlueCard-Blue-Magenta",
             "paperColor": {
                 "L": 83.5,
@@ -205,7 +205,7 @@
             ]
         },
         {
-            "description": "Cyan and Red Markers",
+            "description": "Blue Cardstock Cyan and Red Markers",
             "filename": "BlueCard-Cyan-Red",
             "paperColor": {
                 "L": 83.5,
@@ -238,7 +238,7 @@
             ]
         },
         {
-            "description": "Cyan and Orange Markers",
+            "description": "Blue Cardstock Cyan and Orange Markers",
             "filename": "BlueCard-Cyan-Orange",
             "paperColor": {
                 "L": 83.5,
@@ -271,7 +271,7 @@
             ]
         },
         {
-            "description": "Blue and Red Markers",
+            "description": "Blue Cardstock Blue and Red Markers",
             "filename": "BlueCard-Blue-Red",
             "paperColor": {
                 "L": 83.5,
@@ -304,7 +304,7 @@
             ]
         },
         {
-            "description": "Cyan, Magenta, and Yellow Markers",
+            "description": "Blue Cardstock Cyan, Magenta, and Yellow Markers",
             "filename": "BlueCard-Cyan-Magenta-Yellow",
             "paperColor": {
                 "L": 83.5,
