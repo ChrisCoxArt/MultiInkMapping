@@ -258,26 +258,51 @@ bool labHueLess(const namedColor &a, const namedColor &b)
     return angle1 < angle2;
 }
 
+
 /********************************************************************************/
 
-// here we want chromatic mixes, not darks
-static
-xyzColor estimate_ink_mix( inkColorSet &inkSet, const std::vector<xyzColor> &inkList,
-                            const std::vector<size_t> &inkIndices,
-                            const xyzColor &paperColor, size_t inkCount )
+/*
+TODO - handle edge cases better
+    paper->(ink1 + ink2) changes suddenly when they get to 1,1
+    Need better interpolation of partial inks
+    
+    interp > half? (would still have jumps)
+    interp any partial?     (singles can be ignored)
+    interp if more than 2 inks partial?     sounds best
+        get >= 1.0 map
+        get any > 0.0 map
+        then interp?
+        
+        lookupSolidMap
+        lookupFractionMap
+        
+        solidsXYZ
+        fractionsXYZ
+        
+        solidsABC solidsABCD, interp from ABC to ABCD ?
+        seems effectively hedral interpolation
+        need to lookup per fractional channel
+
+ */
+// returns bitmap and overprint XYZ value
+uint32_t lookup_overprints( const inkColorSet &inkSet,
+                        const std::vector<float> &inkFractionList,
+                        size_t inkCount,
+                        xyzColor &overprint_result )
 {
-    xyzColor overprint = identityXYZ;
-#if 1
     uint32_t opBitmap = 0;
     
     // see if we have an overprint that can be looked up
     if (inkSet.overprints.size() > 0) {
         uint32_t lookupBitmap = 0;
-        size_t bitCount = inkCount;
+        int bitCount = 0;
         
         for (size_t i = 0; i < inkCount; ++i) {
-            size_t index = inkIndices[i];
-            lookupBitmap |= (1UL << index);
+            float thisFraction = inkFractionList[i];
+            if (thisFraction >= 1.0) {
+                lookupBitmap |= (1UL << i);
+                ++bitCount;
+            }
         }
         
         if (bitCount > 1) {
@@ -286,7 +311,7 @@ xyzColor estimate_ink_mix( inkColorSet &inkSet, const std::vector<xyzColor> &ink
             if ( iter != inkSet.overprint_bitmask_map.end() ) {
                 size_t opIndex = (size_t) iter->second;
                 opBitmap = inkSet.overprints[ opIndex ].inkBitmap;
-                overprint = inkSet.overprints[ opIndex ].colorXYZ;
+                overprint_result = inkSet.overprints[ opIndex ].colorXYZ;
             }
 
             // Can we at least come close?  Need closest match ignoring some channels, while still having 2 or more channels.
@@ -294,16 +319,38 @@ xyzColor estimate_ink_mix( inkColorSet &inkSet, const std::vector<xyzColor> &ink
         }
     }
     
+    return opBitmap;
+}
+
+/********************************************************************************/
+
+// here we want chromatic mixes, not darks
+static
+xyzColor estimate_ink_mix( const inkColorSet &inkSet, const std::vector<xyzColor> &inkList,
+                            const std::vector<size_t> &inkIndices,
+                            const xyzColor &paperColor, size_t inkCount )
+{
+    xyzColor overprint = identityXYZ;
+
+#if 1
+    // convert to fraction lists for lookup
+    std::vector<float> inkFractionList(kMaxChannels,0.0f);
+    for (size_t i = 0; i < inkCount; ++i) {
+        size_t index = inkIndices[i];
+        inkFractionList[index] = 1.0;
+    }
+
+    // find any known overprints for these inks
+    uint32_t opBitmap = lookup_overprints( inkSet, inkFractionList, kMaxChannels, overprint );
+    
     // interp and multiply remaining inks that weren't in the overprint data
     for (size_t i = 0; i < inkCount; ++i) {
         size_t index = inkIndices[i];
-        if ((opBitmap & (1UL << index)) != 0)
-            continue;
-        
-        auto &ink = inkList[i];
-        overprint *= ink;
+        if ((opBitmap & (1UL << index)) == 0) {
+            auto &ink = inkList[i];
+            overprint *= ink;
+        }
     }
-
 #else
     for ( const auto &ink : inkList ) {
         overprint *= ink;
@@ -326,33 +373,8 @@ xyzColor estimate_fractional_ink_mix( const inkColorSet &inkSet, const std::vect
     
     xyzColor overprint = identityXYZ;
 #if 1
-    uint32_t opBitmap = 0;
-    
-    // see if we have an overprint that can be looked up
-    if (inkSet.overprints.size() > 0) {
-        uint32_t lookupBitmap = 0;
-        int bitCount = 0;
-        for (size_t i = 0; i < inkCount; ++i) {
-            float thisFraction = inkFractionList[i];
-            if (thisFraction >= 1.0) {
-                lookupBitmap |= (1UL << i);
-                ++bitCount;
-            }
-        }
-        
-        if (bitCount > 1) {
-            // do we have a matching overprint?
-            auto iter = inkSet.overprint_bitmask_map.find(lookupBitmap);
-            if ( iter != inkSet.overprint_bitmask_map.end() ) {
-                size_t opIndex = (size_t) iter->second;
-                opBitmap = inkSet.overprints[ opIndex ].inkBitmap;
-                overprint = inkSet.overprints[ opIndex ].colorXYZ;
-            }
-
-            // Can we at least come close?  Need closest match ignoring some channels, while still having 2 or more channels.
-// TODO - Or should I add fake entries to the map for this? preprocess sounds saner.
-        }
-    }
+    // find any known overprints for these inks
+    uint32_t opBitmap = lookup_overprints( inkSet, inkFractionList, inkCount, overprint );
     
     // interp and multiply remaining inks that weren't in the overprint data
     for (size_t i = 0; i < inkCount; ++i) {
