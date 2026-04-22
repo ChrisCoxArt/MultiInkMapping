@@ -3,7 +3,7 @@
     "gridPoints": 21,
     "tableDepth": 8,
     "tableSizeLimit": 1048576,
-    "Comment": "Experiments with Watercolors, Sharpies, OLD Alcohol markers, Colored Papers, plus first overprint tests",
+    "Comment": "Experiments with Watercolors, Sharpies, OLD Alcohol markers, Colored Papers, first overprint tests, first color filter tests",
 
     "colorSets": [
         {
@@ -220,9 +220,65 @@
             ]
         },
         {
+            "description": "Turquoise and Orange Paint on Lilac Paper Filter",
+            "filename": "Experimental-Turquoise-Orange-LilacPaperFilter",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "filterColor": {
+                "L": 91.2,
+                "a": 17.0,
+                "b": -11.0
+            },
+            "primariesList": [
+                {
+                    "L": 62.0,
+                    "Name": "Orange",
+                    "a": 32.0,
+                    "b": 58.0
+                },
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                }
+            ]
+        },
+        {
             "description": "Turquoise and Orange Paint on Lime Paper",
             "filename": "Experimental-Turquoise-Orange-LimePaper",
             "paperColor": {
+                "L": 85.0,
+                "a": -25.5,
+                "b": 37.5
+            },
+            "primariesList": [
+                {
+                    "L": 62.0,
+                    "Name": "Orange",
+                    "a": 32.0,
+                    "b": 58.0
+                },
+                {
+                    "L": 44.4,
+                    "Name": "Turquoise",
+                    "a": -35.9,
+                    "b": -32.5
+                }
+            ]
+        },
+        {
+            "description": "Turquoise and Orange Paint on Lime Paper Filter",
+            "filename": "Experimental-Turquoise-Orange-LimePaperFilter",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "filterColor": {
                 "L": 85.0,
                 "a": -25.5,
                 "b": 37.5
@@ -639,6 +695,118 @@
                     "inkNames": [
                         "FLYellow", "FLPink"
                     ]
+                }
+            ]
+        },
+        {
+            "description": "Teal and PinkViolet Paint on Pink Paper",
+            "filename": "Experimental-Teal-PinkViolet-PinkPaper",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "filterColor": {
+                "L": 87.8,
+                "a": 33.3,
+                "b": 7.1
+            },
+            "primariesList": [
+                {
+                    "L": 66.8,
+                    "Name": "Teal",
+                    "a": -51.5,
+                    "b": -15.4
+                },
+                {
+                    "L": 67.0,
+                    "Name": "PinkViolet",
+                    "a": 59.0,
+                    "b": -25.0
+                }
+            ]
+        },
+        {
+            "description": "Teal and PinkViolet Paint on Green Paper",
+            "filename": "Experimental-Teal-PinkViolet-GreenPaper",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "filterColor": {
+                "L": 84.9,
+                "a": -23.5,
+                "b": 29.9
+            },
+            "primariesList": [
+                {
+                    "L": 66.8,
+                    "Name": "Teal",
+                    "a": -51.5,
+                    "b": -15.4
+                },
+                {
+                    "L": 67.0,
+                    "Name": "PinkViolet",
+                    "a": 59.0,
+                    "b": -25.0
+                }
+            ]
+        },
+        {
+            "description": "Teal and PinkViolet Paint on Blue Paper",
+            "filename": "Experimental-Teal-PinkViolet-BluePaper",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "filterColor": {
+                "L": 83.5,
+                "a": -17.7,
+                "b": -11.9
+            },
+            "primariesList": [
+                {
+                    "L": 66.8,
+                    "Name": "Teal",
+                    "a": -51.5,
+                    "b": -15.4
+                },
+                {
+                    "L": 67.0,
+                    "Name": "PinkViolet",
+                    "a": 59.0,
+                    "b": -25.0
+                }
+            ]
+        },
+        {
+            "description": "Teal and PinkViolet Paint on Violet Paper",
+            "filename": "Experimental-Teal-PinkViolet-VioletPaper",
+            "paperColor": {
+                "L": 97.121,
+                "a": -0.025,
+                "b": 0.025
+            },
+            "filterColor": {
+                "L": 85.7,
+                "a": 9.7,
+                "b": -16.9
+            },
+            "primariesList": [
+                {
+                    "L": 66.8,
+                    "Name": "Teal",
+                    "a": -51.5,
+                    "b": -15.4
+                },
+                {
+                    "L": 67.0,
+                    "Name": "PinkViolet",
+                    "a": 59.0,
+                    "b": -25.0
                 }
             ]
         }

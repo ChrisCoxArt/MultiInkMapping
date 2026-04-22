@@ -22,6 +22,10 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
+BUG - overprints are inset, leading to thin areas around primaries
+need some way to get the splines closer to primary saturation.
+See Experimental-Turquoise-Orange-Green_abstract.icc
+    Experimental-Violet-Magenta-YellowOrange_abstract.icc
 
 
 TODO - would be nice to add measured overprint colors
@@ -258,7 +262,6 @@ bool labHueLess(const namedColor &a, const namedColor &b)
     return angle1 < angle2;
 }
 
-
 /********************************************************************************/
 
 /*
@@ -266,7 +269,7 @@ TODO - handle edge cases better
     paper->(ink1 + ink2) changes suddenly when they get to 1,1
     Need better interpolation of partial inks
     
-    interp > half? (would still have jumps)
+    interp > half?          (would still have jumps)
     interp any partial?     (singles can be ignored)
     interp if more than 2 inks partial?     sounds best
         get >= 1.0 map
@@ -330,6 +333,8 @@ xyzColor estimate_ink_mix( const inkColorSet &inkSet, const std::vector<xyzColor
                             const std::vector<size_t> &inkIndices,
                             const xyzColor &paperColor, size_t inkCount )
 {
+    assert( inkCount >= 1 && inkCount <= kMaxChannels );
+    
     xyzColor overprint = identityXYZ;
 
 #if 1
@@ -381,9 +386,9 @@ xyzColor estimate_fractional_ink_mix( const inkColorSet &inkSet, const std::vect
         if ((opBitmap & (1UL << i)) != 0)
             continue;
         
-        auto &ink = inkList[i];
         float thisFraction = inkFractionList[i];
         if (thisFraction > 0.0) {
+            auto &ink = inkList[i];
             xyzColor fractionalInk = interp2inks( thisFraction, identityXYZ, ink );
             overprint *= fractionalInk;
         }
@@ -2294,6 +2299,46 @@ int create_utility_maps( inkColorSet &inkSet )
     return 0;
 }
 
+/********************************************************************************/
+
+// This is an experiment to simulate different paper colors with a filter color.
+// Reasoning that colored paper is just an ink applied before other colors.
+void apply_filter_colors( inkColorSet &inkSet )
+{
+    if (inkSet.filterColor.L <= 0.0)
+        return;
+    
+    const xyzColor filterXYZ = LAB2XYZ( inkSet.filterColor );
+
+    // adjust paper
+    xyzColor tempXYZ = LAB2XYZ( inkSet.paperColor );
+    xyzColor resultXYZ = tempXYZ * filterXYZ;
+    labColor resultLAB = XYZ2LAB( resultXYZ );
+    inkSet.paperColor = resultLAB;
+    
+    // adjust dark
+    tempXYZ = LAB2XYZ( inkSet.darkColor );
+    resultXYZ = tempXYZ * filterXYZ;
+    resultLAB = XYZ2LAB( resultXYZ );
+    inkSet.darkColor = resultLAB;
+
+    // adjust primaries
+    for (auto &prim : inkSet.primaries ) {
+        tempXYZ = LAB2XYZ( prim.color );
+        resultXYZ = tempXYZ * filterXYZ;
+        resultLAB = XYZ2LAB( resultXYZ );
+        prim.color = resultLAB;
+    }
+    
+    // adjust overprints
+    for (auto &over : inkSet.overprints ) {
+        tempXYZ = LAB2XYZ( over.color );
+        resultXYZ = tempXYZ * filterXYZ;
+        resultLAB = XYZ2LAB( resultXYZ );
+        over.color = resultLAB;
+    }
+}
+
 /******************************************************************************/
 /******************************************************************************/
 
@@ -2396,15 +2441,18 @@ void processInkSetList(void)
         // if errors are bad, then continue to the next set
         if (fail)
             continue;
-        
-        // create utility mappings and do more error checking
-        if ( create_utility_maps( inkSet ) != 0 )
-            continue;
-        
 
         printf("Processing set %s\n", inkSet.name.c_str() );
         
         try {
+            
+            // apply filters to adjust colors
+            apply_filter_colors( inkSet );
+        
+            // create utility mappings and do more error checking
+            if ( create_utility_maps( inkSet ) != 0 )
+                continue;
+            
             // create splines from measured points using approximate mixing model
             mix_ink_splines( inkSet );
             

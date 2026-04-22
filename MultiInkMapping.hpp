@@ -367,8 +367,9 @@ struct inkColorSet {
     
     labColor paperColor;            // lightest possible color
     labColor darkColor;             // darkest possible color from combination of inks, calculated if L <= 0
+    labColor filterColor;           // optional color filter to apply, simulating different paper colors
     named_color_list primaries;     // saturated hues
-    std::vector< overPrintSwatch > overprints;    // may be empty
+    std::vector< overPrintSwatch > overprints;    // overprints of primaries, may be empty
 
 public:
     spline_list splines;        // built from basic ink data

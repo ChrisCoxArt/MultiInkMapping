@@ -214,6 +214,7 @@ void from_json( const json &j, inkColorSet &p )
     // set some defaults
     p.darkColor =  labColor(-1,0,0);            // flag to automatically calculate
     p.paperColor = labColor(98.0,0.0,0.0);      // unbelievably white
+    p.filterColor = labColor(-1,0,0);           // flat to ignore this if unset
     
     // these are required
     ReadString( j, "filename", p.name );
@@ -230,6 +231,10 @@ void from_json( const json &j, inkColorSet &p )
     auto dataFound2 = j.find("darkColor");
     if (dataFound2 != j.end())
         p.darkColor = dataFound2.value();
+    
+    auto dataFound4 = j.find("filterColor");
+    if (dataFound4 != j.end())
+        p.filterColor = dataFound4.value();
     
     // overprints are optional
     auto dataFound3 = j.find("overprints");
