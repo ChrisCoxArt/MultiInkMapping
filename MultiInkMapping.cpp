@@ -87,6 +87,7 @@ TODO - What about tints and shades?  need percentages of mixes, plus measurement
 #include <cstring>
 #include <cstdlib>
 #include <cmath>
+#include <iostream>
 #include <string>
 #include <vector>
 #include <memory>

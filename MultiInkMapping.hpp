@@ -273,12 +273,12 @@ float constexpr grid_to_L( size_t grid_value, size_t gridPoints )
     return (100.0f * (float)grid_value) / (float)(gridPoints - 1);
 }
 
-// ccox - FIX ME - cheap version for now -- refine if needed
 inline
 float constexpr grid_to_AB( size_t grid_value, size_t gridPoints )
 {
-    float middle = 0.5f * gridPoints;
-    return (127.0f * ((float)grid_value - middle)) / middle;
+    //float middle = 0.5f * (gridPoints-1);
+    //return (127.0f * ((float)grid_value - middle)) / middle;  // gives zero, but doesn't reach -128
+    return (255.0f * grid_value / (gridPoints-1)) - 128.0f;
 }
 
 /********************************************************************************/
