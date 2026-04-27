@@ -1394,10 +1394,32 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
         size_t tiffBufferSize = (tiffWidth*tiffHeight) * 3 * ((size_t)depth/8);
         std::unique_ptr<uint8_t> tiffBuffer(new uint8_t[ tiffBufferSize ]);
         memset( tiffBuffer.get(), 0, tiffBufferSize );
-
-// TODO- copy the data in more useful order for N=3..4
-// this looks really wrong for 3 inks
-        memcpy( tiffBuffer.get(), gridBuffer.get(), gridBufferSize );
+        
+        // make the tile order semi-useful
+        if (inkCount==1 || ((inkCount & 1) == 0))
+        //if (inkCount <= 2)
+                memcpy( tiffBuffer.get(), gridBuffer.get(), gridBufferSize );
+        else {
+            uint8_t *tiffData = tiffBuffer.get();
+            uint16_t *tiff16Data = (uint16_t*)tiffData;
+            for (size_t k = 0; k < gridCount; ++k ) {
+                size_t x = k % gridPoints;
+                size_t y = (k / gridPoints) % gridPoints;
+                size_t tile = k / (gridPoints*gridPoints);
+                size_t tileX = tile % tilesWide;
+                size_t tileY = tile / tilesWide;
+                size_t index = (tileY * gridPoints * tiffWidth) + (tileX * gridPoints) + (y * tiffWidth) + x;
+                if (depth == 16) {
+                    tiff16Data[3*index+0] = grid16Ptr[3*k+0];
+                    tiff16Data[3*index+1] = grid16Ptr[3*k+1];
+                    tiff16Data[3*index+2] = grid16Ptr[3*k+2];
+                } else {
+                    tiffData[3*index+0] = gridData[3*k+0];
+                    tiffData[3*index+1] = gridData[3*k+1];
+                    tiffData[3*index+2] = gridData[3*k+2];
+                }
+            }
+        }
         
         WriteTIFF( inkSet.name + "_A2B.tiff", 96.0, TIFF_MODE_CIELAB, tiffBuffer.get(),
                    tiffWidth, tiffHeight, 3, depth );
