@@ -266,12 +266,15 @@ color_list mix_pure_ink_spline( int steps, const labColor &paperColor, const lab
 
 /********************************************************************************/
 
-bool labLLess(const labColor &a, const labColor &b)
+bool labLMore(const labColor &a, const labColor &b)
 {
-    return a.L < b.L;
+    return a.L > b.L;
 }
 
 /********************************************************************************/
+
+// try to handle a list of points
+// brightest should be paper, darkest should be dark mix
 
 static
 color_list mix_overprint_ink_spline2( float Lstep, const std::vector<labColor> &points_in )
@@ -282,23 +285,23 @@ color_list mix_overprint_ink_spline2( float Lstep, const std::vector<labColor> &
     
     assert ( pointCount >= 3 );   // 3 points minimum
     
-    // sort list decreasing L*
+    // copy list, sort decreasing L*
     std::vector<labColor> points( points_in );
-    std::sort( points.begin(), points.end(), labLLess );
+    std::sort( points.begin(), points.end(), labLMore );
 
-    // exact first color
+    // exact first color, should be paper
     temp.push_back( points[0] );
     
     for (size_t i = 1; i < pointCount; ++i) {
     
         labColor prevColor = points[i-1];
         labColor nextColor = points[i];
-        float range = nextColor.L - prevColor.L;
+        float range = prevColor.L - nextColor.L;
         xyzColor prevColorXYZ = LAB2XYZ( prevColor );
         xyzColor nextColorXYZ = LAB2XYZ( nextColor );
         
-        for (float L = (prevColor.L + Lstep); L < nextColor.L; L += Lstep) {
-            float t = (L - prevColor.L) / range;
+        for (float L = (prevColor.L - Lstep); L > nextColor.L; L -= Lstep) {
+            float t = (prevColor.L - L) / range;
             xyzColor mix = interp2inks( t, prevColorXYZ, nextColorXYZ );
             labColor mixLAB = XYZ2LAB( mix );
             temp.push_back( mixLAB );
@@ -307,76 +310,8 @@ color_list mix_overprint_ink_spline2( float Lstep, const std::vector<labColor> &
         // exact sample
         temp.push_back( nextColor );
     }
-
-// TODO - do these in light -> dark order...
-    std::reverse( temp.begin(), temp.end() );
- 
-    // error checking
-    VerifyDecreasingL(temp);
-
-    return temp;
-}
-
-/********************************************************************************/
-
-static
-color_list mix_overprint_ink_spline( int steps, const labColor &paperColor, const labColor &inkColor1, const labColor &inkColor2, const labColor &darkColor)
-{
-    int i;
-    xyzColor mix;
-    labColor mixLAB;
-    color_list temp;
     
-    xyzColor paperColorXYZ = LAB2XYZ( paperColor );
-    xyzColor darkColorXYZ = LAB2XYZ( darkColor );
-    
-    labColor mid1 = inkColor1;
-    labColor mid2 = inkColor2;
-    
-    if (mid1.L < mid2.L)
-        std::swap( mid1, mid2 );
-    
-    // if they're equal, then something is off
-    assert( mid1.L > mid2.L );
-    
-    xyzColor inkColorXYZ1 = LAB2XYZ( mid1 );    // lighter
-    xyzColor inkColorXYZ2 = LAB2XYZ( mid2 );    // darker
-
-    // exact paper
-    temp.push_back( paperColor );
-    
-    // interp paper->ink1
-    for (i=1; i < (steps/3); ++i) {
-        float t = (float) i / (float) (steps/3);
-        mix = interp2inks( t, paperColorXYZ, inkColorXYZ1 );
-        mixLAB = XYZ2LAB( mix );
-        temp.push_back( mixLAB );
-    }
-    
-    // 50/50 overprint
-    temp.push_back( mid1 );     // i = (steps/3)
-    
-    // interp ink1->ink2
-    for (i=(steps/3)+1; i < (2*steps/3); ++i) {
-        float t = (float) (i - (steps/3)) / (float) (steps/3);
-        mix = interp2inks( t, inkColorXYZ1, inkColorXYZ2 );
-        mixLAB = XYZ2LAB( mix );
-        temp.push_back( mixLAB );
-    }
-    
-    // 100/100 exact overprint
-    temp.push_back( mid2 );     // i = (2*steps/3)
- 
-    // interp ink->dark
-    for (i=(2*steps/3)+1; i < (steps-1); ++i) {
-        float t = (float) (i - (2*steps/3)) / (float) (steps/3);
-        mix = interp2inks( t, inkColorXYZ2, darkColorXYZ );
-        mixLAB = XYZ2LAB( mix );
-        temp.push_back( mixLAB );
-    }
-    
-    // exact dark
-    temp.push_back( darkColor );
+    // last point should be dark mix
  
     // error checking
     VerifyDecreasingL(temp);
@@ -582,8 +517,7 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
 
         labColor mix1LAB = XYZ2LAB( mix1 );
         labColor mix2LAB = XYZ2LAB( mix2 );
-        temp = mix_overprint_ink_spline( steps, inkSet.paperColor, mix1LAB, mix2LAB, inkSet.darkColor );
-//        temp = mix_overprint_ink_spline2( 1.0, { inkSet.paperColor, mix1LAB, mix2LAB, inkSet.darkColor } );
+        temp = mix_overprint_ink_spline2( 2.0, { inkSet.paperColor, mix1LAB, mix2LAB, inkSet.darkColor } );
         inkSet.splines.push_back( temp );
         inkSet.mixData.push_back( inkMixPair( ink1Index, ink2Index, t1, t2 ) );
     }
