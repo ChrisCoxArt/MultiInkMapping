@@ -214,7 +214,7 @@ void from_json( const json &j, inkColorSet &p )
     // set some defaults
     p.darkColor =  labColor(-1,0,0);            // flag to automatically calculate
     p.paperColor = labColor(98.0,0.0,0.0);      // unbelievably white
-    p.filterColor = labColor(-1,0,0);           // flat to ignore this if unset
+    p.filterColor = labColor(-1,0,0);           // flag to ignore this if unset
     
     // these are required
     ReadString( j, "filename", p.name );

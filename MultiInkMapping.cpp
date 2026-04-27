@@ -23,9 +23,20 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 BUG - overprints are inset, leading to thin areas around primaries
+too linear on the interpolation from overprint to paper?
 need some way to get the splines closer to primary saturation.
+force chroma >= straight line between primaries?
+    better ink mix model for splines?
+    changing splines to lerp doesn't seem to make a difference
+should I supersample the range of each lut entry to get the greatest value?
+
+Try adding another point to the overprint spline - halfway between primaries (lighter than overprint)
+    helps some, still not quite right
+
 See Experimental-Turquoise-Orange-Green_abstract.icc
     Experimental-Violet-Magenta-YellowOrange_abstract.icc
+
+
 
 
 TODO - would be nice to add measured overprint colors
@@ -255,6 +266,126 @@ color_list mix_pure_ink_spline( int steps, const labColor &paperColor, const lab
 
 /********************************************************************************/
 
+bool labLLess(const labColor &a, const labColor &b)
+{
+    return a.L < b.L;
+}
+
+/********************************************************************************/
+
+static
+color_list mix_overprint_ink_spline2( float Lstep, const std::vector<labColor> &points_in )
+{
+    color_list temp;
+    
+    size_t pointCount = points_in.size();
+    
+    assert ( pointCount >= 3 );   // 3 points minimum
+    
+    // sort list decreasing L*
+    std::vector<labColor> points( points_in );
+    std::sort( points.begin(), points.end(), labLLess );
+
+    // exact first color
+    temp.push_back( points[0] );
+    
+    for (size_t i = 1; i < pointCount; ++i) {
+    
+        labColor prevColor = points[i-1];
+        labColor nextColor = points[i];
+        float range = nextColor.L - prevColor.L;
+        xyzColor prevColorXYZ = LAB2XYZ( prevColor );
+        xyzColor nextColorXYZ = LAB2XYZ( nextColor );
+        
+        for (float L = (prevColor.L + Lstep); L < nextColor.L; L += Lstep) {
+            float t = (L - prevColor.L) / range;
+            xyzColor mix = interp2inks( t, prevColorXYZ, nextColorXYZ );
+            labColor mixLAB = XYZ2LAB( mix );
+            temp.push_back( mixLAB );
+        }
+        
+        // exact sample
+        temp.push_back( nextColor );
+    }
+
+// TODO - do these in light -> dark order...
+    std::reverse( temp.begin(), temp.end() );
+ 
+    // error checking
+    VerifyDecreasingL(temp);
+
+    return temp;
+}
+
+/********************************************************************************/
+
+static
+color_list mix_overprint_ink_spline( int steps, const labColor &paperColor, const labColor &inkColor1, const labColor &inkColor2, const labColor &darkColor)
+{
+    int i;
+    xyzColor mix;
+    labColor mixLAB;
+    color_list temp;
+    
+    xyzColor paperColorXYZ = LAB2XYZ( paperColor );
+    xyzColor darkColorXYZ = LAB2XYZ( darkColor );
+    
+    labColor mid1 = inkColor1;
+    labColor mid2 = inkColor2;
+    
+    if (mid1.L < mid2.L)
+        std::swap( mid1, mid2 );
+    
+    // if they're equal, then something is off
+    assert( mid1.L > mid2.L );
+    
+    xyzColor inkColorXYZ1 = LAB2XYZ( mid1 );    // lighter
+    xyzColor inkColorXYZ2 = LAB2XYZ( mid2 );    // darker
+
+    // exact paper
+    temp.push_back( paperColor );
+    
+    // interp paper->ink1
+    for (i=1; i < (steps/3); ++i) {
+        float t = (float) i / (float) (steps/3);
+        mix = interp2inks( t, paperColorXYZ, inkColorXYZ1 );
+        mixLAB = XYZ2LAB( mix );
+        temp.push_back( mixLAB );
+    }
+    
+    // 50/50 overprint
+    temp.push_back( mid1 );     // i = (steps/3)
+    
+    // interp ink1->ink2
+    for (i=(steps/3)+1; i < (2*steps/3); ++i) {
+        float t = (float) (i - (steps/3)) / (float) (steps/3);
+        mix = interp2inks( t, inkColorXYZ1, inkColorXYZ2 );
+        mixLAB = XYZ2LAB( mix );
+        temp.push_back( mixLAB );
+    }
+    
+    // 100/100 exact overprint
+    temp.push_back( mid2 );     // i = (2*steps/3)
+ 
+    // interp ink->dark
+    for (i=(2*steps/3)+1; i < (steps-1); ++i) {
+        float t = (float) (i - (2*steps/3)) / (float) (steps/3);
+        mix = interp2inks( t, inkColorXYZ2, darkColorXYZ );
+        mixLAB = XYZ2LAB( mix );
+        temp.push_back( mixLAB );
+    }
+    
+    // exact dark
+    temp.push_back( darkColor );
+ 
+    // error checking
+    VerifyDecreasingL(temp);
+
+    return temp;
+}
+
+/********************************************************************************/
+
 bool labHueLess(const namedColor &a, const namedColor &b)
 {
     float angle1 = (float)(M_PI + atan2f(a.color.A,a.color.B));
@@ -323,48 +454,6 @@ uint32_t lookup_overprints( const inkColorSet &inkSet,
     }
     
     return opBitmap;
-}
-
-/********************************************************************************/
-
-// here we want chromatic mixes, not darks
-static
-xyzColor estimate_ink_mix( const inkColorSet &inkSet, const std::vector<xyzColor> &inkList,
-                            const std::vector<size_t> &inkIndices,
-                            const xyzColor &paperColor, size_t inkCount )
-{
-    assert( inkCount >= 1 && inkCount <= kMaxChannels );
-    
-    xyzColor overprint = identityXYZ;
-
-#if 1
-    // convert to fraction lists for lookup
-    std::vector<float> inkFractionList(kMaxChannels,0.0f);
-    for (size_t i = 0; i < inkCount; ++i) {
-        size_t index = inkIndices[i];
-        inkFractionList[index] = 1.0;
-    }
-
-    // find any known overprints for these inks
-    uint32_t opBitmap = lookup_overprints( inkSet, inkFractionList, kMaxChannels, overprint );
-    
-    // interp and multiply remaining inks that weren't in the overprint data
-    for (size_t i = 0; i < inkCount; ++i) {
-        size_t index = inkIndices[i];
-        if ((opBitmap & (1UL << index)) == 0) {
-            auto &ink = inkList[i];
-            overprint *= ink;
-        }
-    }
-#else
-    for ( const auto &ink : inkList ) {
-        overprint *= ink;
-    }
-#endif
-
-    overprint *= paperColor;
-
-    return overprint;
 }
 
 /********************************************************************************/
@@ -452,19 +541,25 @@ xyzColor estimate_darkest_ink_overprint( const std::vector<namedColor> &inkList,
 
 static
 void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int steps,
-            const size_t ink1Index, const size_t ink2Index, const xyzColor &paperColor )
+            const size_t ink1Index, const size_t ink2Index, const xyzColor &paperColor,
+            const std::vector<xyzColor> &inkListXYZ )
 {
-    color_list temp;
-    labColor mixLAB;
+    color_list temp;    // reuse to reduce allocations/deletions
  
     labColor ink1 = inkSet.primaries[ink1Index].color;
     labColor ink2 = inkSet.primaries[ink2Index].color;
 
     xyzColor ink1Color = LAB2XYZ( ink1 );
     xyzColor ink2Color = LAB2XYZ( ink2 );
+    
+    std::vector<float> inkFractions(kMaxChannels,0.0f);
+    inkFractions[ink1Index] = 0.5;
+    inkFractions[ink2Index] = 0.5;
+    xyzColor halfwayMix = estimate_fractional_ink_mix( inkSet, inkListXYZ, inkFractions, paperColor, kMaxChannels );
 
-    xyzColor halfwayMix = estimate_ink_mix( inkSet, { ink1Color/paperColor, ink2Color/paperColor },
-                                            {ink1Index, ink2Index}, paperColor, 2 );
+    inkFractions[ink1Index] = 1.0;
+    inkFractions[ink2Index] = 1.0;
+    xyzColor overprintMix = estimate_fractional_ink_mix( inkSet, inkListXYZ, inkFractions, paperColor, kMaxChannels );
 
     // d == 0 is the last pure ink spline
     // d == division is this pure ink spline (handled elsewhere)
@@ -473,18 +568,22 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
         float t1 = 1.0f;
         float t2 = 1.0f;
 
-        xyzColor mix;
+        xyzColor mix1, mix2;
         if (t <= 0.5f) {
-            mix = interp2inks( t*2.0f, ink1Color, halfwayMix );
+            mix1 = interp2inks( t*2.0f, ink1Color, halfwayMix );
+            mix2 = interp2inks( t*2.0f, ink1Color, overprintMix );
             t2 = t*2.0f; // going 0 -> 1
         }
         else {
-            mix = interp2inks( (t-0.5f)*2.0f, halfwayMix, ink2Color );
+            mix1 = interp2inks( (t-0.5f)*2.0f, halfwayMix, ink2Color );
+            mix2 = interp2inks( (t-0.5f)*2.0f, overprintMix, ink2Color );
             t1 = (1.0f - t) * 2.0f;   // going 1 -> 0
         }
 
-        mixLAB = XYZ2LAB( mix );
-        temp = mix_pure_ink_spline( steps, inkSet.paperColor, mixLAB, inkSet.darkColor );
+        labColor mix1LAB = XYZ2LAB( mix1 );
+        labColor mix2LAB = XYZ2LAB( mix2 );
+        temp = mix_overprint_ink_spline( steps, inkSet.paperColor, mix1LAB, mix2LAB, inkSet.darkColor );
+//        temp = mix_overprint_ink_spline2( 1.0, { inkSet.paperColor, mix1LAB, mix2LAB, inkSet.darkColor } );
         inkSet.splines.push_back( temp );
         inkSet.mixData.push_back( inkMixPair( ink1Index, ink2Index, t1, t2 ) );
     }
@@ -516,12 +615,16 @@ static
 void mix_ink_splines( inkColorSet &inkSet )
 {
     const int steps = 51;    // odd so we have a midpoint
-    const int divisions = 4;    // even so we have a midpoint (5 splines per surface)
+    const int divisions = 16;    // even so we have a midpoint (17 splines per surface)
 
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0 && inkCount <= kMaxChannels);
 
     xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
+
+    std::vector<xyzColor> inkListXYZ(kMaxChannels);
+    for (size_t i = 0; i < inkCount; ++i)
+        inkListXYZ[i] = LAB2XYZ(inkSet.primaries[i].color) / paperColor;
 
     // first ink spline, always calculated
     color_list temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[0].color, inkSet.darkColor );
@@ -532,9 +635,9 @@ void mix_ink_splines( inkColorSet &inkSet )
     for (size_t k = 1; k < inkCount; ++k) {
         subdivide_ink_splines( inkSet, divisions, steps,
             k-1, k,
-            paperColor);
+            paperColor, inkListXYZ );
 
-        // pure ink spline paper->ink2->combined
+        // pure ink spline paper->ink2->dark
         temp = mix_pure_ink_spline( steps, inkSet.paperColor, inkSet.primaries[k].color, inkSet.darkColor );
         inkSet.splines.push_back( temp );
         inkSet.mixData.push_back( inkMixPair( k, k, 1.0, 0.0 ) );
@@ -544,7 +647,7 @@ void mix_ink_splines( inkColorSet &inkSet )
     if (inkCount > 2) {
         subdivide_ink_splines( inkSet, divisions, steps,
             inkCount-1, 0,
-            paperColor);
+            paperColor, inkListXYZ );
     }
     
     assert( inkSet.splines.size() == inkSet.mixData.size() );
@@ -557,6 +660,11 @@ void mix_ink_splines( inkColorSet &inkSet )
 static
 float SplineInterp( float t, float A, float B, float C, float D )
 {
+
+#if 0
+// debug
+    return LERP( t, B, C );
+#else
 // catmull rom - cardinal spline with tension = 0.5
 // needs scaling by 0.5 at end
     const float    M11 = -1.0, M12 = 3.0, M13 = -3.0, M14 = 1.0;
@@ -572,6 +680,7 @@ float SplineInterp( float t, float A, float B, float C, float D )
     value += D * (M44 + t * (M34 + t * (M24 + t*M14) ) );
     
     return 0.5f * value;
+#endif
 }
 
 /********************************************************************************/
@@ -1224,12 +1333,11 @@ static
 void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfile,
                     const size_t maxGridSize )
 {
-    const int maxChannels = kMaxChannels;          // ICC spec. limit
     const int maxGridPoints = 31;                  // sanity limit (could be increased)
     
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
-    assert(inkCount <= maxChannels);
+    assert(inkCount <= kMaxChannels);
     
     // decide on table size
     size_t gridPoints = 2;         // absolute minimum
@@ -1245,11 +1353,11 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
     }
     
     // setup loops to create the table
-    std::vector<uint32_t> loopCounters(maxChannels);
-    std::vector<float> inkFractions(maxChannels);
+    std::vector<uint32_t> loopCounters(kMaxChannels);
+    std::vector<float> inkFractions(kMaxChannels);
 
 #if 0
-    std::vector<uint32_t> loopSteps(maxChannels);   // um, I may not end up using these
+    std::vector<uint32_t> loopSteps(kMaxChannels);   // um, I may not end up using these
     size_t index = inkCount;
     int step = 3;
     while (index) {
@@ -1261,7 +1369,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
 
     xyzColor paperColor = LAB2XYZ( inkSet.paperColor );
     
-    std::vector<xyzColor> inkListXYZ(maxChannels);
+    std::vector<xyzColor> inkListXYZ(kMaxChannels);
     for (size_t i = 0; i < inkCount; ++i)
         inkListXYZ[i] = LAB2XYZ(inkSet.primaries[i].color) / paperColor;
 
@@ -1615,7 +1723,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, size_t gridPoints, p
         
         // create interpolated point list from the splines
         PointList planePoints;
-        size_t subDivisions = std::min( (size_t)300, 50*(size_t)inkCount );
+        size_t subDivisions = std::min( (size_t)600, 100*(size_t)inkCount );
         PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
 // DEBUG the last set generated to check the gamut shape and area
@@ -1902,7 +2010,7 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, size_t gridP
         
         // create interpolated point list from the splines
         PointList planePoints;
-        size_t subDivisions = std::min( (size_t)300, 50*inkCount );
+        size_t subDivisions = std::min( (size_t)600, 50*inkCount );
         PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
 // DEBUG the last set generated to check the gamut shape and area
