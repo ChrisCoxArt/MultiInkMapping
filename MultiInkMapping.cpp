@@ -486,15 +486,21 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
 
     xyzColor ink1Color = LAB2XYZ( ink1 );
     xyzColor ink2Color = LAB2XYZ( ink2 );
+
+    std::vector<float> mixFractions = { 0.25, 0.5, 0.75, 1.0 };
+    std::vector<labColor> samplesLAB( 2 + mixFractions.size() );
+    std::vector<xyzColor> samplesXYZ( mixFractions.size() );
+    std::vector<xyzColor> mixesXYZ( mixFractions.size() );
     
     std::vector<float> inkFractions(kMaxChannels,0.0f);
-    inkFractions[ink1Index] = 0.5;
-    inkFractions[ink2Index] = 0.5;
-    xyzColor halfwayMix = estimate_fractional_ink_mix( inkSet, inkListXYZ, inkFractions, paperColor, kMaxChannels );
-
-    inkFractions[ink1Index] = 1.0;
-    inkFractions[ink2Index] = 1.0;
-    xyzColor overprintMix = estimate_fractional_ink_mix( inkSet, inkListXYZ, inkFractions, paperColor, kMaxChannels );
+    
+    for (size_t i = 0; i < mixFractions.size(); ++i) {
+        auto thisFraction = mixFractions[i];
+        inkFractions[ink1Index] = thisFraction;
+        inkFractions[ink2Index] = thisFraction;
+        xyzColor halfwayMix = estimate_fractional_ink_mix( inkSet, inkListXYZ, inkFractions, paperColor, kMaxChannels );
+        samplesXYZ[i] = halfwayMix;
+    }
 
     // d == 0 is the last pure ink spline
     // d == division is this pure ink spline (handled elsewhere)
@@ -503,21 +509,27 @@ void subdivide_ink_splines( inkColorSet &inkSet, const int divisions, const int 
         float t1 = 1.0f;
         float t2 = 1.0f;
 
-        xyzColor mix1, mix2;
         if (t <= 0.5f) {
-            mix1 = interp2inks( t*2.0f, ink1Color, halfwayMix );
-            mix2 = interp2inks( t*2.0f, ink1Color, overprintMix );
+            for (size_t i = 0; i < mixFractions.size(); ++i) {
+                xyzColor mix1 = interp2inks( t*2.0f, ink1Color, samplesXYZ[i] );
+                mixesXYZ[i] = mix1;
+            }
             t2 = t*2.0f; // going 0 -> 1
         }
         else {
-            mix1 = interp2inks( (t-0.5f)*2.0f, halfwayMix, ink2Color );
-            mix2 = interp2inks( (t-0.5f)*2.0f, overprintMix, ink2Color );
+            for (size_t i = 0; i < mixFractions.size(); ++i) {
+                xyzColor mix2 = interp2inks( (t-0.5f)*2.0f, samplesXYZ[i], ink2Color );
+                mixesXYZ[i] = mix2;
+            }
             t1 = (1.0f - t) * 2.0f;   // going 1 -> 0
         }
 
-        labColor mix1LAB = XYZ2LAB( mix1 );
-        labColor mix2LAB = XYZ2LAB( mix2 );
-        temp = mix_overprint_ink_spline2( 2.0, { inkSet.paperColor, mix1LAB, mix2LAB, inkSet.darkColor } );
+        samplesLAB[0] = inkSet.paperColor;
+        for (size_t i = 0; i < mixFractions.size(); ++i)
+            samplesLAB[1+i] = XYZ2LAB( mixesXYZ[i] );
+        samplesLAB[1 + mixFractions.size()] = inkSet.darkColor;
+    
+        temp = mix_overprint_ink_spline2( 2.0, samplesLAB );
         inkSet.splines.push_back( temp );
         inkSet.mixData.push_back( inkMixPair( ink1Index, ink2Index, t1, t2 ) );
     }
@@ -1382,6 +1394,9 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
         size_t tiffBufferSize = (tiffWidth*tiffHeight) * 3 * ((size_t)depth/8);
         std::unique_ptr<uint8_t> tiffBuffer(new uint8_t[ tiffBufferSize ]);
         memset( tiffBuffer.get(), 0, tiffBufferSize );
+
+// TODO- copy the data in more useful order for N=3..4
+// this looks really wrong for 3 inks
         memcpy( tiffBuffer.get(), gridBuffer.get(), gridBufferSize );
         
         WriteTIFF( inkSet.name + "_A2B.tiff", 96.0, TIFF_MODE_CIELAB, tiffBuffer.get(),
