@@ -22,20 +22,19 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
-BUG - overprints are inset, leading to thin areas around primaries
-too linear on the interpolation from overprint to paper?
-need some way to get the splines closer to primary saturation.
-force chroma >= straight line between primaries?
-    better ink mix model for splines?
-    changing splines to lerp doesn't seem to make a difference
-should I supersample the range of each lut entry to get the greatest value?
 
-Try adding another point to the overprint spline - halfway between primaries (lighter than overprint)
-    helps some, still not quite right
 
-See Experimental-Turquoise-Orange-Green_abstract.icc
-    Experimental-Violet-Magenta-YellowOrange_abstract.icc
+TODO - make smoothing optional
 
+
+Abstract and B2A0 are not reaching full scale seen in A2B0 output profiles.
+    Grid sampling errors (missing values between samples), or other problems?
+    Or am I looking at downsampling errors in ColorSync Utility?
+        seems to downsample all to 10x10x10 - increasing grid size doesn't change 3D model in abstract A2B0
+
+See Experimental-Turquoise-Orange-Green_abstract.icc        --- clean points, clean table,looks like ColorSync downsampling
+    Experimental-Violet-Magenta-YellowOrange_abstract.icc  -- curve in colors near L=80 mean angle find fails for orange
+        would need something closer to "outermost closest point to line"
 
 
 
@@ -1278,9 +1277,9 @@ A2B - inks and overprints to LAB, N-dimensional to 3 channels
 */
 static
 void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfile,
-                    const size_t maxGridSize )
+                    const size_t maxGridSize, const size_t gridSizeInput )
 {
-    const int maxGridPoints = 31;                  // sanity limit (could be increased)
+    const size_t maxGridPoints = std::min( size_t(101), gridSizeInput );    // sanity limit
     
     size_t inkCount = inkSet.primaries.size();
     assert(inkCount > 0);
@@ -1699,7 +1698,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, size_t gridPoints, p
         PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
 // DEBUG the last set generated to check the gamut shape and area
-//DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
+//DumpPointList( std::string("pointlist_") + inkSet.name + std::to_string(L), planePoints );
 
         spline_mix_data mixPoints;
         MixPointsFromSplines( subDivisions, inkSet.mixData, mixPoints, (inkCount > 2) );
@@ -1735,30 +1734,28 @@ void createB2A_table( const inkColorSet &inkSet, int depth, size_t gridPoints, p
                 
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
-                    //bool inside = pointInPoly( planePoints, thisSpot );
 
-                    if (true) {
-                        // this we want relative to our splines, so offset by our neutral axis
-                        float thisHue = (float)(M_PI + atan2f( Afloat - neutral.A, Bfloat - neutral.B ));
+                    // this we want relative to our splines, so offset by our neutral axis
+                    float thisHue = (float)(M_PI + atan2f( Afloat - neutral.A, Bfloat - neutral.B ));
 
-                        // find bounding hue angles (and handle wrap around!)
-                        // FYI - lower and upper bound reverse the arguments to less()
-                        auto found = std::lower_bound( splineHueAngles.begin(), splineHueAngles.end(), thisHue,
-                                                [](const splineHuePair &a, float b) { return a.angle < b; } );
-                        long index = 0;
-                        long index1 = 0;
-                        if (found != splineHueAngles.end()) {
-                            index = (long)( found - splineHueAngles.begin() );
-                            index1 = index - 1;
-                            
-                            if (index1 < 0)
-                                index1 = (long)splineHueAngles.size() - 1;
-                        }
-                        else {
-                            index = (long)splineHueAngles.size() - 1;
-                            index1 = 0;
-                        }
+                    // find bounding hue angles (and handle wrap around!)
+                    // FYI - lower and upper bound reverse the arguments to less()
+                    auto found = std::lower_bound( splineHueAngles.begin(), splineHueAngles.end(), thisHue,
+                                            [](const splineHuePair &a, float b) { return a.angle < b; } );
+                    long index = 0;
+                    long index1 = 0;
+                    if (found != splineHueAngles.end()) {
+                        index = (long)( found - splineHueAngles.begin() );
+                        index1 = index - 1;
                         
+                        if (index1 < 0)
+                            index1 = (long)splineHueAngles.size() - 1;
+                    }
+                    else {
+                        index = (long)splineHueAngles.size() - 1;
+                        index1 = 0;
+                    }
+                    
 
 assert( index != index1 );
 assert( index >= 0 );
@@ -1766,79 +1763,78 @@ assert( index1 >= 0 );
 assert( index < (long)splineHueAngles.size() );
 assert( index1 < (long)splineHueAngles.size() );
 
-                        // interpolate to get primary ink mix
-                        float angle1 = splineHueAngles[(size_t)index].angle;
-                        float angle2 = splineHueAngles[(size_t)index1].angle;
-                        
-                        // and look up the indices for the mixData based on the hue angle indices
-                        size_t mixIndex = splineHueAngles[(size_t)index].index;
-                        size_t mixIndex1 = splineHueAngles[(size_t)index1].index;
+                    // interpolate to get primary ink mix
+                    float angle1 = splineHueAngles[(size_t)index].angle;
+                    float angle2 = splineHueAngles[(size_t)index1].angle;
+                    
+                    // and look up the indices for the mixData based on the hue angle indices
+                    size_t mixIndex = splineHueAngles[(size_t)index].index;
+                    size_t mixIndex1 = splineHueAngles[(size_t)index1].index;
 assert( mixIndex != mixIndex1 );
 assert( mixIndex < inkSet.mixData.size() );
 assert( mixIndex1 < inkSet.mixData.size() );
 
-                        
-                        if (thisHue > angle1) {
-                            angle2 += 2.0f*(float)M_PI;
-                        }
-                        else if (angle2 > angle1)
-                            angle2 -= 2.0f*(float)M_PI;
-                        
-                        if (angle2 > angle1) {
-                            std::swap(angle2,angle1);
-                            std::swap(mixIndex,mixIndex1);
-                        }
-                        
-                        if (thisHue < angle2)
-                            thisHue += 2.0f*(float)M_PI;
+                    
+                    if (thisHue > angle1) {
+                        angle2 += 2.0f*(float)M_PI;
+                    }
+                    else if (angle2 > angle1)
+                        angle2 -= 2.0f*(float)M_PI;
+                    
+                    if (angle2 > angle1) {
+                        std::swap(angle2,angle1);
+                        std::swap(mixIndex,mixIndex1);
+                    }
+                    
+                    if (thisHue < angle2)
+                        thisHue += 2.0f*(float)M_PI;
 
 assert(angle2 <= angle1);
-                        float tempDist = angle1 - angle2;
-                        float hueFraction = (thisHue - angle2);
+                    float tempDist = angle1 - angle2;
+                    float hueFraction = (thisHue - angle2);
 assert(hueFraction >= 0.0);
-                        if (fabsf(tempDist) < 1e-6)
-                            hueFraction = 0.0f;
-                        else
-                            hueFraction /= tempDist;
+                    if (fabsf(tempDist) < 1e-6)
+                        hueFraction = 0.0f;
+                    else
+                        hueFraction /= tempDist;
 assert(hueFraction <= 1.0);
 assert(hueFraction >= 0.0);
-                        
-                        if (hueFraction < 0.0f)
-                            hueFraction = 0.0f;
-                        if (hueFraction > 1.0f)
-                            hueFraction = 1.0f;
+                    
+                    if (hueFraction < 0.0f)
+                        hueFraction = 0.0f;
+                    if (hueFraction > 1.0f)
+                        hueFraction = 1.0f;
 
-                        std::fill( inkWeights.begin(), inkWeights.end(), 0 );
-                        std::fill( inkWeights2.begin(), inkWeights2.end(), 0 );
-                        
-                        inkWeights[ inkSet.mixData[(size_t)mixIndex].inkIndex1 ] += inkSet.mixData[(size_t)mixIndex].ink1Fraction;
-                        inkWeights[ inkSet.mixData[(size_t)mixIndex].inkIndex2 ] += inkSet.mixData[(size_t)mixIndex].ink2Fraction;
-                        
-                        inkWeights2[ inkSet.mixData[(size_t)mixIndex1].inkIndex1 ] += inkSet.mixData[(size_t)mixIndex1].ink1Fraction;
-                        inkWeights2[ inkSet.mixData[(size_t)mixIndex1].inkIndex2 ] += inkSet.mixData[(size_t)mixIndex1].ink2Fraction;
-                        
-                        // interpolate inks
-                        inkWeights = MixInkWeights( hueFraction, inkWeights2, inkWeights, inkCount );
+                    std::fill( inkWeights.begin(), inkWeights.end(), 0 );
+                    std::fill( inkWeights2.begin(), inkWeights2.end(), 0 );
+                    
+                    inkWeights[ inkSet.mixData[(size_t)mixIndex].inkIndex1 ] += inkSet.mixData[(size_t)mixIndex].ink1Fraction;
+                    inkWeights[ inkSet.mixData[(size_t)mixIndex].inkIndex2 ] += inkSet.mixData[(size_t)mixIndex].ink2Fraction;
+                    
+                    inkWeights2[ inkSet.mixData[(size_t)mixIndex1].inkIndex1 ] += inkSet.mixData[(size_t)mixIndex1].ink1Fraction;
+                    inkWeights2[ inkSet.mixData[(size_t)mixIndex1].inkIndex2 ] += inkSet.mixData[(size_t)mixIndex1].ink2Fraction;
+                    
+                    // interpolate inks
+                    inkWeights = MixInkWeights( hueFraction, inkWeights2, inkWeights, inkCount );
 
-                        // use ratio of distances from neutral and outer point as chroma estimate
-                        Point mixedAB;
-                        mixedAB.a = LERP( hueFraction, planeSpline[(size_t)mixIndex1].a, planeSpline[(size_t)mixIndex].a );
-                        mixedAB.b = LERP( hueFraction, planeSpline[(size_t)mixIndex1].b, planeSpline[(size_t)mixIndex].b );
-                        float closestDist = hypotf( mixedAB.a - neutral.A, mixedAB.b - neutral.B );
-                        float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
+                    // use ratio of distances from neutral and outer point as chroma estimate
+                    Point mixedAB;
+                    mixedAB.a = LERP( hueFraction, planeSpline[(size_t)mixIndex1].a, planeSpline[(size_t)mixIndex].a );
+                    mixedAB.b = LERP( hueFraction, planeSpline[(size_t)mixIndex1].b, planeSpline[(size_t)mixIndex].b );
+                    float closestDist = hypotf( mixedAB.a - neutral.A, mixedAB.b - neutral.B );
+                    float thisDist = hypotf( Afloat - neutral.A, Bfloat - neutral.B );
 
-                        float tchroma = (closestDist > 1e-10f) ? (thisDist / closestDist) : 0.0f;
-                        if (tchroma > 1.0f)  // clamp colors outside of gamut
-                            tchroma = 1.0f;
+                    float tchroma = (closestDist > 1e-10f) ? (thisDist / closestDist) : 0.0f;
+                    if (tchroma > 1.0f)  // clamp colors outside of gamut
+                        tchroma = 1.0f;
 assert( tchroma >= 0.0 );
 
 // this doesn't seem to have an effect here
 //                        inkWeights = SaturateInkWeights( inkWeights, inkCount );
 
-                        // scale from full inks to neutral  (aka: interp to no ink)
-                        inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
+                    // scale from full inks to neutral  (aka: interp to no ink)
+                    inkWeights = ScaleInkWeights( tchroma, inkWeights, inkCount );
 
-                    }   // inside
                 }
 
                 // adjust L* for all ink mixes
@@ -1853,13 +1849,13 @@ assert( tchroma >= 0.0 );
     }   // end for L
 
 
-
-
+// this is damaging saturated primaries, and the data seems smooth already
+#if 0
     // smooth the floating point table
     SmoothOneDirection( gridData, (size_t)gridPoints, planeStep, rowStep, colStep, inkCount );
     SmoothOneDirection( gridData, (size_t)gridPoints, rowStep, colStep, planeStep, inkCount );
     SmoothOneDirection( gridData, (size_t)gridPoints, colStep, planeStep, rowStep, inkCount );
-
+#endif
 
     // convert the float table to integer
     assert( depth == 8 || depth == 16 );
@@ -1986,8 +1982,8 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, size_t gridP
         PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
 // DEBUG the last set generated to check the gamut shape and area
-//DumpPointList( std::string("pointSplines_") + std::to_string(L), planeSpline );
-//DumpPointList( std::string("pointlist_") + std::to_string(L), planePoints );
+//DumpPointList( std::string("pointSplines_") + filename + std::to_string(L), planeSpline );
+//DumpPointList( std::string("pointlist_") + filename + std::to_string(L), planePoints );
 
         spline_mix_data mixPoints;
         MixPointsFromSplines( subDivisions, inkSet.mixData, mixPoints, (inkCount > 2) );
@@ -2016,12 +2012,6 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, size_t gridP
                 
                 // for 3 or more inks, test for inside polygon, interpolate inside
                 if (inkCount > 2) {
-#if 0
-// old, not very accuate for > 2 inks
-                    bool inside = pointInPoly( planePoints, thisSpot );
-                    if (inside)
-                        result = thisSpot;
-#else
                     // this we want relative to our splines, so offset by our neutral axis
                     float thisHue = (float)(M_PI + atan2f( Afloat - neutral.A, Bfloat - neutral.B ));
 
@@ -2111,7 +2101,6 @@ assert(hueFraction >= 0.0);
                     // scale full saturation result to neutral
                     result.a = LERP( tchroma, neutral.A, result.a );
                     result.b = LERP( tchroma, neutral.B, result.b );
-#endif
                 }
                 
                 // save the values
@@ -2123,12 +2112,14 @@ assert(hueFraction >= 0.0);
             }   // end for A
         }   // end for L
 
-    
+
+// this is hurting saturated colors, and the current result is pretty smooth already
+#if 0
     // smooth the 3D table data
     SmoothOneDirection( gridData, (size_t)gridPoints, planeStep, rowStep, colStep, 3 );
     SmoothOneDirection( gridData, (size_t)gridPoints, rowStep, colStep, planeStep, 3 );
     SmoothOneDirection( gridData, (size_t)gridPoints, colStep, planeStep, rowStep, 3 );
-    
+#endif
 
     assert( depth == 8 || depth == 16 );
     size_t bufferSize = (size_t)gridPoints * (size_t)gridPoints * (size_t)gridPoints * 3 * ((size_t)depth/8);
@@ -2250,7 +2241,7 @@ void create_output_profile( const inkColorSet &inkSet, int depth, size_t gridPoi
     myProfile.profileFormats = globalSettings.gProfileTypes;
 
     // make A2B0 (ink to LAB) - determines grid size internally
-    createA2B_table( inkSet, depth, myProfile, tableSizeLimit );
+    createA2B_table( inkSet, depth, myProfile, tableSizeLimit, gridPoints );
 
     // make B2A0 (LAB to ink)
     createB2A_table( inkSet, depth, gridPoints, myProfile );
@@ -2528,7 +2519,7 @@ void processInkSetList(void)
             
             // apply filters to adjust colors
             apply_filter_colors( inkSet );
-        
+            
             // create utility mappings and do more error checking
             if ( create_utility_maps( inkSet ) != 0 )
                 continue;
