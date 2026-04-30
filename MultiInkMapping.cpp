@@ -24,17 +24,18 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
-TODO - make smoothing optional
-
 
 Abstract and B2A0 are not reaching full scale seen in A2B0 output profiles.
     Grid sampling errors (missing values between samples), or other problems?
     Or am I looking at downsampling errors in ColorSync Utility?
         seems to downsample all to 10x10x10 - increasing grid size doesn't change 3D model in abstract A2B0
 
-See Experimental-Turquoise-Orange-Green_abstract.icc        --- clean points, clean table,looks like ColorSync downsampling
-    Experimental-Violet-Magenta-YellowOrange_abstract.icc  -- curve in colors near L=80 mean angle find fails for orange
-        would need something closer to "outermost closest point to line"
+See:
+Experimental-Turquoise-Orange-Green_abstract.icc
+    clean points, clean table,looks like ColorSync downsampling
+Experimental-Violet-Magenta-YellowOrange_abstract.icc
+    curve in colors near L=80 mean angle find fails for orange
+    would need something closer to "outermost closest point to line"
 
 
 
@@ -1849,13 +1850,13 @@ assert( tchroma >= 0.0 );
     }   // end for L
 
 
-// this is damaging saturated primaries, and the data seems smooth already
-#if 0
-    // smooth the floating point table
-    SmoothOneDirection( gridData, (size_t)gridPoints, planeStep, rowStep, colStep, inkCount );
-    SmoothOneDirection( gridData, (size_t)gridPoints, rowStep, colStep, planeStep, inkCount );
-    SmoothOneDirection( gridData, (size_t)gridPoints, colStep, planeStep, rowStep, inkCount );
-#endif
+    if (globalSettings.gSmoothTables) {
+        // this is damaging saturated primaries, and the data seems smooth already
+        // smooth the floating point table
+        SmoothOneDirection( gridData, (size_t)gridPoints, planeStep, rowStep, colStep, inkCount );
+        SmoothOneDirection( gridData, (size_t)gridPoints, rowStep, colStep, planeStep, inkCount );
+        SmoothOneDirection( gridData, (size_t)gridPoints, colStep, planeStep, rowStep, inkCount );
+    }
 
     // convert the float table to integer
     assert( depth == 8 || depth == 16 );
@@ -2113,13 +2114,13 @@ assert(hueFraction >= 0.0);
         }   // end for L
 
 
-// this is hurting saturated colors, and the current result is pretty smooth already
-#if 0
-    // smooth the 3D table data
-    SmoothOneDirection( gridData, (size_t)gridPoints, planeStep, rowStep, colStep, 3 );
-    SmoothOneDirection( gridData, (size_t)gridPoints, rowStep, colStep, planeStep, 3 );
-    SmoothOneDirection( gridData, (size_t)gridPoints, colStep, planeStep, rowStep, 3 );
-#endif
+    if (globalSettings.gSmoothTables) {
+        // this is hurting saturated colors, and the current result is pretty smooth already
+        // smooth the 3D table data
+        SmoothOneDirection( gridData, (size_t)gridPoints, planeStep, rowStep, colStep, 3 );
+        SmoothOneDirection( gridData, (size_t)gridPoints, rowStep, colStep, planeStep, 3 );
+        SmoothOneDirection( gridData, (size_t)gridPoints, colStep, planeStep, rowStep, 3 );
+    }
 
     assert( depth == 8 || depth == 16 );
     size_t bufferSize = (size_t)gridPoints * (size_t)gridPoints * (size_t)gridPoints * 3 * ((size_t)depth/8);

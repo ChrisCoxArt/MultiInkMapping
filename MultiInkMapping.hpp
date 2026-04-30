@@ -390,6 +390,7 @@ struct settings_spec {
     bool gCreateOutput;
     bool gCreateAbstract;
     bool gTIFFTables;
+    bool gSmoothTables;
     std::string gDefaultCopyright;
     uint32_t gProfileTypes;
     
