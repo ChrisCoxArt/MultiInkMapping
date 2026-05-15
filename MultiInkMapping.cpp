@@ -22,6 +22,9 @@ This further assumes that the primaries are really transparent, so ink order doe
 
 
 
+TODO - dilate gamut bitmaps
+min seems excessive
+if 2 neighbors seems like it'll work
 
 
 
@@ -34,9 +37,21 @@ See:
 Experimental-Turquoise-Orange-Green_abstract.icc
     clean points, clean table,looks like ColorSync downsampling
 Experimental-Violet-Magenta-YellowOrange_abstract.icc
-    curve in colors near L=80 mean angle find fails for orange
-    would need something closer to "outermost closest point to line"
-
+    curve in colors near L=80 mean angle search fails for orange
+    would need something closer to "outermost closest point to line"?
+        find all intersections, use outer or inner?  closest?
+        find all angle bound sets?  Find all segments crossing line from center to infinity?
+                explicit loop with wraparound logic, or "find_if"?
+                    accumulate angles into vector
+                    process vector afterward if > 1
+                    assert if size == 0
+                    
+                < max dist, take closest; > max dist, take max
+                guess that is always closest, in a way
+                unlikely to have really concave shapes, just slight concavity due to lightness.
+            use approximations for distance to segment without interpolating?
+                midpoint?
+                endpoints?
 
 
 TODO - would be nice to add measured overprint colors
@@ -1135,7 +1150,7 @@ bool pointInPoly( const PointList &poly, const Point a )
 }
 
 /********************************************************************************/
-#if 0
+#if 1
 // debugging tool
 static
 void DumpPointList( const std::string &name, const PointList &planePoints )
@@ -1398,8 +1413,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
         
         // make the tile order semi-useful
         if (inkCount==1 || ((inkCount & 1) == 0))
-        //if (inkCount <= 2)
-                memcpy( tiffBuffer.get(), gridBuffer.get(), gridBufferSize );
+            memcpy( tiffBuffer.get(), gridBuffer.get(), gridBufferSize );
         else {
             uint8_t *tiffData = tiffBuffer.get();
             uint16_t *tiff16Data = (uint16_t*)tiffData;
@@ -1698,7 +1712,8 @@ void createB2A_table( const inkColorSet &inkSet, int depth, size_t gridPoints, p
         size_t subDivisions = std::min( (size_t)600, 100*(size_t)inkCount );
         PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
-// DEBUG the last set generated to check the gamut shape and area
+// DEBUG to check the gamut shape and area
+//DumpPointList( std::string("pointSplines_") + inkSet.name + std::to_string(L), planeSpline );
 //DumpPointList( std::string("pointlist_") + inkSet.name + std::to_string(L), planePoints );
 
         spline_mix_data mixPoints;
@@ -1738,13 +1753,50 @@ void createB2A_table( const inkColorSet &inkSet, int depth, size_t gridPoints, p
 
                     // this we want relative to our splines, so offset by our neutral axis
                     float thisHue = (float)(M_PI + atan2f( Afloat - neutral.A, Bfloat - neutral.B ));
+                    
+                    long index = 0;
+                    long index1 = 0;
+#if 0
+                    // search for all angle sets that bound this hue
+                    std::vector<size_t> intersections;
+                    
+                    for (size_t k = 1; k < splineHueAngles.size(); ++k ) {
+                        if ( (splineHueAngles[k].angle > thisHue) && (splineHueAngles[k-1].angle < thisHue) )
+                            intersections.push_back(k);
+                    }
 
+                    // find closest of intersections
+                    if (intersections.size() == 0) {        // only bounding set was wraparound
+                        index1 = (long)splineHueAngles.size() - 1;
+                        index = 0;
+                    }
+                    else if (intersections.size() == 1) {   // only 1 intersection
+                        index = (long)intersections[0];
+                        index1 = index - 1;
+                    } else {
+                        // find closest in list
+// TODO - write me!
+                        float minDist = 9e10f;
+                        for (size_t k = 0; k < intersections.size(); ++k) {
+                            size_t testIndex = intersections[k];
+                            Point pa = planeSpline[testIndex];
+                            Point pb = planeSpline[testIndex-1];
+                            float ta = (pa.a + pb.a) * 0.5f;
+                            float tb = (pa.b + pb.b) * 0.5f;
+                            float dist = hypot( ta - neutral.A, tb - neutral.B );
+                            if (dist < minDist) {
+                                minDist = dist;
+                                index = (long)testIndex;
+                            }
+                        }
+                        index1 = index - 1;
+                    }
+#else
                     // find bounding hue angles (and handle wrap around!)
                     // FYI - lower and upper bound reverse the arguments to less()
                     auto found = std::lower_bound( splineHueAngles.begin(), splineHueAngles.end(), thisHue,
                                             [](const splineHuePair &a, float b) { return a.angle < b; } );
-                    long index = 0;
-                    long index1 = 0;
+                    
                     if (found != splineHueAngles.end()) {
                         index = (long)( found - splineHueAngles.begin() );
                         index1 = index - 1;
@@ -1756,7 +1808,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, size_t gridPoints, p
                         index = (long)splineHueAngles.size() - 1;
                         index1 = 0;
                     }
-                    
+#endif
 
 assert( index != index1 );
 assert( index >= 0 );
@@ -1775,8 +1827,7 @@ assert( mixIndex != mixIndex1 );
 assert( mixIndex < inkSet.mixData.size() );
 assert( mixIndex1 < inkSet.mixData.size() );
 
-                    
-                    if (thisHue > angle1) {
+                    if (thisHue > angle1) { // dealing with a wraparound
                         angle2 += 2.0f*(float)M_PI;
                     }
                     else if (angle2 > angle1)
@@ -1787,10 +1838,13 @@ assert( mixIndex1 < inkSet.mixData.size() );
                         std::swap(mixIndex,mixIndex1);
                     }
                     
+                    // before the first angle
                     if (thisHue < angle2)
                         thisHue += 2.0f*(float)M_PI;
 
-assert(angle2 <= angle1);
+assert( angle2 <= angle1 );
+assert( thisHue >= angle2 );
+assert( thisHue <= angle1 );
                     float tempDist = angle1 - angle2;
                     float hueFraction = (thisHue - angle2);
 assert(hueFraction >= 0.0);
@@ -1982,7 +2036,8 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, size_t gridP
         size_t subDivisions = std::min( (size_t)600, 50*inkCount );
         PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
-// DEBUG the last set generated to check the gamut shape and area
+// DEBUG to check the gamut shape and area
+
 //DumpPointList( std::string("pointSplines_") + filename + std::to_string(L), planeSpline );
 //DumpPointList( std::string("pointlist_") + filename + std::to_string(L), planePoints );
 
