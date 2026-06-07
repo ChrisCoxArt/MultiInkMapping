@@ -115,7 +115,7 @@ static
 void add_mluc_binary( profileDataInner &data, uint32_t signature, const std::string &desc )
 {
     const uint16_t iso_english = (uint16_t)((uint16_t)'e' << 8) | (uint16_t)'n';
-    const uint16_t iso_unitedstates = (uint16_t)((uint16_t)'u' << 8) | (uint16_t)'s';
+    const uint16_t iso_unitedstates = (uint16_t)((uint16_t)'U' << 8) | (uint16_t)'S';
 
     // figure out the size we need
     // strings are ASCII, NULL terminated
@@ -928,11 +928,11 @@ void write_tags_xml( const profileDataInner &data, FILE *output )
     fprintf(output, "<Tags>\n");
     
     fprintf(output, "<profileDescriptionTag> <multiLocalizedUnicodeType>\n");
-    fprintf(output, "<LocalizedText LanguageCountry=\"enus\"><![CDATA[%s]]></LocalizedText>\n", data.description.c_str() );
+    fprintf(output, "<LocalizedText LanguageCountry=\"enUS\"><![CDATA[%s]]></LocalizedText>\n", data.description.c_str() );
     fprintf(output, "</multiLocalizedUnicodeType> </profileDescriptionTag>\n");
 
     fprintf(output, "<copyrightTag> <multiLocalizedUnicodeType>\n");
-    fprintf(output, "<LocalizedText LanguageCountry=\"enus\"><![CDATA[%s]]></LocalizedText>\n", data.copyright.c_str() );
+    fprintf(output, "<LocalizedText LanguageCountry=\"enUS\"><![CDATA[%s]]></LocalizedText>\n", data.copyright.c_str() );
     fprintf(output, "</multiLocalizedUnicodeType> </copyrightTag>\n");
 
     if (data.optionalNoteText.length() != 0)
@@ -1239,7 +1239,7 @@ static void write_mluc_json( FILE *output, const std::string &desc )
     fprintf(output, "\"type\": \"multiLocalizedUnicodeType\",\n");
     fprintf(output, "\"localizedStrings\": [\n");
         // could have a loop here
-        fprintf(output,"{ \"country\": \"us\", \"language\": \"en\", \"text\": \"%s\" }\n", desc.c_str());
+        fprintf(output,"{ \"country\": \"US\", \"language\": \"en\", \"text\": \"%s\" }\n", desc.c_str());
     fprintf(output, "] }\n"); // end list of strings, end data
 }
 
