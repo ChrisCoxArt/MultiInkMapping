@@ -2467,6 +2467,51 @@ void apply_filter_colors( inkColorSet &inkSet )
 }
 
 /******************************************************************************/
+
+// Cross product 2 vectors from O to A and B
+// Returns a positive value, if OAB makes a counter-clockwise turn,
+// negative for clockwise turn, and zero if the points are collinear.
+float cross(const Point &O, const Point &A, const Point &B)
+{
+	return (A.a - O.a) * (B.b - O.b) - (A.b - O.b) * (B.a - O.a);
+}
+
+// Returns a list of points on the convex hull from the set of input points.
+// Duplicate points and colinear points are removed.
+// Monotone chain algorithm  O(NlogN+2N)
+template <typename P>
+std::vector<P> convex_hull2D(std::vector<P> points_in)
+{
+	size_t n = points_in.size();
+
+	if (n <= 3)
+        return points_in;
+
+	std::vector<P> result(2*n); // worst case storage
+
+	// Sort points
+	std::sort( points_in.begin(), points_in.end() );
+
+	// Build lower hull
+    size_t k = 0;
+	for (size_t i = 0; i < n; ++i) {
+		while (k >= 2 && cross(result[k-2], result[k-1], points_in[i]) <= 0)
+            k--;
+		result[k++] = points_in[i];
+	}
+
+	// Build upper hull
+	for (size_t i = n-1, t = k+1; i > 0; --i) {
+		while (k >= t && cross(result[k-2], result[k-1], points_in[i-1]) <= 0)
+            k--;
+		result[k++] = points_in[i-1];
+	}
+
+	result.resize(k-1);
+	return result;
+}
+
+/******************************************************************************/
 /******************************************************************************/
 
 // isolate this so we can change globals per json file
@@ -2612,6 +2657,18 @@ settings_spec globalSettings;
 
 int main (int argc, char * argv[])
 {
+#if 1
+/// test convex hull algorithm
+    // should return 4 points on square
+    std::vector<Point> points = { { 0, 3 }, { 2, 2 }, { 1, 1 }, { 2, 1 }, { 3, 0 }, { 0, 0 }, { 3, 3 } };
+    auto temp = convex_hull2D( points );
+    
+    // colinear returns start and end
+    std::vector<Point> points2 = { { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 3 }, { 0, 4 }, { 0, 5 }, { 0, 6 }, { 0, 6 }, { 0, 6 }, { 0, 9 }, { 0, 10 } };
+    auto temp2 = convex_hull2D(points2);
+#endif
+
+
     // settings to default
     defaultSettings( globalSettings );
 

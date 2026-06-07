@@ -490,6 +490,7 @@ filename_list parse_arguments( int argc, char *argv[] )
             globalSettings.gTIFFTables = true;
         }
         else if ( strcasecmp( argv[c], "-V" ) == 0
+                || strcasecmp( argv[c], "--V" ) == 0
                 || strcasecmp( argv[c], "-help" ) == 0
                 || strcasecmp( argv[c], "--help" ) == 0
                 || strcasecmp( argv[c], "-version" ) == 0

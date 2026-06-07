@@ -72,7 +72,14 @@ public:
     Point() {};
     Point( float A, float B ) : a(A), b(B) {}
     
-    bool operator==(const Point& other) const = default;
+    bool operator==(const Point& o) const = default;
+    
+    bool operator<(const Point& o) const {
+        if (a == o.a)
+            return b < o.b;
+        else
+            return a < o.a;
+    }
 };
 
 /******************************************************************************/
