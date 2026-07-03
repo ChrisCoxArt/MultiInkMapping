@@ -1150,7 +1150,7 @@ bool pointInPoly( const PointList &poly, const Point a )
 }
 
 /********************************************************************************/
-#if 1
+#if 0
 // debugging tool
 static
 void DumpPointList( const std::string &name, const PointList &planePoints )
@@ -2254,7 +2254,7 @@ assert(hueFraction >= 0.0);
     myProfile.pcsSpace = kSpaceLAB;
     myProfile.preferredCMM = icSigIccDEV;
     myProfile.platform = icSigMacintosh;
-    myProfile.manufacturer = icSigNone;
+    myProfile.manufacturer = icSigUnknown;
     myProfile.creator = icSigccox;
     myProfile.profileFormats = globalSettings.gProfileTypes;
 
@@ -2292,7 +2292,7 @@ void create_output_profile( const inkColorSet &inkSet, int depth, size_t gridPoi
     myProfile.pcsSpace = kSpaceLAB;
     myProfile.preferredCMM = icSigIccDEV;
     myProfile.platform = icSigMacintosh;
-    myProfile.manufacturer = icSigNone;
+    myProfile.manufacturer = icSigUnknown;
     myProfile.creator = icSigccox;
     myProfile.profileFormats = globalSettings.gProfileTypes;
 

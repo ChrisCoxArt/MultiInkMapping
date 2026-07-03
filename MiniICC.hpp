@@ -152,7 +152,7 @@ struct colorantTableFormat {
 struct profileData {
 
     profileData() : preferredCMM(icSigIccDEV), platform(icSigMacintosh),
-                manufacturer(icSigNone), creator(icSigccox),
+                manufacturer(icSigUnknown), creator(icSigccox),
                 profileFormats(kProfileBinary) {}
 
     std::string     description;        // required

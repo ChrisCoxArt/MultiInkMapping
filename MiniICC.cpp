@@ -665,7 +665,7 @@ void write_header_binary( const profileDataInner &data, FILE *output )
     fwrite( &temp, 4, 1, output );
     
     // 4 byte device model
-    uint32_t model = 0;
+    uint32_t model = icSigUnknown;
     temp = SwabLong( model );
     fwrite( &temp, 4, 1, output );
     
