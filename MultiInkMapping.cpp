@@ -969,7 +969,7 @@ DEFERRED - find a way to accelerate the search
 
 // really simple tent, with a twist to reduce scum dots
 inline
-float Smooth3( float a, float b, float c)
+float Smooth3( float a, float b, float c )
 {
     // scum dot reduction
     if (b == 1.0f || b == 0.0f)
@@ -999,6 +999,7 @@ void constexpr Smooth3( float *a, float *b, float *c, size_t channels)
 /********************************************************************************/
 
 // filter in place, in one dimension, for 3 channels
+// this can be a cache thrasher
 static
 void SmoothOneDirection3( float *data, size_t gridPoints, size_t planeStep, size_t rowStep, size_t colStep )
 {
@@ -1064,7 +1065,7 @@ void SmoothOneDirection3( float *data, size_t gridPoints, size_t planeStep, size
 
 /********************************************************************************/
 
-// filter in place, in one dimension, for arbitrary channel counts
+// this can be a cache thrasher
 static
 void SmoothOneDirection( float *data, size_t gridPoints, size_t planeStep, size_t rowStep, size_t colStep, size_t channels )
 {
@@ -1134,6 +1135,105 @@ void SmoothOneDirection( float *data, size_t gridPoints, size_t planeStep, size_
 
 /********************************************************************************/
 
+// filter in place, for all dimensions, for arbitrary channel counts
+// this can be a cache thrasher
+/*
+NDimension edge detection:
+
+memset(output,0,total*(depth>>3));
+
+split out depth 8, 16, 32
+
+TODO - duplicate values on edges, or ignore edges?
+    duplicate would almost always show edge
+    ignore and let other dimensions catch differences
+
+ */
+static
+void SmoothN( float *data, std::vector<size_t> &dimensions, std::vector<size_t> &steps,
+            size_t channels, size_t totalSize, size_t depth )
+{
+    assert(channels > 0);
+    assert(channels <= kMaxChannels);
+    
+    size_t inkCount = dimensions.size();
+    
+    std::vector<size_t> wsteps( steps );
+    std::vector<size_t> loopIndices(inkCount,0);
+
+    for (size_t m = 0; m < inkCount; ++m) {
+        size_t lastDimension = dimensions[channels-1];
+        
+        if (lastDimension <= 2)    // nothing to operate on in this dimension
+          continue;
+        
+        size_t innerLimit = lastDimension-1;
+        size_t colStep = steps[channels-1];
+        
+        std::fill( loopIndices.begin(), loopIndices.end(), 0 );
+
+        for (size_t z = 0; loopIndices[0] < dimensions[0]; ++z) {
+            
+            size_t index = 0;
+            for (size_t n = 0; n < (inkCount-1); ++n)
+                index += loopIndices[n] * wsteps[n];
+            
+            // special case first k value
+            for (size_t c = 0; c < channels; ++c) {
+                auto current = data[ index + c ];
+                auto prev = current;
+                auto next = data[ index + colStep + c ];
+                auto result = Smooth3( prev, current, next );
+                data[ index + c ] = result;
+            }
+            index += colStep;
+            
+            for (size_t k = 1; k < innerLimit; ++k) {
+                
+                for (size_t c = 0; c < channels; ++c) {
+                    auto prev = data[ index - colStep + c ];
+                    auto current = data[ index + c ];
+                    auto next = data[ index + colStep + c ];
+                    auto result = Smooth3( prev, current, next );
+                    data[ index + c ] = result;
+                }
+                index += colStep;
+            }
+            
+            // special case last k value
+            for (size_t c = 0; c < channels; ++c) {
+                auto prev = data[ index - colStep + c ];
+                auto current = data[ index + c ];
+                auto next = current;
+                auto result = Smooth3( prev, current, next );
+                data[ index + c ] = result;
+            }
+            
+            
+            // increment loop counters
+            //    if incremented is >= limitpj[, reset and roll upward in list
+            //    if we don't overflow, save the incremented value and break out of the loop
+            for (int j = ((int)inkCount-2); j >= 0; --j) {
+                auto temp = loopIndices[(size_t)j] + 1;
+                if (temp >= dimensions[(size_t)j] && j != 0)   // we want counter 0 to overflow, to end the big loop
+                    loopIndices[(size_t)j] = 0;
+                else {
+                    loopIndices[(size_t)j] = temp;
+                    break;
+                }
+            }   // end loop counter update
+
+        }   // end voxel loop
+
+        // prepare for next dimension
+        (void)std::rotate( wsteps.begin(), wsteps.begin()+1, wsteps.end() );
+
+    }   // end outer dimension loop
+
+}
+
+/********************************************************************************/
+
 // useful for debugging, but slow
 // probably faster to rasterize the poly without antialiasing and sample the bitmap
 static
@@ -1182,15 +1282,15 @@ void createGamut_table( const inkColorSet &inkSet, int /* depth */, size_t gridP
     assert(inkCount > 0 && inkCount <= kMaxChannels);
 
     // allocate my gamut grid
-    size_t gridCount =  (size_t)gridPoints * (size_t)gridPoints * (size_t)gridPoints;
+    size_t gridCount = gridPoints * gridPoints * gridPoints;
     std::unique_ptr<uint8_t> gamutBuffer(new uint8_t[ gridCount ]);
     uint8_t *gamutData = gamutBuffer.get();
     
     // set everything to out of gamut (inverted from a normal image/table, but ok...)
     memset( gamutData, 255, gridCount );
     
-    const size_t gamutPlaneStep = (size_t)gridPoints * (size_t)gridPoints;
-    const size_t gamutRowStep = (size_t)gridPoints;
+    const size_t gamutPlaneStep = gridPoints * gridPoints;
+    const size_t gamutRowStep = gridPoints;
     const size_t gamutColStep = 1;
     
     // 1 or 2 inks... doesn't really have a gamut volume
@@ -1337,7 +1437,7 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
 
     assert( depth == 8 || depth == 16 );
     size_t gridCount = gridSize;
-    size_t gridBufferSize = (size_t)gridCount * 3 * ((size_t)depth/8);
+    size_t gridBufferSize = gridCount * 3 * ((size_t)depth/8);
     std::unique_ptr<uint8_t> gridBuffer(new uint8_t[ gridBufferSize ]);
     uint8_t *gridData = gridBuffer.get();
     uint16_t *grid16Ptr = (uint16_t*)gridData;
@@ -1394,14 +1494,14 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
 
     if ( globalSettings.gTIFFTables ) {
         // calculate an image size that is close to square
-        size_t tiles = (size_t)gridCount / ((size_t)gridPoints*(size_t)gridPoints);
+        size_t tiles = gridCount / (gridPoints*gridPoints);
         if (tiles < 1) tiles = 1;
         
         size_t tilesWide = (size_t)sqrtf((float)tiles);
         size_t tilesHigh = (tiles + (tilesWide-1)) / tilesWide;
         
-        size_t tiffWidth = tilesWide * (size_t)gridPoints;
-        size_t tiffHeight = tilesHigh * (size_t)gridPoints;
+        size_t tiffWidth = tilesWide * gridPoints;
+        size_t tiffHeight = tilesHigh * gridPoints;
         if (inkCount == 1)
             tiffWidth = 1;
 
@@ -1640,22 +1740,22 @@ void createB2A_table( const inkColorSet &inkSet, int depth, size_t gridPoints, p
     size_t gridSize = (size_t)pow( gridPoints, 3 );
 
     size_t gridCount = gridSize;
-    std::unique_ptr<float> gridBuffer(new float[ (size_t)gridCount * (size_t)inkCount ]);
+    std::unique_ptr<float> gridBuffer(new float[ gridCount * inkCount ]);
     float *gridData = gridBuffer.get();
 
-    size_t planeStep = (size_t)gridPoints * (size_t)gridPoints * (size_t)inkCount;
-    size_t rowStep = (size_t)gridPoints * (size_t)inkCount;
-    size_t colStep = (size_t)inkCount;
+    size_t planeStep = gridPoints * gridPoints * inkCount;
+    size_t rowStep = gridPoints * inkCount;
+    size_t colStep = inkCount;
 
 #if !defined(NDEBUG)
     // zero the table, just in case
     // can probably remove this after debugging
-    memset(gridData,0,(size_t)gridCount*(size_t)inkCount*sizeof(float));
+    memset(gridData,0,gridCount*inkCount*sizeof(float));
 #endif
 
-    std::vector<float> inkWeights( (size_t)inkCount );
-    std::vector<float> inkWeights2( (size_t)inkCount );
-    std::vector<float> neutralWeights( (size_t)inkCount );
+    std::vector<float> inkWeights( inkCount );
+    std::vector<float> inkWeights2( inkCount );
+    std::vector<float> neutralWeights( inkCount );
     std::vector<splineHuePair> splineHueAngles( inkSet.splines.size() );
     
     for (size_t L = 0; L < gridPoints; ++L) {
@@ -1709,7 +1809,7 @@ void createB2A_table( const inkColorSet &inkSet, int depth, size_t gridPoints, p
         
         // create interpolated point list from the splines
         PointList planePoints;
-        size_t subDivisions = std::min( (size_t)600, 100*(size_t)inkCount );
+        size_t subDivisions = std::min( (size_t)600, 100*inkCount );
         PointListFromSplines( subDivisions, planeSpline, planePoints, (inkCount > 2) );
 
 // DEBUG to check the gamut shape and area
@@ -1907,14 +2007,28 @@ assert( tchroma >= 0.0 );
     if (globalSettings.gSmoothTables) {
         // this is damaging saturated primaries, and the data seems smooth already
         // smooth the floating point table
+#if 0
         SmoothOneDirection( gridData, (size_t)gridPoints, planeStep, rowStep, colStep, inkCount );
         SmoothOneDirection( gridData, (size_t)gridPoints, rowStep, colStep, planeStep, inkCount );
         SmoothOneDirection( gridData, (size_t)gridPoints, colStep, planeStep, rowStep, inkCount );
+#else
+        std::vector<size_t> dimensions(inkCount,gridPoints);
+        std::vector<size_t> loopSteps(inkCount);
+
+        size_t channels = 3;        // LAB data
+        size_t step = channels;     // innermost column step, == channels
+        for (size_t index = 3; index > 0; --index) {    // dimensionality
+            loopSteps[index-1] = step;
+            step *= gridPoints;
+        }
+
+        SmoothN( gridData, dimensions, loopSteps, channels, gridCount * inkCount, 32 );
+#endif
     }
 
     // convert the float table to integer
     assert( depth == 8 || depth == 16 );
-    std::unique_ptr<uint8_t> outBuffer(new uint8_t[ (size_t)gridCount * (size_t)inkCount * ((size_t)depth/8) ]);
+    std::unique_ptr<uint8_t> outBuffer(new uint8_t[ gridCount * inkCount * ((size_t)depth/8) ]);
     uint8_t *outData = outBuffer.get();
     uint16_t *out16Ptr = (uint16_t*)outData;
 
@@ -1922,7 +2036,7 @@ assert( tchroma >= 0.0 );
         // order the data for easy viewing as an image
         uint8_t *tifPtr = outData;
         for (size_t B = 0; B < gridPoints; ++B) {
-            size_t Bindex = ((size_t)gridPoints-1 - B);    // need to flip B
+            size_t Bindex = (gridPoints-1 - B);    // need to flip B
             for (size_t L = 0; L < gridPoints; ++L) {
                 for (size_t A = 0; A < gridPoints; ++A) {
                     for (size_t c = 0; c < inkCount; ++c) {
@@ -1936,7 +2050,7 @@ assert( tchroma >= 0.0 );
         // write TIFF File
         int mode = (inkCount < 4) ? TIFF_MODE_GRAY_WHITEZERO : TIFF_MODE_CMYK;
         WriteTIFF( inkSet.name + "_B2A.tiff", 96.0, mode, outBuffer.get(),
-                    (size_t)gridPoints*(size_t)gridPoints, (size_t)gridPoints, (int)inkCount, 8 );
+                    gridPoints*gridPoints, gridPoints, (int)inkCount, 8 );
     }
 
 
@@ -1978,13 +2092,13 @@ void create_abstract_profile( const inkColorSet &inkSet, int depth, size_t gridP
     size_t A, B;    // my grid iteration indices
 
     // allocate my grid
-    size_t gridCount =  (size_t)gridPoints * (size_t)gridPoints * (size_t)gridPoints;
+    size_t gridCount = gridPoints * gridPoints * gridPoints;
     std::unique_ptr<float> gridBuffer(new float[ gridCount * 3 ]);
     float *gridData = gridBuffer.get();
     
 
-    size_t planeStep = (size_t)gridPoints * (size_t)gridPoints * 3;
-    size_t rowStep = (size_t)gridPoints * 3;
+    size_t planeStep = gridPoints * gridPoints * 3;
+    size_t rowStep = gridPoints * 3;
     size_t colStep = 3;
     
     size_t inkCount = inkSet.primaries.size();
