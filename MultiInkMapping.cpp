@@ -1545,6 +1545,28 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
         
         WriteTIFF( inkSet.name + "_A2B.tiff", 96.0, TIFF_MODE_CIELAB, tiffBuffer.get(),
                    tiffWidth, tiffHeight, 3, depth );
+
+// TODO - add switch for edges
+{
+        std::unique_ptr<uint8_t> edgeBuffer(new uint8_t[ tiffBufferSize ]);
+        uint8_t *edgeData = edgeBuffer.get();
+    
+        size_t channels = inkCount;       // ink input
+        size_t step = 3;         // innermost column step, == output channels
+        std::vector<size_t> dimensions(channels,gridPoints);
+        std::vector<size_t> loopSteps(channels);
+
+// TODO - is this right for the image format?
+// NO, it is not! Need to find edges THEN convert for TIFF output
+        for (size_t index = channels; index > 0; --index) {    // dimensionality
+            loopSteps[index-1] = step;
+            step *= gridPoints;
+        }
+
+        FindEdgesN( tiffBuffer.get(), edgeData, dimensions, loopSteps, 3, tiffWidth*tiffHeight, (size_t)depth );
+        WriteTIFF( inkSet.name + "_A2B_Edges.tiff", 96.0, TIFF_MODE_RGB, edgeData,
+                    tiffWidth, tiffHeight, 3, depth );
+}
     }
 
     tableFormat myTable;
