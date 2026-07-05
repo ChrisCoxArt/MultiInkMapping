@@ -1003,157 +1003,28 @@ float Smooth3( float a, float b, float c )
 
 /********************************************************************************/
 
-// prev, current, next
+// really simple tent, with a twist to reduce scum dots
 inline
-void constexpr Smooth3( std::vector<float> &a, const std::vector<float> &b, const std::vector<float> &c, size_t channels)
+uint8_t Smooth3( uint8_t a, uint8_t b, uint8_t c )
 {
-    for (size_t i = 0; i < channels; ++i)
-        a[i] = Smooth3(a[i],b[i],c[i]);
-}
-
-// prev, current, next
-inline
-void constexpr Smooth3( float *a, float *b, float *c, size_t channels)
-{
-    for (size_t i = 0; i < channels; ++i)
-        a[i] = Smooth3(a[i],b[i],c[i]);
+    // scum dot reduction
+    if (b == 255 || b == 0)
+        return b;
+    
+    return (uint8_t)((a + 4*(uint16_t)b + c) / 6);
 }
 
 /********************************************************************************/
 
-// filter in place, in one dimension, for 3 channels
-// this can be a cache thrasher
-static
-void SmoothOneDirection3( float *data, size_t gridPoints, size_t planeStep, size_t rowStep, size_t colStep )
+// really simple tent, with a twist to reduce scum dots
+inline
+uint16_t Smooth3( uint16_t a, uint16_t b, uint16_t c )
 {
-    size_t i, j, k;
+    // scum dot reduction
+    if (b == 65535 || b == 0)
+        return b;
     
-    for (i = 0; i < gridPoints; ++i) {
-        for (j = 0; j < gridPoints; ++j) {
-            k = 0;
-            
-            // special case first value
-            
-            float last0 = data[ i * planeStep + j * rowStep + k*colStep + 0 ];
-            float last1 = data[ i * planeStep + j * rowStep + k*colStep + 1 ];
-            float last2 = data[ i * planeStep + j * rowStep + k*colStep + 2 ];
-            
-            float current0 = last0;
-            float current1 = last1;
-            float current2 = last2;
-            
-            float next0 = 0, next1 = 0, next2 = 0;
-            float result0, result1, result2;
-            
-            for (k = 0; k < (gridPoints-1); ++k) {
-                
-                next0 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 0 ];
-                next1 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 1 ];
-                next2 = data[ i * planeStep + j * rowStep + (k+1)*colStep + 2 ];
-                
-                result0 = Smooth3( last0, current0, next0 );
-                result1 = Smooth3( last1, current1, next1 );
-                result2 = Smooth3( last2, current2, next2 );
-                
-                // write back smoothed result
-                data[ i * planeStep + j * rowStep + k*colStep + 0 ] = result0;
-                data[ i * planeStep + j * rowStep + k*colStep + 1 ] = result1;
-                data[ i * planeStep + j * rowStep + k*colStep + 2 ] = result2;
-                
-                // rotate
-                last0 = current0;
-                last1 = current1;
-                last2 = current2;
-                
-                current0 = next0;
-                current1 = next1;
-                current2 = next2;
-            }
-            
-            // special case last k value
-            // next == current already
-            result0 =  Smooth3( last0, current0, next0 );
-            result1 =  Smooth3( last1, current1, next1 );
-            result2 =  Smooth3( last2, current2, next2 );
-            
-            // write back smoothed result
-            data[ i * planeStep + j * rowStep + k*colStep + 0 ] = result0;
-            data[ i * planeStep + j * rowStep + k*colStep + 1 ] = result1;
-            data[ i * planeStep + j * rowStep + k*colStep + 2 ] = result2;
-        }
-        
-    }
-
-}
-
-/********************************************************************************/
-
-// this can be a cache thrasher
-static
-void SmoothOneDirection( float *data, size_t gridPoints, size_t planeStep, size_t rowStep, size_t colStep, size_t channels )
-{
-    assert(channels > 0);
-    assert(channels <= kMaxChannels);
- 
-    if (channels == 3) {
-        SmoothOneDirection3( data, gridPoints, planeStep, rowStep, colStep );
-        return;
-    }
-    
-    // there isn't an easy way to do this for arbitrary channel counts
-    std::vector<float> last(kMaxChannels);
-    std::vector<float> current(kMaxChannels);
-    std::vector<float> next(kMaxChannels);
-
-    float *lastp = &last[0];
-    float *currentp = &current[0];
-    float *nextp = &next[0];
-    
-    for (size_t i = 0; i < gridPoints; ++i) {
- 
-        for (size_t j = 0; j < gridPoints; ++j) {
-            size_t k = 0;
-            
-            // special case first value
-            for (size_t c = 0; c < channels; ++c) {
-                auto value = data[ i * planeStep + j * rowStep + k * colStep + c ];
-                lastp[c] = value;
-                currentp[c] = value;
-            }
-            
-            for (k = 0; k < (gridPoints-1); ++k) {
-            
-                for (size_t c = 0; c < channels; ++c)
-                    nextp[c] = data[ i * planeStep + j * rowStep + (k+1)*colStep + c ];
-                
-                Smooth3( lastp, currentp, nextp, channels );
-                
-                // write back smoothed result
-                for (size_t c = 0; c < channels; ++c)
-                   data[ i * planeStep + j * rowStep + k*colStep + c ] = lastp[c];
-                
-                // rotate pointers
-                float *tempp = lastp;
-                lastp = currentp;
-                currentp = nextp;
-                nextp = tempp;
-            }
-            
-            // special case last k value
-            // next == current, duplicating end value
-            for (size_t c = 0; c < channels; ++c)
-               nextp[c] = currentp[c];
-            
-            Smooth3( lastp, currentp, nextp, channels );
-            
-            // write back smoothed result
-            for (size_t c = 0; c < channels; ++c)
-               data[ i * planeStep + j * rowStep + k*colStep + c ] = lastp[c];
-            
-        }   // end j loop
-        
-    }   // end i loop
-
+    return (uint16_t)((a + 4*(uint32_t)b + c) / 6);
 }
 
 /********************************************************************************/
@@ -2097,11 +1968,6 @@ assert( tchroma >= 0.0 );
     if (globalSettings.gSmoothTables) {
         // this is damaging saturated primaries, and the data seems smooth already
         // smooth the floating point table
-#if 0
-        SmoothOneDirection( gridData, (size_t)gridPoints, planeStep, rowStep, colStep, inkCount );
-        SmoothOneDirection( gridData, (size_t)gridPoints, rowStep, colStep, planeStep, inkCount );
-        SmoothOneDirection( gridData, (size_t)gridPoints, colStep, planeStep, rowStep, inkCount );
-#else
         size_t channels = 3;        // LAB input
         size_t step = inkCount;     // innermost column step, == output channels
         std::vector<size_t> dimensions(channels,gridPoints);
@@ -2113,7 +1979,6 @@ assert( tchroma >= 0.0 );
         }
 
         SmoothN( gridData, dimensions, loopSteps, channels, gridCount * inkCount, 32 );
-#endif
     }
 
     // convert the float table to integer
@@ -2151,7 +2016,7 @@ assert( tchroma >= 0.0 );
         WriteTIFF( inkSet.name + "_B2A.tiff", 96.0, mode, outBuffer.get(),
                     gridPoints*gridPoints, gridPoints, (int)inkCount, depth );
 
-
+// TODO - add switch for edges
 {
         std::unique_ptr<uint8_t> edgeBuffer(new uint8_t[ gridCount * inkCount * ((size_t)depth/8) ]);
         uint8_t *edgeData = edgeBuffer.get();
@@ -2166,7 +2031,7 @@ assert( tchroma >= 0.0 );
             step *= gridPoints;
         }
 
-        FindEdgesN( outBuffer.get(), edgeData, dimensions, loopSteps, inkCount, gridCount * inkCount, depth );
+        FindEdgesN( outBuffer.get(), edgeData, dimensions, loopSteps, inkCount, gridCount * inkCount, (size_t)depth );
         WriteTIFF( inkSet.name + "_B2A_Edges.tiff", 96.0, mode, edgeData,
                     gridPoints*gridPoints, gridPoints, (int)inkCount, depth );
 }
@@ -2405,9 +2270,17 @@ assert(hueFraction >= 0.0);
     if (globalSettings.gSmoothTables) {
         // this is hurting saturated colors, and the current result is pretty smooth already
         // smooth the 3D table data
-        SmoothOneDirection( gridData, (size_t)gridPoints, planeStep, rowStep, colStep, 3 );
-        SmoothOneDirection( gridData, (size_t)gridPoints, rowStep, colStep, planeStep, 3 );
-        SmoothOneDirection( gridData, (size_t)gridPoints, colStep, planeStep, rowStep, 3 );
+        size_t channels = 3;        // LAB input
+        size_t step = 3;            // innermost column step, == output channels
+        std::vector<size_t> dimensions(channels,gridPoints);
+        std::vector<size_t> loopSteps(channels);
+
+        for (size_t index = channels; index > 0; --index) {    // dimensionality
+            loopSteps[index-1] = step;
+            step *= gridPoints;
+        }
+
+        SmoothN( gridData, dimensions, loopSteps, channels, gridCount * inkCount, 32 );
     }
 
     assert( depth == 8 || depth == 16 );
@@ -2416,6 +2289,7 @@ assert(hueFraction >= 0.0);
     uint8_t *outPtr = outBuffer.get();
     uint16_t *out16Ptr = (uint16_t*)outPtr;
 
+// TODO - add 16 bit output!
     if (globalSettings.gTIFFTables) {
         // order the data for easy viewing as an image
         uint8_t *tifPtr = outPtr;
@@ -2441,6 +2315,8 @@ assert(hueFraction >= 0.0);
         // write TIFF File
         WriteTIFF( filename + "_abstract.tiff", 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
                     (size_t)gridPoints * (size_t)gridPoints, (size_t)gridPoints, 3, 8 );
+
+// TODO - add edges
     }
 
     // oganize data for ICC profile
