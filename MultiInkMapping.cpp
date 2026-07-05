@@ -1543,30 +1543,31 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
             }
         }
         
-        WriteTIFF( inkSet.name + "_A2B.tiff", 96.0, TIFF_MODE_CIELAB, tiffBuffer.get(),
-                   tiffWidth, tiffHeight, 3, depth );
-
-// TODO - add switch for edges
-{
-        std::unique_ptr<uint8_t> edgeBuffer(new uint8_t[ tiffBufferSize ]);
-        uint8_t *edgeData = edgeBuffer.get();
-    
-        size_t channels = inkCount;       // ink input
-        size_t step = 3;         // innermost column step, == output channels
-        std::vector<size_t> dimensions(channels,gridPoints);
-        std::vector<size_t> loopSteps(channels);
+        // do this BEFORE lab data is shifted in WriteTIFF
+        if (globalSettings.gFindEdges) {
+            std::unique_ptr<uint8_t> edgeBuffer(new uint8_t[ tiffBufferSize ]);
+            uint8_t *edgeData = edgeBuffer.get();
+        
+            size_t channels = inkCount;       // ink input
+            size_t step = 3;         // innermost column step, == output channels
+            std::vector<size_t> dimensions(channels,gridPoints);
+            std::vector<size_t> loopSteps(channels);
 
 // TODO - is this right for the image format?
-// NO, it is not! Need to find edges THEN convert for TIFF output
-        for (size_t index = channels; index > 0; --index) {    // dimensionality
-            loopSteps[index-1] = step;
-            step *= gridPoints;
-        }
+// Need to find edges THEN convert for TIFF output?
+            for (size_t index = channels; index > 0; --index) {    // dimensionality
+                loopSteps[index-1] = step;
+                step *= gridPoints;
+            }
 
-        FindEdgesN( tiffBuffer.get(), edgeData, dimensions, loopSteps, 3, tiffWidth*tiffHeight, (size_t)depth );
-        WriteTIFF( inkSet.name + "_A2B_Edges.tiff", 96.0, TIFF_MODE_RGB, edgeData,
-                    tiffWidth, tiffHeight, 3, depth );
-}
+            FindEdgesN( tiffBuffer.get(), edgeData, dimensions, loopSteps,
+                        3, tiffWidth*tiffHeight, (size_t)depth );
+            WriteTIFF( inkSet.name + "_A2B_Edges.tiff", 96.0, TIFF_MODE_RGB, edgeData,
+                        tiffWidth, tiffHeight, 3, depth );
+        }
+        
+        WriteTIFF( inkSet.name + "_A2B.tiff", 96.0, TIFF_MODE_CIELAB, tiffBuffer.get(),
+                   tiffWidth, tiffHeight, 3, depth );
     }
 
     tableFormat myTable;
@@ -2084,25 +2085,25 @@ assert( tchroma >= 0.0 );
         WriteTIFF( inkSet.name + "_B2A.tiff", 96.0, mode, outBuffer.get(),
                     gridPoints*gridPoints, gridPoints, (int)inkCount, depth );
 
-// TODO - add switch for edges
-{
-        std::unique_ptr<uint8_t> edgeBuffer(new uint8_t[ gridCount * inkCount * ((size_t)depth/8) ]);
-        uint8_t *edgeData = edgeBuffer.get();
-    
-        size_t channels = 3;        // LAB input
-        size_t step = inkCount;     // innermost column step, == output channels
-        std::vector<size_t> dimensions(channels,gridPoints);
-        std::vector<size_t> loopSteps(channels);
+        if (globalSettings.gFindEdges) {
+            std::unique_ptr<uint8_t> edgeBuffer(new uint8_t[ gridCount * inkCount * ((size_t)depth/8) ]);
+            uint8_t *edgeData = edgeBuffer.get();
+        
+            size_t channels = 3;        // LAB input
+            size_t step = inkCount;     // innermost column step, == output channels
+            std::vector<size_t> dimensions(channels,gridPoints);
+            std::vector<size_t> loopSteps(channels);
 
-        for (size_t index = channels; index > 0; --index) {    // dimensionality
-            loopSteps[index-1] = step;
-            step *= gridPoints;
+            for (size_t index = channels; index > 0; --index) {    // dimensionality
+                loopSteps[index-1] = step;
+                step *= gridPoints;
+            }
+
+            FindEdgesN( outBuffer.get(), edgeData, dimensions, loopSteps,
+                        inkCount, gridCount * inkCount, (size_t)depth );
+            WriteTIFF( inkSet.name + "_B2A_Edges.tiff", 96.0, mode, edgeData,
+                        gridPoints*gridPoints, gridPoints, (int)inkCount, depth );
         }
-
-        FindEdgesN( outBuffer.get(), edgeData, dimensions, loopSteps, inkCount, gridCount * inkCount, (size_t)depth );
-        WriteTIFF( inkSet.name + "_B2A_Edges.tiff", 96.0, mode, edgeData,
-                    gridPoints*gridPoints, gridPoints, (int)inkCount, depth );
-}
     }
 
 
@@ -2393,29 +2394,30 @@ assert(hueFraction >= 0.0);
             }
         }
         
+        // do this BEFORE lab data is shifted in WriteTIFF
+        if (globalSettings.gFindEdges) {
+            std::unique_ptr<uint8_t> edgeBuffer(new uint8_t[ bufferSize ]);
+            uint8_t *edgeData = edgeBuffer.get();
+        
+            size_t channels = 3;        // LAB input
+            size_t step = 3;            // innermost column step, == output channels
+            std::vector<size_t> dimensions(channels,gridPoints);
+            std::vector<size_t> loopSteps(channels);
+
+            for (size_t index = channels; index > 0; --index) {    // dimensionality
+                loopSteps[index-1] = step;
+                step *= gridPoints;
+            }
+
+            FindEdgesN( outBuffer.get(), edgeData, dimensions, loopSteps,
+                        3, bufferSize, (size_t)depth );
+            WriteTIFF( inkSet.name + "_abstract_Edges.tiff", 96.0, TIFF_MODE_RGB, edgeData,
+                        gridPoints*gridPoints, gridPoints, 3, depth );
+        }
+        
         // write TIFF File
         WriteTIFF( filename + "_abstract.tiff", 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
                     gridPoints * gridPoints, gridPoints, 3, depth );
-
-// TODO - add switch for edges
-{
-        std::unique_ptr<uint8_t> edgeBuffer(new uint8_t[ bufferSize ]);
-        uint8_t *edgeData = edgeBuffer.get();
-    
-        size_t channels = 3;        // LAB input
-        size_t step = 3;            // innermost column step, == output channels
-        std::vector<size_t> dimensions(channels,gridPoints);
-        std::vector<size_t> loopSteps(channels);
-
-        for (size_t index = channels; index > 0; --index) {    // dimensionality
-            loopSteps[index-1] = step;
-            step *= gridPoints;
-        }
-
-        FindEdgesN( outBuffer.get(), edgeData, dimensions, loopSteps, channels, bufferSize, (size_t)depth );
-        WriteTIFF( inkSet.name + "_abstract_Edges.tiff", 96.0, TIFF_MODE_RGB, edgeData,
-                    gridPoints*gridPoints, gridPoints, 3, depth );
-}
     }
 
     // oganize data for ICC profile
@@ -2865,7 +2867,7 @@ settings_spec globalSettings;
 
 int main (int argc, char * argv[])
 {
-#if 1
+#if 0
 /// test convex hull algorithm
     // should return 4 points on square
     std::vector<Point> points = { { 0, 3 }, { 2, 2 }, { 1, 1 }, { 2, 1 }, { 3, 0 }, { 0, 0 }, { 3, 3 } };

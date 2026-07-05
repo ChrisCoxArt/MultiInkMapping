@@ -398,6 +398,7 @@ struct settings_spec {
     bool gCreateAbstract;
     bool gTIFFTables;
     bool gSmoothTables;
+    bool gFindEdges;
     std::string gDefaultCopyright;
     uint32_t gProfileTypes;
     

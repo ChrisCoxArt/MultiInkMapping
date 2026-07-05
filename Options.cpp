@@ -254,6 +254,7 @@ void to_json( json &j, const settings_spec &p )
               { "createAbstractProfiles", p.gCreateAbstract },
               { "createTIFFTables", p.gTIFFTables },
               { "smoothTables", p.gSmoothTables },
+              { "findEdges", p.gFindEdges },
               { "defaultCopyright", p.gDefaultCopyright },
               { "colorSets", p.colorSets },
             };
@@ -282,6 +283,7 @@ void defaultSettings( settings_spec &p )
     p.gCreateAbstract = true;
     p.gTIFFTables = false;
     p.gSmoothTables = false;
+    p.gFindEdges = false;
     p.gProfileTypes = kProfileBinary;
     p.colorSets.clear();
 }
@@ -300,6 +302,7 @@ void from_json( const json &j, settings_spec &p )
     ReadBool( j, "createAbstractProfiles", p.gCreateAbstract );
     ReadBool( j, "createTIFFTables", p.gTIFFTables );
     ReadBool( j, "smoothTables", p.gSmoothTables );
+    ReadBool( j, "findEdges", p.gFindEdges );
     ReadString( j, "defaultCopyright", p.gDefaultCopyright );
     
     // set, or clear, optional filetypes
@@ -431,6 +434,7 @@ void print_usage(char *argv[])
     printf("\t-limit L        upper limit on A2B table size (default %zu)\n", globalSettings.gTableSizeLimit );
     printf("\t-copyright C    copyright string for profiles (default \"%s\")\n", globalSettings.gDefaultCopyright.c_str() );
     printf("\t-smooth         smooth tables (default false)\n" );
+    printf("\t-edges          save edges for TIFF tables (default false)\n" );
     printf("\t-tiff           also output tables as TIFF files (default false)\n" );
     printf("\t-json           also write JSON ICC profiles (default false)\n" );
     printf("\t-xml            also write XML ICC profiles (default false)\n" );
@@ -476,6 +480,9 @@ filename_list parse_arguments( int argc, char *argv[] )
         }
         else if ( (strcasecmp( argv[c], "-smooth" ) == 0 || strcasecmp( argv[c], "-s" ) == 0 ) ) {
             globalSettings.gSmoothTables = true;
+        }
+        else if ( (strcasecmp( argv[c], "-edges" ) == 0 || strcasecmp( argv[c], "-e" ) == 0 ) ) {
+            globalSettings.gFindEdges = true;
         }
         else if ( (strcasecmp( argv[c], "-xml" ) == 0 || strcasecmp( argv[c], "-x" ) == 0 ) ) {
             globalSettings.gProfileTypes |= kProfileXML;
