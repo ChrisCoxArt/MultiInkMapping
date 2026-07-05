@@ -1031,9 +1031,10 @@ uint16_t Smooth3( uint16_t a, uint16_t b, uint16_t c )
 
 // filter in place, for all dimensions, for arbitrary channel counts
 // this can be a cache thrasher
+// currently always 32 bit float
 template<typename T>
-void SmoothN( T *data, std::vector<size_t> &dimensions_in,
-            std::vector<size_t> &steps_in,
+void SmoothInner( T *data, const std::vector<size_t> &dimensions_in,
+            const std::vector<size_t> &steps_in,
             size_t channels, size_t totalSize, size_t depth )
 {
     assert(channels > 0);
@@ -1120,8 +1121,31 @@ void SmoothN( T *data, std::vector<size_t> &dimensions_in,
 /********************************************************************************/
 
 template<typename T>
-void FindEdgesN( T *input, T *output, std::vector<size_t> &dimensions_in,
-            std::vector<size_t> &steps_in,
+void SmoothN( T *input, const std::vector<size_t> &dimensions_in,
+            const std::vector<size_t> &steps_in,
+            size_t channels, size_t totalSize, size_t depth )
+{
+    if (depth == 8) {
+        SmoothInner( (uint8_t *)input,
+                        dimensions_in, steps_in,
+                        channels, totalSize, 8 );
+    } else if (depth == 16) {
+        SmoothInner( (uint16_t *)input,
+                        dimensions_in, steps_in,
+                        channels, totalSize, 16 );
+    } else if (depth == 32) {
+        SmoothInner( (float *)input,
+                        dimensions_in, steps_in,
+                        channels, totalSize, 32 );
+    }
+}
+
+/********************************************************************************/
+
+template<typename T>
+void FindEdgesInner( T *input, T *output,
+            const std::vector<size_t> &dimensions_in,
+            const std::vector<size_t> &steps_in,
             size_t channels, size_t totalSize, size_t depth )
 {
     assert(channels > 0);
@@ -1191,6 +1215,28 @@ void FindEdgesN( T *input, T *output, std::vector<size_t> &dimensions_in,
 
     }   // end outer dimension loop
 
+}
+
+/********************************************************************************/
+
+template<typename T>
+void FindEdgesN( T *input, T *output, const std::vector<size_t> &dimensions_in,
+            const std::vector<size_t> &steps_in,
+            size_t channels, size_t totalSize, size_t depth )
+{
+    if (depth == 8) {
+        FindEdgesInner( (uint8_t *)input, (uint8_t *)output,
+                        dimensions_in, steps_in,
+                        channels, totalSize, 8 );
+    } else if (depth == 16) {
+        FindEdgesInner( (uint16_t *)input, (uint16_t *)output,
+                        dimensions_in, steps_in,
+                        channels, totalSize, 16 );
+    } else if (depth == 32) {
+        FindEdgesInner( (float *)input, (float *)output,
+                        dimensions_in, steps_in,
+                        channels, totalSize, 32 );
+    }
 }
 
 /********************************************************************************/
@@ -2284,39 +2330,70 @@ assert(hueFraction >= 0.0);
     }
 
     assert( depth == 8 || depth == 16 );
-    size_t bufferSize = (size_t)gridPoints * (size_t)gridPoints * (size_t)gridPoints * 3 * ((size_t)depth/8);
+    size_t bufferCount = gridCount * 3;
+    size_t bufferSize = bufferCount * ((size_t)depth/8);
     std::unique_ptr<uint8_t> outBuffer(new uint8_t[ bufferSize ]);
     uint8_t *outPtr = outBuffer.get();
     uint16_t *out16Ptr = (uint16_t*)outPtr;
 
-// TODO - add 16 bit output!
     if (globalSettings.gTIFFTables) {
         // order the data for easy viewing as an image
         uint8_t *tifPtr = outPtr;
+        uint16_t *tifPtr16 = out16Ptr;
         for (B = 0; B < gridPoints; ++B) {
             size_t Bindex = ((size_t)gridPoints-1 - B);    // need to flip B
             for (size_t L = 0; L < gridPoints; ++L) {
                 for (A = 0; A < gridPoints; ++A) {
-
-                    // convert to integer output values
-                    int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 0 ] );
-                    int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 1 ] );
-                    int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 2 ] );
-                    
-                    // write value out to file (interleaved)
-                    tifPtr[0] = (uint8_t)Lout;
-                    tifPtr[1] = (uint8_t)Aout;
-                    tifPtr[2] = (uint8_t)Bout;
-                    tifPtr += 3;
+                    if (depth == 8) {
+                        // convert to integer output values
+                        int Lout =   floatL_to_fileL8( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 0 ] );
+                        int Aout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 1 ] );
+                        int Bout = floatAB_to_fileAB8( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 2 ] );
+                        
+                        // write value out to file (interleaved)
+                        tifPtr[0] = (uint8_t)Lout;
+                        tifPtr[1] = (uint8_t)Aout;
+                        tifPtr[2] = (uint8_t)Bout;
+                        tifPtr += 3;
+                    } else {
+                        // convert to integer output values
+                        int Lout =   floatL_to_fileL16( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 0 ] );
+                        int Aout = floatAB_to_fileAB16( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 1 ] );
+                        int Bout = floatAB_to_fileAB16( gridData[ L * planeStep + A * rowStep + Bindex*colStep + 2 ] );
+                        
+                        // write value out to file (interleaved)
+                        tifPtr16[0] = (uint16_t)Lout;
+                        tifPtr16[1] = (uint16_t)Aout;
+                        tifPtr16[2] = (uint16_t)Bout;
+                        tifPtr16 += 3;
+                    }
                 }
             }
         }
         
         // write TIFF File
         WriteTIFF( filename + "_abstract.tiff", 96.0, TIFF_MODE_CIELAB, outBuffer.get(),
-                    (size_t)gridPoints * (size_t)gridPoints, (size_t)gridPoints, 3, 8 );
+                    gridPoints * gridPoints, gridPoints, 3, depth );
 
-// TODO - add edges
+// TODO - add switch for edges
+{
+        std::unique_ptr<uint8_t> edgeBuffer(new uint8_t[ bufferSize ]);
+        uint8_t *edgeData = edgeBuffer.get();
+    
+        size_t channels = 3;        // LAB input
+        size_t step = 3;            // innermost column step, == output channels
+        std::vector<size_t> dimensions(channels,gridPoints);
+        std::vector<size_t> loopSteps(channels);
+
+        for (size_t index = channels; index > 0; --index) {    // dimensionality
+            loopSteps[index-1] = step;
+            step *= gridPoints;
+        }
+
+        FindEdgesN( outBuffer.get(), edgeData, dimensions, loopSteps, channels, bufferSize, (size_t)depth );
+        WriteTIFF( inkSet.name + "_abstract_Edges.tiff", 96.0, TIFF_MODE_RGB, edgeData,
+                    gridPoints*gridPoints, gridPoints, 3, depth );
+}
     }
 
     // oganize data for ICC profile
