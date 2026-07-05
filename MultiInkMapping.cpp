@@ -1045,6 +1045,14 @@ void SmoothInner( T *data, const std::vector<size_t> &dimensions_in,
     std::vector<size_t> wsteps( steps_in );
     std::vector<size_t> wdimensions( dimensions_in );
     std::vector<size_t> loopIndices( dimensionCount, 0 );
+    
+    if (dimensionCount == 1) {
+        // fake a second dimension so the loops work
+        wdimensions.push_back(1);
+        wsteps.push_back(0);
+        loopIndices.push_back(0);
+        dimensionCount = 2;
+    }
 
     for (size_t m = 0; m < dimensionCount; ++m) {
         size_t lastDimension = wdimensions[dimensionCount-1];
@@ -1156,6 +1164,14 @@ void FindEdgesInner( T *input, T *output,
     std::vector<size_t> wsteps( steps_in );
     std::vector<size_t> wdimensions( dimensions_in );
     std::vector<size_t> loopIndices( dimensionCount );
+    
+    if (dimensionCount == 1) {
+        // fake a second dimension so the loops work
+        wdimensions.push_back(1);
+        wsteps.push_back(0);
+        loopIndices.push_back(0);
+        dimensionCount = 2;
+    }
     
     memset(output,0,totalSize*(depth>>3));
 
