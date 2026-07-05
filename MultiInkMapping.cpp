@@ -1543,31 +1543,60 @@ void createA2B_table( const inkColorSet &inkSet, int depth, profileData &myProfi
             }
         }
         
-        // do this BEFORE lab data is shifted in WriteTIFF
-        if (globalSettings.gFindEdges) {
-            std::unique_ptr<uint8_t> edgeBuffer(new uint8_t[ tiffBufferSize ]);
-            uint8_t *edgeData = edgeBuffer.get();
+        WriteTIFF( inkSet.name + "_A2B.tiff", 96.0, TIFF_MODE_CIELAB, tiffBuffer.get(),
+                   tiffWidth, tiffHeight, 3, depth );
         
+        
+        if (globalSettings.gFindEdges) {
+            // find edges from the raw grid data, then copy to image format as above
+            std::unique_ptr<uint8_t> edgeGridBuffer(new uint8_t[ gridBufferSize ]);
+            uint8_t *edgeGridData = edgeGridBuffer.get();
+            uint16_t *edgeGridData16 = (uint16_t*)edgeGridData;
+            
             size_t channels = inkCount;       // ink input
             size_t step = 3;         // innermost column step, == output channels
             std::vector<size_t> dimensions(channels,gridPoints);
             std::vector<size_t> loopSteps(channels);
 
-// TODO - is this right for the image format?
-// Need to find edges THEN convert for TIFF output?
             for (size_t index = channels; index > 0; --index) {    // dimensionality
                 loopSteps[index-1] = step;
                 step *= gridPoints;
             }
 
-            FindEdgesN( tiffBuffer.get(), edgeData, dimensions, loopSteps,
-                        3, tiffWidth*tiffHeight, (size_t)depth );
-            WriteTIFF( inkSet.name + "_A2B_Edges.tiff", 96.0, TIFF_MODE_RGB, edgeData,
+            FindEdgesN( gridData, edgeGridData, dimensions, loopSteps,
+                        3, gridCount * 3, (size_t)depth );
+            
+            std::unique_ptr<uint8_t> edgeTiffBuffer(new uint8_t[ tiffBufferSize ]);
+            uint8_t *edgeTiffData = edgeTiffBuffer.get();
+            
+            // make the tile order semi-useful
+            if (inkCount==1 || ((inkCount & 1) == 0))
+                memcpy( edgeTiffData, edgeGridData, gridBufferSize );
+            else {
+                uint8_t *tiffData = edgeTiffBuffer.get();
+                uint16_t *tiff16Data = (uint16_t*)tiffData;
+                for (size_t k = 0; k < gridCount; ++k ) {
+                    size_t x = k % gridPoints;
+                    size_t y = (k / gridPoints) % gridPoints;
+                    size_t tile = k / (gridPoints*gridPoints);
+                    size_t tileX = tile % tilesWide;
+                    size_t tileY = tile / tilesWide;
+                    size_t index = (tileY * gridPoints * tiffWidth) + (tileX * gridPoints) + (y * tiffWidth) + x;
+                    if (depth == 16) {
+                        tiff16Data[3*index+0] = edgeGridData16[3*k+0];
+                        tiff16Data[3*index+1] = edgeGridData16[3*k+1];
+                        tiff16Data[3*index+2] = edgeGridData16[3*k+2];
+                    } else {
+                        tiffData[3*index+0] = edgeGridData[3*k+0];
+                        tiffData[3*index+1] = edgeGridData[3*k+1];
+                        tiffData[3*index+2] = edgeGridData[3*k+2];
+                    }
+                }
+            }
+            
+            WriteTIFF( inkSet.name + "_A2B_Edges.tiff", 96.0, TIFF_MODE_RGB, edgeTiffData,
                         tiffWidth, tiffHeight, 3, depth );
         }
-        
-        WriteTIFF( inkSet.name + "_A2B.tiff", 96.0, TIFF_MODE_CIELAB, tiffBuffer.get(),
-                   tiffWidth, tiffHeight, 3, depth );
     }
 
     tableFormat myTable;
