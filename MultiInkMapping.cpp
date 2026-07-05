@@ -964,6 +964,29 @@ DEFERRED - find a way to accelerate the search
     return closest_index;
 }
 
+/********************************************************************************/
+
+inline
+float Edge3( float a, float b, float c )
+{
+    return std::abs( b - (a+c)*0.5f );
+}
+
+/********************************************************************************/
+
+inline
+uint8_t Edge3( uint8_t a, uint8_t b, uint8_t c )
+{
+    return (uint8_t) std::abs( (int)b - ((int)(a+c)>>1) );
+}
+
+/********************************************************************************/
+
+inline
+uint16_t Edge3( uint16_t a, uint16_t b, uint16_t c )
+{
+    return (uint16_t) std::abs( (int)b - ((int)(a+c)>>1) );
+}
 
 /********************************************************************************/
 
@@ -1137,53 +1160,43 @@ void SmoothOneDirection( float *data, size_t gridPoints, size_t planeStep, size_
 
 // filter in place, for all dimensions, for arbitrary channel counts
 // this can be a cache thrasher
-/*
-NDimension edge detection:
-
-memset(output,0,total*(depth>>3));
-
-split out depth 8, 16, 32
-
-TODO - duplicate values on edges, or ignore edges?
-    duplicate would almost always show edge
-    ignore and let other dimensions catch differences
-
- */
-static
-void SmoothN( float *data, std::vector<size_t> &dimensions, std::vector<size_t> &steps,
+template<typename T>
+void SmoothN( T *data, std::vector<size_t> &dimensions_in,
+            std::vector<size_t> &steps_in,
             size_t channels, size_t totalSize, size_t depth )
 {
     assert(channels > 0);
     assert(channels <= kMaxChannels);
     
-    size_t inkCount = dimensions.size();
+    size_t dimensionCount = dimensions_in.size();
     
-    std::vector<size_t> wsteps( steps );
-    std::vector<size_t> loopIndices(inkCount,0);
+    std::vector<size_t> wsteps( steps_in );
+    std::vector<size_t> wdimensions( dimensions_in );
+    std::vector<size_t> loopIndices( dimensionCount, 0 );
 
-    for (size_t m = 0; m < inkCount; ++m) {
-        size_t lastDimension = dimensions[channels-1];
+    for (size_t m = 0; m < dimensionCount; ++m) {
+        size_t lastDimension = wdimensions[dimensionCount-1];
         
         if (lastDimension <= 2)    // nothing to operate on in this dimension
           continue;
         
         size_t innerLimit = lastDimension-1;
-        size_t colStep = steps[channels-1];
+        size_t colStep = wsteps[dimensionCount-1];
         
         std::fill( loopIndices.begin(), loopIndices.end(), 0 );
 
-        for (size_t z = 0; loopIndices[0] < dimensions[0]; ++z) {
+        for (size_t z = 0; loopIndices[0] < wdimensions[0]; ++z) {
             
             size_t index = 0;
-            for (size_t n = 0; n < (inkCount-1); ++n)
+            for (size_t n = 0; n < (dimensionCount-1); ++n)
                 index += loopIndices[n] * wsteps[n];
             
             // special case first k value
             for (size_t c = 0; c < channels; ++c) {
-                auto current = data[ index + c ];
-                auto prev = current;
-                auto next = data[ index + colStep + c ];
-                auto result = Smooth3( prev, current, next );
+                T current = data[ index + c ];
+                T prev = current;
+                T next = data[ index + colStep + c ];
+                T result = Smooth3( prev, current, next );
                 data[ index + c ] = result;
             }
             index += colStep;
@@ -1191,10 +1204,10 @@ void SmoothN( float *data, std::vector<size_t> &dimensions, std::vector<size_t> 
             for (size_t k = 1; k < innerLimit; ++k) {
                 
                 for (size_t c = 0; c < channels; ++c) {
-                    auto prev = data[ index - colStep + c ];
-                    auto current = data[ index + c ];
-                    auto next = data[ index + colStep + c ];
-                    auto result = Smooth3( prev, current, next );
+                    T prev = data[ index - colStep + c ];
+                    T current = data[ index + c ];
+                    T next = data[ index + colStep + c ];
+                    T result = Smooth3( prev, current, next );
                     data[ index + c ] = result;
                 }
                 index += colStep;
@@ -1202,23 +1215,23 @@ void SmoothN( float *data, std::vector<size_t> &dimensions, std::vector<size_t> 
             
             // special case last k value
             for (size_t c = 0; c < channels; ++c) {
-                auto prev = data[ index - colStep + c ];
-                auto current = data[ index + c ];
-                auto next = current;
-                auto result = Smooth3( prev, current, next );
+                T prev = data[ index - colStep + c ];
+                T current = data[ index + c ];
+                T next = current;
+                T result = Smooth3( prev, current, next );
                 data[ index + c ] = result;
             }
             
             
-            // increment loop counters
-            //    if incremented is >= limitpj[, reset and roll upward in list
+            // increment loop counters, ignoring last dimension we iterated above
+            //    if incremented is >= limit[j], reset and roll upward in list
             //    if we don't overflow, save the incremented value and break out of the loop
-            for (int j = ((int)inkCount-2); j >= 0; --j) {
-                auto temp = loopIndices[(size_t)j] + 1;
-                if (temp >= dimensions[(size_t)j] && j != 0)   // we want counter 0 to overflow, to end the big loop
+            for (int j = ((int)dimensionCount-2); j >= 0; --j) {
+                auto increment_temp = loopIndices[(size_t)j] + 1;
+                if (increment_temp >= wdimensions[(size_t)j] && j != 0)   // we want counter 0 to overflow, to end the big loop
                     loopIndices[(size_t)j] = 0;
                 else {
-                    loopIndices[(size_t)j] = temp;
+                    loopIndices[(size_t)j] = increment_temp;
                     break;
                 }
             }   // end loop counter update
@@ -1227,6 +1240,83 @@ void SmoothN( float *data, std::vector<size_t> &dimensions, std::vector<size_t> 
 
         // prepare for next dimension
         (void)std::rotate( wsteps.begin(), wsteps.begin()+1, wsteps.end() );
+        (void)std::rotate( wdimensions.begin(), wdimensions.begin()+1, wdimensions.end() );
+
+    }   // end outer dimension loop
+
+}
+
+/********************************************************************************/
+
+template<typename T>
+void FindEdgesN( T *input, T *output, std::vector<size_t> &dimensions_in,
+            std::vector<size_t> &steps_in,
+            size_t channels, size_t totalSize, size_t depth )
+{
+    assert(channels > 0);
+    assert(channels <= kMaxChannels);
+    
+    size_t dimensionCount = dimensions_in.size();
+    
+    std::vector<size_t> wsteps( steps_in );
+    std::vector<size_t> wdimensions( dimensions_in );
+    std::vector<size_t> loopIndices( dimensionCount );
+    
+    memset(output,0,totalSize*(depth>>3));
+
+    for (size_t m = 0; m < dimensionCount; ++m) {
+        size_t lastDimension = wdimensions[dimensionCount-1];
+        
+        if (lastDimension <= 2)    // nothing to operate on in this dimension
+          continue;
+        
+        size_t innerLimit = lastDimension-1;
+        size_t colStep = wsteps[dimensionCount-1];
+        
+        std::fill( loopIndices.begin(), loopIndices.end(), 0 );
+
+        for (size_t z = 0; loopIndices[0] < wdimensions[0]; ++z) {
+            
+            size_t index = 0;
+            for (size_t n = 0; n < (dimensionCount-1); ++n)
+                index += loopIndices[n] * wsteps[n];
+            
+            // ignore first pixel, edge duplication doesn't work well with edge detection
+            index += colStep;
+            
+            for (size_t k = 1; k < innerLimit; ++k) {
+                
+                for (size_t c = 0; c < channels; ++c) {
+                    T prev = input[ index - colStep + c ];
+                    T current = input[ index + c ];
+                    T next = input[ index + colStep + c ];
+                    T result = Edge3( prev, current, next );
+                    T old = output[ index + c ];
+                    output[ index + c ] = std::max( result, old );
+                }
+                index += colStep;
+            }
+            
+            // ignore last pixel, edge duplication doesn't work well with edge detection
+            
+            // increment loop counters, ignoring last dimension we iterated above
+            //    if incremented is >= limit[j], reset and roll upward in list
+            //    if we don't overflow, save the incremented value and break out of the loop
+            for (int j = ((int)dimensionCount-2); j >= 0; --j) {
+                auto increment_temp = loopIndices[(size_t)j] + 1;
+                if (increment_temp >= wdimensions[(size_t)j] && j != 0)   // we want counter 0 to overflow, to end the big loop
+                    loopIndices[(size_t)j] = 0;
+                else {
+                    loopIndices[(size_t)j] = increment_temp;
+                    break;
+                }
+            }   // end loop counter update
+
+        }   // end voxel loop
+
+        // prepare for next dimension
+        (void)std::rotate( wsteps.begin(), wsteps.begin()+1, wsteps.end() );
+        (void)std::rotate( wdimensions.begin(), wdimensions.begin()+1, wdimensions.end() );
 
     }   // end outer dimension loop
 
@@ -2012,12 +2102,12 @@ assert( tchroma >= 0.0 );
         SmoothOneDirection( gridData, (size_t)gridPoints, rowStep, colStep, planeStep, inkCount );
         SmoothOneDirection( gridData, (size_t)gridPoints, colStep, planeStep, rowStep, inkCount );
 #else
-        std::vector<size_t> dimensions(inkCount,gridPoints);
-        std::vector<size_t> loopSteps(inkCount);
+        size_t channels = 3;        // LAB input
+        size_t step = inkCount;     // innermost column step, == output channels
+        std::vector<size_t> dimensions(channels,gridPoints);
+        std::vector<size_t> loopSteps(channels);
 
-        size_t channels = 3;        // LAB data
-        size_t step = channels;     // innermost column step, == channels
-        for (size_t index = 3; index > 0; --index) {    // dimensionality
+        for (size_t index = channels; index > 0; --index) {    // dimensionality
             loopSteps[index-1] = step;
             step *= gridPoints;
         }
@@ -2035,14 +2125,23 @@ assert( tchroma >= 0.0 );
     if ( globalSettings.gTIFFTables ) {
         // order the data for easy viewing as an image
         uint8_t *tifPtr = outData;
+        uint16_t *tifPtr16 = out16Ptr;
         for (size_t B = 0; B < gridPoints; ++B) {
             size_t Bindex = (gridPoints-1 - B);    // need to flip B
             for (size_t L = 0; L < gridPoints; ++L) {
                 for (size_t A = 0; A < gridPoints; ++A) {
-                    for (size_t c = 0; c < inkCount; ++c) {
-                        tifPtr[c] = float_to_file255( gridData[ L * planeStep + A * rowStep + Bindex*colStep + c ] );
+                    size_t index = L * planeStep + A * rowStep + Bindex*colStep;
+                    if (depth == 8) {
+                        for (size_t c = 0; c < inkCount; ++c) {
+                            tifPtr[c] = float_to_file255( gridData[ index + c ] );
+                        }
+                        tifPtr += inkCount;
+                    } else {
+                        for (size_t c = 0; c < inkCount; ++c) {
+                            tifPtr16[c] = float_to_file65535( gridData[ index + c ] );
+                        }
+                        tifPtr16 += inkCount;
                     }
-                    tifPtr += inkCount;
                 }
             }
         }
@@ -2050,7 +2149,27 @@ assert( tchroma >= 0.0 );
         // write TIFF File
         int mode = (inkCount < 4) ? TIFF_MODE_GRAY_WHITEZERO : TIFF_MODE_CMYK;
         WriteTIFF( inkSet.name + "_B2A.tiff", 96.0, mode, outBuffer.get(),
-                    gridPoints*gridPoints, gridPoints, (int)inkCount, 8 );
+                    gridPoints*gridPoints, gridPoints, (int)inkCount, depth );
+
+
+{
+        std::unique_ptr<uint8_t> edgeBuffer(new uint8_t[ gridCount * inkCount * ((size_t)depth/8) ]);
+        uint8_t *edgeData = edgeBuffer.get();
+    
+        size_t channels = 3;        // LAB input
+        size_t step = inkCount;     // innermost column step, == output channels
+        std::vector<size_t> dimensions(channels,gridPoints);
+        std::vector<size_t> loopSteps(channels);
+
+        for (size_t index = channels; index > 0; --index) {    // dimensionality
+            loopSteps[index-1] = step;
+            step *= gridPoints;
+        }
+
+        FindEdgesN( outBuffer.get(), edgeData, dimensions, loopSteps, inkCount, gridCount * inkCount, depth );
+        WriteTIFF( inkSet.name + "_B2A_Edges.tiff", 96.0, mode, edgeData,
+                    gridPoints*gridPoints, gridPoints, (int)inkCount, depth );
+}
     }
 
 
