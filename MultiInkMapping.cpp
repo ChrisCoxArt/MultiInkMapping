@@ -1031,7 +1031,6 @@ uint16_t Smooth3( uint16_t a, uint16_t b, uint16_t c )
 
 // filter in place, for all dimensions, for arbitrary channel counts
 // this can be a cache thrasher
-// currently always 32 bit float
 template<typename T>
 void SmoothInner( T *data, const std::vector<size_t> &dimensions_in,
             const std::vector<size_t> &steps_in,
@@ -1041,10 +1040,14 @@ void SmoothInner( T *data, const std::vector<size_t> &dimensions_in,
     assert(channels <= kMaxChannels);
     
     size_t dimensionCount = dimensions_in.size();
+    if (dimensionCount < 1)
+        return;
     
     std::vector<size_t> wsteps( steps_in );
     std::vector<size_t> wdimensions( dimensions_in );
     std::vector<size_t> loopIndices( dimensionCount, 0 );
+    
+    assert( dimensionCount == steps_in.size() );
     
     if (dimensionCount == 1) {
         // fake a second dimension so the loops work
@@ -1053,6 +1056,10 @@ void SmoothInner( T *data, const std::vector<size_t> &dimensions_in,
         loopIndices.push_back(0);
         dimensionCount = 2;
     }
+    
+    assert( dimensionCount == wdimensions.size() );
+    assert( dimensionCount == wsteps.size() );
+    assert( dimensionCount == loopIndices.size() );
 
     for (size_t m = 0; m < dimensionCount; ++m) {
         size_t lastDimension = wdimensions[dimensionCount-1];
@@ -1160,10 +1167,14 @@ void FindEdgesInner( T *input, T *output,
     assert(channels <= kMaxChannels);
     
     size_t dimensionCount = dimensions_in.size();
+    if (dimensionCount < 1)
+        return;
     
     std::vector<size_t> wsteps( steps_in );
     std::vector<size_t> wdimensions( dimensions_in );
     std::vector<size_t> loopIndices( dimensionCount );
+    
+    assert( dimensionCount == steps_in.size() );
     
     if (dimensionCount == 1) {
         // fake a second dimension so the loops work
@@ -1172,6 +1183,10 @@ void FindEdgesInner( T *input, T *output,
         loopIndices.push_back(0);
         dimensionCount = 2;
     }
+    
+    assert( dimensionCount == wdimensions.size() );
+    assert( dimensionCount == wsteps.size() );
+    assert( dimensionCount == loopIndices.size() );
     
     memset(output,0,totalSize*(depth>>3));
 
