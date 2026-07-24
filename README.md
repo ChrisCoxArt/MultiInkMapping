@@ -23,8 +23,10 @@ And that's all I need from it.
 Usage: MultiInkMapping <args> input.json
 	-depth B        bit depth of output data [8 or 16] (default 8)
 	-grid G         number of grid points per channel (default 21)
-	-limit L        upper limit on A2B table size (default 1048576)
+	-limit L        upper limit on A2B table size (default 1048576 points)
 	-copyright C    copyright string for profiles (default "Copyright (c) Chris Cox 2026")
+	-smooth         smooth tables (default false)
+	-edges          save edges for TIFF tables (default false)
 	-tiff           also output tables as TIFF files (default false)
 	-json           also write JSON ICC profiles (default false)
 	-xml            also write XML ICC profiles (default false)
