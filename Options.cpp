@@ -431,7 +431,7 @@ void print_usage(char *argv[])
     
     printf("\t-depth B        bit depth of output data [8 or 16] (default %d)\n", globalSettings.gDataDepth );
     printf("\t-grid G         number of grid points per channel (default %d)\n", globalSettings.gDataGridPoints );
-    printf("\t-limit L        upper limit on A2B table size (default %zu)\n", globalSettings.gTableSizeLimit );
+    printf("\t-limit L        upper limit on A2B table size (default %zu points)\n", globalSettings.gTableSizeLimit );
     printf("\t-copyright C    copyright string for profiles (default \"%s\")\n", globalSettings.gDefaultCopyright.c_str() );
     printf("\t-smooth         smooth tables (default false)\n" );
     printf("\t-edges          save edges for TIFF tables (default false)\n" );

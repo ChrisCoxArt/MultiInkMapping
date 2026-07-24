@@ -975,6 +975,14 @@ float Edge3( float a, float b, float c )
 /********************************************************************************/
 
 inline
+double Edge3( double a, double b, double c )
+{
+    return std::abs( b - (a+c)*0.5f );
+}
+
+/********************************************************************************/
+
+inline
 uint8_t Edge3( uint8_t a, uint8_t b, uint8_t c )
 {
     return (uint8_t) std::abs( (int)b - ((int)(a+c)>>1) );
@@ -1158,7 +1166,7 @@ void SmoothN( T *input, const std::vector<size_t> &dimensions_in,
 /********************************************************************************/
 
 template<typename T>
-void FindEdgesInner( T *input, T *output,
+void FindEdgesInner( const T *input, T *output,
             const std::vector<size_t> &dimensions_in,
             const std::vector<size_t> &steps_in,
             size_t channels, size_t totalSize, size_t depth )
@@ -1251,7 +1259,7 @@ void FindEdgesInner( T *input, T *output,
 /********************************************************************************/
 
 template<typename T>
-void FindEdgesN( T *input, T *output, const std::vector<size_t> &dimensions_in,
+void FindEdgesN( const T *input, T *output, const std::vector<size_t> &dimensions_in,
             const std::vector<size_t> &steps_in,
             size_t channels, size_t totalSize, size_t depth )
 {
@@ -2161,7 +2169,7 @@ assert( tchroma >= 0.0 );
 
             FindEdgesN( outBuffer.get(), edgeData, dimensions, loopSteps,
                         inkCount, gridCount * inkCount, (size_t)depth );
-            WriteTIFF( inkSet.name + "_B2A_Edges.tiff", 96.0, mode, edgeData,
+            WriteTIFF( inkSet.name + "_B2A_Edges.tiff", 96.0, TIFF_MODE_GRAY_BLACKZERO, edgeData,
                         gridPoints*gridPoints, gridPoints, (int)inkCount, depth );
         }
     }
